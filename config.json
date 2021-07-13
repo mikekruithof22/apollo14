@@ -1,0 +1,25 @@
+{
+    "brokerApiUrl": "https://api.binance.com/",
+    "numberOfCandlesToRetrieve": 1000,
+    "logBullishDivergenceCalculation": false,
+    "testWithHistoricData": true,
+    "generateExcelFile": true,
+    "rsi": {
+        "minimumRisingPercentage": 2.00,
+        "calculationLength": 14
+    },
+    "candle": {
+        "tradingPair": "BTCUSDT",
+        "interval": "1h",
+        "minimumDeclingPercentage": -2.00
+    },
+    "calcBullishDivergence": {
+        "numberOfMinimumIntervals": 5,
+        "numberOfMaximumIntervals": 15
+    },
+    "stopLossOrder": {
+        "takeProfitPercentage": 5,
+        "takeLossPercentage": 2,
+        "candleAmountToLookIntoTheFuture": 10
+    }
+}

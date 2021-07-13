@@ -1,0 +1,19 @@
+{
+  "name": "bullishdivergence",
+  "version": "1.0.0",
+  "description": "to the moon",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test/delta.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "binance": "^1.3.9",
+    "dotenv": "^10.0.0",
+    "node-fetch": "^2.6.1",
+    "technicalindicators": "^3.1.0",
+    "xlsx": "^0.17.0"
+  }
+}
