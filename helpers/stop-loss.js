@@ -9,16 +9,6 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
         // In case of profit, check the "highest",
         const profitPercentage = calculatePercentageChange(startCandle.close, nextCandlesAfterHit[i].high);
 
-        // console.log('---------------stopLossCalculation ---------------');
-        // console.log('lossPercentage');
-        // console.log(lossPercentage);
-        // console.log('takeLossPercentage');
-        // console.log(takeLossPercentage);
-        // console.log('profitPercentage');
-        // console.log(profitPercentage);
-        // console.log('takeProfitPercentage');
-        // console.log(takeProfitPercentage);
-
         if (lossPercentage >= takeLossPercentage && profitPercentage >= takeProfitPercentage) {
             message = `Profit limit and sell limit occured inside the same candle --> Cannot tell if it is a profit or loss`;
             break;
@@ -26,7 +16,7 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
             message = `Trade was profitable. We sold for: ${nextCandlesAfterHit[i].high}. Candle closeDate: ${nextCandlesAfterHit[i].closeTime}`;
             break;
         } else if (lossPercentage >= takeLossPercentage) {
-            message = `Trade was NOT profitable. We sold for: ${nextCandlesAfterHit[i].low}. Candle closeDate: ${nextCandlesAfterHit[i].closeTime}`;
+            message = `Trade was unsuccessful. We sold for: ${nextCandlesAfterHit[i].low}. Candle closeDate: ${nextCandlesAfterHit[i].closeTime}`;
             break;
         } else {
             message = `Unable to calculate if there would have been a profit or loss`;
@@ -37,7 +27,7 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
 }
 
 const findHighestCandle = (nextCandlesAfterHit) => {
-    const candleWithHighstPrice = nextCandlesAfterHit.reduce(function(prev, current) {
+    const candleWithHighstPrice = nextCandlesAfterHit.reduce(function (prev, current) {
         return (prev.high > current.high) ? prev : current
     });
 
@@ -46,7 +36,7 @@ const findHighestCandle = (nextCandlesAfterHit) => {
 }
 
 const findLowestCandle = (nextCandlesAfterHit) => {
-    const candleWithLowestPrice = nextCandlesAfterHit.reduce(function(prev, current) {
+    const candleWithLowestPrice = nextCandlesAfterHit.reduce(function (prev, current) {
         return (prev.low > current.low) ? prev : current
     });
 

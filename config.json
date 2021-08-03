@@ -2,7 +2,7 @@
     "brokerApiUrl": "https://api.binance.com/",
     "numberOfCandlesToRetrieve": 1000,
     "logBullishDivergenceCalculation": false,
-    "testWithHistoricData": true,
+    "testWithHistoricalData": true,    
     "generateExcelFile": true,
     "tradingPair": "BTCUSDT",
     "orderConditions": [
@@ -10,8 +10,6 @@
             "name": "Order condition name one",
             "interval": "1h",
             "rsi": {
-                "usePointsGainInsteadOffRisingPercentage": true,
-                "minAbsolutePointsGain": 20,
                 "minimumRisingPercentage": 2.00,
                 "calculationLength": 14
             },
@@ -32,8 +30,6 @@
             "name": "Order condition name two",
             "interval": "15m",
             "rsi": {
-                "usePointsGainInsteadOffRisingPercentage": false,
-                "minAbsolutePointsGain": 30,
                 "minimumRisingPercentage": 4.00,
                 "calculationLength": 14
             },

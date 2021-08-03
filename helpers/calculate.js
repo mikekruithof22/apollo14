@@ -50,7 +50,6 @@ const calculateBullishDivergence = (
                 }
 
                 let obj = {
-                    message: 'Found a bullish divergence which meets the configured criteria',
                     startWithCandle: candleList[compareWithCandleIndex],
                     startRsiValue: compareWithRsiValue,
                     endingCandle: candleList[mostRecenCandleIndex],
@@ -81,10 +80,6 @@ const calculateBullishHistoricalDivergences = (
     orderConditionName
 ) => {
     let bullishDivergenceCandles = [];
-
-    // console.log('--------------- calculateBullishHistoricalDivergences---------------');
-    // console.log('startCount '  + startCount);
-    // console.log('stopCount '  + stopCount);
 
     for (var i = startCount; i < closePriceList.length; i++) {
         const currentCandle = closePriceList[closePriceList.length - i];
@@ -127,12 +122,9 @@ const calculateBullishHistoricalDivergences = (
 
                     const highestNextCandleAfterHit = stopLoss.findHighestCandle(nextCandlesAfterHit);
                     const lowestCandleAfterHit = stopLoss.findLowestCandle(nextCandlesAfterHit);
-                    // const nextCandleWithHighestSlope = calculatSlopeAfterBullishDivergence(candleList[i + j], nextCandlesAfterHit);
-
 
                     let obj = {
                         id: candleList[compareWithCandleIndex].openTime,
-                        message: 'Found a bullish divergence which meets the configured criteria',
                         startWithCandle: candleList[compareWithCandleIndex],
                         startRsiValue: compareWithRsiValue,
                         endingCandle: candleList[currentCandleIndex],
@@ -183,26 +175,6 @@ const calcAmountOfSuccessfulTrades = (bullishDivergenceCandles, searchFor) => {
     }).length;
 
     return count;
-}
-
-/*
-    Once you got a Bullish Divergence get the close price from the last candle.
-    Next compare it with the largest 'highest' from the following X-amount of candles
-*/
-const calculatSlopeAfterBullishDivergence = (startCandle, nextCandlesAfterHit) => {
-    let result = [];
-    for (var i = 0; i < nextCandlesAfterHit.length; i++) {
-        let obj = {
-            openTime: nextCandlesAfterHit[i].openTime,
-            closeTime: nextCandlesAfterHit[i].closeTime,
-            high: nextCandlesAfterHit[i].high,
-            slope: calculatePercentageChange(startCandle.close, nextCandlesAfterHit[i].high)
-        }
-        result.push(obj);
-        obj = {};
-    }
-    const highestResult = result.reduce((acc, result) => acc = acc && acc.slope > result.slope ? acc : result, undefined);
-    return highestResult;
 }
 
 const showCalculationLoging = (compareWithRsiValue, mostRecentRsiValue, compareWithCandle, mostRecentCandle, i, rsiChange, closePriceChange) => {

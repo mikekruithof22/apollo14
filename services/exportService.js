@@ -65,6 +65,7 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
         return [
             metaDataContent.amount,
             metaDataContent.succesfull,
+            metaDataContent.succesfull,
             metaDataContent.unable,
             metaDataContent.numberOffApiCalls,
             metaDataContent.configuration
@@ -96,15 +97,17 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
         ' * ',
         'CANDLES DIFFERENCE',
         'HIGHEST NEXT CANDLE',
-        'LOWEST CANDLE'
+        'LOWEST CANDLE',
+        'MOST LIKELY OUTCOME'
     ];
 
     const workSheetColumnTwoNames = [
-        'Number of divergences',
-        'Number of succesfull trades',
-        'Number of unable to know if succesfull trades',
-        'Number of api calls',
-        'Configuration object'
+        'DIVERGENCES',
+        'SUCCESSFULL TRADES',
+        'UNSUCCESSFULL TRADES',
+        'UNABLE TO DECIDE TRADES TRADES',
+        'NUMBER OF API CALLS',
+        'CONFIGURATION OBJECT'
     ];
 
     exportExcel(dataFirstSheet, dataSecondSheet, workSheetColumnOneNames, workSheetColumnTwoNames);

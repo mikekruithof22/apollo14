@@ -1,7 +1,7 @@
-const formatDate = (date) => {
+const formatLongDate = (date) => {
     return date.toLocaleString();
 }
 
 module.exports = {
-    formatDate
+    formatLongDate
 };

@@ -6,13 +6,13 @@ const calculate = require('./helpers/calculate');
 const excel = require('./services/exportService');
 
 async function runInTerminal() {
-    let logFileBullishDivergenceContent = [];
+    let excelFileContent = [];
     let numberOffApiCalls = 0;
 
     // STEP 01 - prepare config data
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
-    const testWithHistoricData = config.testWithHistoricData;
+    const testWithHistoricalData = config.testWithHistoricalData;
     const generateExcelFile = config.generateExcelFile;
     const tradingPair = config.tradingPair;
     const orderConditions = config.orderConditions;
@@ -21,10 +21,6 @@ async function runInTerminal() {
     for await (let order of orderConditions) {
         const orderConditionName = order.name;
         const candleInterval = order.interval;
-        /* TODO: testmike, deze aan de praat krijgen uit de config. 
-            "usePointsGainInsteadOffRisingPercentage": true,
-             "minAbsolutePointsGain": 20,
-        */
 
         const rsiMinimumRisingPercentage = order.rsi.minimumRisingPercentage;
         const rsiCalculationLength = order.rsi.calculationLength;
@@ -36,7 +32,6 @@ async function runInTerminal() {
         const takeProfitPercentage = order.stopLossOrder.takeProfitPercentage;
         const takeLossPercentage = order.stopLossOrder.takeLossPercentage;
         const candleAmountToLookIntoTheFuture = order.stopLossOrder.candleAmountToLookIntoTheFuture;
-
 
         const url = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
         numberOffApiCalls = numberOffApiCalls + 1;
@@ -51,9 +46,8 @@ async function runInTerminal() {
         const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
         // console.log('---------------rsiCollection ---------------');
         // console.log(rsiCollection);
-        // console.log(`Current order condition number : ${order.length}`);
 
-        if (testWithHistoricData === true) {
+        if (testWithHistoricalData === true) {
             const historicalBullishDivergenceCandles = calculate.calculateBullishHistoricalDivergences(
                 closePriceList,
                 candleObjectList,
@@ -68,9 +62,8 @@ async function runInTerminal() {
                 orderConditionName
             );
             historicalBullishDivergenceCandles.forEach(hit => {
-                logFileBullishDivergenceContent.push(hit);
+                excelFileContent.push(hit);
             });
-
         } else { // REAL TIME 
             const bullishDivergenceCandles = calculate.calculateBullishDivergence(
                 closePriceList,
@@ -85,33 +78,26 @@ async function runInTerminal() {
                 orderConditionName
             );
             bullishDivergenceCandles.forEach(hit => {
-                logFileBullishDivergenceContent.push(hit);
+                excelFileContent.push(hit);
             });
         }
     };
 
-    /*
-        TODO: werkt soort van, althans per order name soort...
-        dit verder uitzoeken.
-
-        Als je tijd over hebt hier mee verder gaan
-
-                 const sortedLogFileBullishDivergenceContent = logFileBullishDivergenceContent.sort((a, b) => new Date(b.startWithCandle.openTime) - new Date(a.startWithCandle.openTime));
-
-                https://www.codegrepper.com/search.php?q=sort%20date%20array%20javascript
-    */
-
     // STEP 03 - generate Excel file
     let amountOfSuccessfulTrades;
+    let amountOfUnsuccessfulTrades;
     let amounfOfUnknownTrades;
 
-    console.log(`----- ${config.testWithHistoricData === false ? 'REALTIME' : 'HISTORICAL'} bullishDivergenceCandles -----`);
-    console.log(`Amount of bullish divergence(s): ${logFileBullishDivergenceContent.length}`);
-    if (testWithHistoricData === true) {
-        amountOfSuccessfulTrades = calculate.calcAmountOfSuccessfulTrades(logFileBullishDivergenceContent, 'profitable');
-        amountOfSuccessfulTrades = amountOfSuccessfulTrades ? amountOfSuccessfulTrades : 0
+    console.log(`----- ${config.testWithHistoricalData === false ? 'REALTIME' : 'HISTORICAL'} bullishDivergenceCandles -----`);
+    console.log(`Amount of bullish divergence(s): ${excelFileContent.length}`);
+    if (testWithHistoricalData === true) {
+        amountOfSuccessfulTrades = calculate.calcAmountOfSuccessfulTrades(excelFileContent, 'profitable');
+        amountOfSuccessfulTrades = amountOfSuccessfulTrades ? amountOfSuccessfulTrades : 0;
 
-        amounfOfUnknownTrades = calculate.calcAmountOfSuccessfulTrades(logFileBullishDivergenceContent, 'Unable');
+        amountOfUnsuccessfulTrades = calculate.calcAmountOfSuccessfulTrades(excelFileContent, 'unsuccessful');
+        amountOfUnsuccessfulTrades = amountOfUnsuccessfulTrades ? amountOfUnsuccessfulTrades : 0;
+
+        amounfOfUnknownTrades = calculate.calcAmountOfSuccessfulTrades(excelFileContent, 'Unable');
         amounfOfUnknownTrades = amounfOfUnknownTrades ? amounfOfUnknownTrades : 0;
 
         console.log(`Of those trades ${amountOfSuccessfulTrades} would have been profitable`);
@@ -122,23 +108,26 @@ async function runInTerminal() {
     if (generateExcelFile === true) {
         const metaDataContent = [
             {
-                amount: `Amount of bullish divergence(s): ${logFileBullishDivergenceContent.length}`,
-                succesfull: testWithHistoricData === false
-                    ? `Realtime data ==> property cannot be filled`
-                    : `Profitable trades: ${amountOfSuccessfulTrades}.`,
-                unable: testWithHistoricData === false
-                    ? `Realtime data ==> property cannot be filled`
-                    : `For ${amounfOfUnknownTrades} was it not possible to say if it would have been profitable`,
+                amount: `Amount of bullish divergence(s): ${excelFileContent.length}`,
+                succesfull: testWithHistoricalData === false
+                    ? `N/A`
+                    : `${amountOfSuccessfulTrades}`,
+                unsuccesfull: testWithHistoricalData === false
+                    ? `N/A`
+                    : `${amountOfUnsuccessfulTrades}`,
+                unable: testWithHistoricalData === false
+                    ? `N/A`
+                    : `${amounfOfUnknownTrades}`,
                 numberOffApiCalls: numberOffApiCalls,
                 configuration: JSON.stringify(config)
             }
         ];
 
-        console.log('--------------- logFileBullishDivergenceContent  ---------------');
-        console.log(logFileBullishDivergenceContent);
+        console.log('--------------- excelFileContent  ---------------');
+        console.log(excelFileContent);
 
 
-        excel.exporDivergencesToExcel(logFileBullishDivergenceContent, metaDataContent);
+        excel.exporDivergencesToExcel(excelFileContent, metaDataContent);
     }
 }
 
