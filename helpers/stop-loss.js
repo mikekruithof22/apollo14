@@ -1,9 +1,7 @@
 const config = require('../config.json');
 
-const stopLossCalculation = (startCandle, nextCandlesAfterHit) => {
+const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage) => {
     let message;
-    const takeLossPercentage = config.stopLossOrder.takeLossPercentage;
-    const takeProfitPercentage = config.stopLossOrder.takeProfitPercentage;
 
     for (var i = 0; i < nextCandlesAfterHit.length; i++) {
         // In case of loss, check the "lowest"

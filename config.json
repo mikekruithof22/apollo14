@@ -4,22 +4,51 @@
     "logBullishDivergenceCalculation": false,
     "testWithHistoricData": true,
     "generateExcelFile": true,
-    "rsi": {
-        "minimumRisingPercentage": 2.00,
-        "calculationLength": 14
-    },
-    "candle": {
-        "tradingPair": "BTCUSDT",
-        "interval": "1h",
-        "minimumDeclingPercentage": -2.00
-    },
-    "calcBullishDivergence": {
-        "numberOfMinimumIntervals": 5,
-        "numberOfMaximumIntervals": 15
-    },
-    "stopLossOrder": {
-        "takeProfitPercentage": 5,
-        "takeLossPercentage": 2,
-        "candleAmountToLookIntoTheFuture": 10
-    }
+    "tradingPair": "BTCUSDT",
+    "orderConditions": [
+        {
+            "name": "Order condition name one",
+            "interval": "1h",
+            "rsi": {
+                "usePointsGainInsteadOffRisingPercentage": true,
+                "minAbsolutePointsGain": 20,
+                "minimumRisingPercentage": 2.00,
+                "calculationLength": 14
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 50
+            },
+            "stopLossOrder": {
+                "takeProfitPercentage": 5,
+                "takeLossPercentage": 2,
+                "candleAmountToLookIntoTheFuture": 10
+            }
+        },
+        {
+            "name": "Order condition name two",
+            "interval": "15m",
+            "rsi": {
+                "usePointsGainInsteadOffRisingPercentage": false,
+                "minAbsolutePointsGain": 30,
+                "minimumRisingPercentage": 4.00,
+                "calculationLength": 14
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 50
+            },
+            "stopLossOrder": {
+                "takeProfitPercentage": 3,
+                "takeLossPercentage": 4,
+                "candleAmountToLookIntoTheFuture": 15
+            }
+        }
+    ]
 }

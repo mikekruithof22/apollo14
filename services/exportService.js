@@ -36,6 +36,8 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
         return [
             //data.id,
             //data.message,
+            data.orderConditionName,
+            '',
             data.startWithCandle.openTime,
             data.startWithCandle.open,
             // data.startWithCandle.high,
@@ -43,7 +45,7 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
             data.startWithCandle.close,
             data.startWithCandle.closeTime,
             data.startRsiValue,
-
+            '',
             data.endingCandle.openTime,
             data.endingCandle.open,
             // data.endingCandle.high,
@@ -51,6 +53,8 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
             data.endingCandle.close,
             data.endingCandle.closeTime,
             data.endiRsiValue,
+            '',
+            data.totalCandles,
             data.highestNextCandle,
             data.lowestCandle,
             data.stopLossMsg
@@ -62,7 +66,7 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
             metaDataContent.amount,
             metaDataContent.succesfull,
             metaDataContent.unable,
-            metaDataContent.uri,
+            metaDataContent.numberOffApiCalls,
             metaDataContent.configuration
         ];
     });
@@ -70,29 +74,36 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
     const workSheetColumnOneNames = [
         //'ID',
         //'message',
+        'ORDER NAME',
+        ' * ',
         'FIRST CANDLE',
-        'Open',
+        'OPEN',
         // 'sw-high',
         // 'sw-low',
-        'Close',
-        'CloseTime',
+        'CLOSE',
+        'CLOSETIME',
         'RSI',
+        ' * ',
+
         'SECOND CANDLE',
-        'Open',
+        'OPEN',
         // 'ec-high',
         // 'ec-low',
-        'Close',
-        'CloseTime',
+        'CLOSE',
+        'CLOSETIME',
         'RSI',
-        'Highest next candle',
-        'Lowest candle'
+
+        ' * ',
+        'CANDLES DIFFERENCE',
+        'HIGHEST NEXT CANDLE',
+        'LOWEST CANDLE'
     ];
 
     const workSheetColumnTwoNames = [
         'Number of divergences',
         'Number of succesfull trades',
         'Number of unable to know if succesfull trades',
-        'Url',
+        'Number of api calls',
         'Configuration object'
     ];
 

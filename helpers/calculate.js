@@ -1,7 +1,18 @@
 const config = require('../config.json');
 const stopLoss = require('./stop-loss');
 
-const calculateBullishDivergence = (closePriceList, candleList, rsiItems, startCount, stopCount, rsiMinimumRisingPercentage, candleMinimumDeclingPercentage) => {
+const calculateBullishDivergence = (
+    closePriceList,
+    candleList,
+    rsiItems,
+    startCount,
+    stopCount,
+    rsiMinimumRisingPercentage,
+    candleMinimumDeclingPercentage,
+    takeLossPercentage,
+    takeProfitPercentage,
+    orderConditionName
+) => {
     let bullishDivergenceCandles = [];
 
     for (var i = startCount; i < closePriceList.length; i++) {
@@ -43,7 +54,9 @@ const calculateBullishDivergence = (closePriceList, candleList, rsiItems, startC
                     startWithCandle: candleList[compareWithCandleIndex],
                     startRsiValue: compareWithRsiValue,
                     endingCandle: candleList[mostRecenCandleIndex],
-                    endiRsiValue: mostRecentRsiValue
+                    endiRsiValue: mostRecentRsiValue,
+                    orderConditionName: orderConditionName,
+                    totalCandles: mostRecenCandleIndex - compareWithCandleIndex
                 }
                 bullishDivergenceCandles.push(obj);
             }
@@ -54,7 +67,19 @@ const calculateBullishDivergence = (closePriceList, candleList, rsiItems, startC
     return bullishDivergenceCandles;
 }
 
-const calculateBullishHistoricalDivergences = (closePriceList, candleList, rsiItems, startCount, stopCount, rsiMinimumRisingPercentage, candleMinimumDeclingPercentage) => {
+const calculateBullishHistoricalDivergences = (
+    closePriceList,
+    candleList,
+    rsiItems,
+    startCount,
+    stopCount,
+    rsiMinimumRisingPercentage,
+    candleMinimumDeclingPercentage,
+    candleAmountToLookIntoTheFuture,
+    takeLossPercentage,
+    takeProfitPercentage,
+    orderConditionName
+) => {
     let bullishDivergenceCandles = [];
 
     // console.log('--------------- calculateBullishHistoricalDivergences---------------');
@@ -67,7 +92,7 @@ const calculateBullishHistoricalDivergences = (closePriceList, candleList, rsiIt
         const currentRsiValue = rsiItems[rsiItems.length - i];
 
         for (var j = startCount; j < stopCount; j++) {
-        // for (var j = startCount; j < stopCount; j++) {
+            // for (var j = startCount; j < stopCount; j++) {
             const compareWithCandle = closePriceList[closePriceList.length - (j + i)];
             const compareWithCandleIndex = closePriceList.length - (j + i);
             const compareWithRsiValue = rsiItems[rsiItems.length - (j + i)];
@@ -96,9 +121,9 @@ const calculateBullishHistoricalDivergences = (closePriceList, candleList, rsiIt
                         console.log('JACKPOT! - <<<<< BullishDivergence - BullishDivergence - BullishDivergence >>>>> - JACKPOT!');
                     }
                     const firstIndex = currentCandleIndex + 1;
-                    const lastIndex = firstIndex + config.stopLossOrder.candleAmountToLookIntoTheFuture;
+                    const lastIndex = firstIndex + candleAmountToLookIntoTheFuture;
                     const nextCandlesAfterHit = candleList.slice(firstIndex, lastIndex);
-                    const stopLossMessage = stopLoss.stopLossCalculation(candleList[currentCandleIndex], nextCandlesAfterHit);
+                    const stopLossMessage = stopLoss.stopLossCalculation(candleList[currentCandleIndex], nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage);
 
                     const highestNextCandleAfterHit = stopLoss.findHighestCandle(nextCandlesAfterHit);
                     const lowestCandleAfterHit = stopLoss.findLowestCandle(nextCandlesAfterHit);
@@ -114,7 +139,9 @@ const calculateBullishHistoricalDivergences = (closePriceList, candleList, rsiIt
                         endiRsiValue: currentRsiValue,
                         highestNextCandle: highestNextCandleAfterHit,
                         lowestCandle: lowestCandleAfterHit,
-                        stopLossMsg: stopLossMessage
+                        stopLossMsg: stopLossMessage,
+                        orderConditionName: orderConditionName,
+                        totalCandles: currentCandleIndex - compareWithCandleIndex
                     }
 
                     bullishDivergenceCandles.push(obj);
