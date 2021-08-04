@@ -11,7 +11,9 @@ const calculateBullishDivergence = (
     candleMinimumDeclingPercentage,
     takeLossPercentage,
     takeProfitPercentage,
-    orderConditionName
+    orderConditionName,
+    enableCreateOrders
+
 ) => {
     const consoleLogSteps = config.test.consoleLogSteps;
 
@@ -61,6 +63,12 @@ const calculateBullishDivergence = (
                     totalCandles: mostRecenCandleIndex - compareWithCandleIndex
                 }
                 bullishDivergenceCandles.push(obj);
+
+                // In case 'enableCreateOrders' is equal to 'true' immediately return
+                // so that you can create an order as fast as possible.
+                if (enableCreateOrders === true) {
+                    break;
+                }
             }
         } else {
             break;
@@ -184,6 +192,26 @@ const calcAmountOfSuccessfulTrades = (bullishDivergenceCandles, searchFor) => {
     return count;
 }
 
+const calcTradeOutcomes = (excelFileContent) => {
+    let amountOfSuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'profitable');
+    amountOfSuccessfulTrades = amountOfSuccessfulTrades ? amountOfSuccessfulTrades : 0;
+
+    let amountOfUnsuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'unsuccessful');
+    amountOfUnsuccessfulTrades = amountOfUnsuccessfulTrades ? amountOfUnsuccessfulTrades : 0;
+
+    let amounfOfUnknownTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Unable');
+    amounfOfUnknownTrades = amounfOfUnknownTrades ? amounfOfUnknownTrades : 0;
+
+    console.log(`Of those trades ${amountOfSuccessfulTrades} would have been profitable`);
+    console.log(`For ${amounfOfUnknownTrades} was it not possible to say if it would have been profitable`);
+
+    return {
+        amountOfSuccessfulTrades,
+        amountOfUnsuccessfulTrades,
+        amounfOfUnknownTrades
+    }
+}
+
 const showCalculationLoging = (compareWithRsiValue, mostRecentRsiValue, compareWithCandle, mostRecentCandle, i, rsiChange, closePriceChange) => {
     console.log('');
     console.log('**************************');
@@ -209,5 +237,6 @@ module.exports = {
     calculatePercentageChange,
     showCalculationLoging,
     calculateBullishHistoricalDivergences,
-    calcAmountOfSuccessfulTrades
+    calcAmountOfSuccessfulTrades,
+    calcTradeOutcomes
 };

@@ -4,6 +4,7 @@ const candleHelper = require('./helpers/candle');
 const calculate = require('./helpers/calculate');
 const excel = require('./services/exportService');
 const configChecker = require('./helpers/config-sanity-check');
+const binance = require('./binance/binance');
 
 async function runInTerminal() {
     let excelFileContent = [];
@@ -56,7 +57,7 @@ async function runInTerminal() {
         // console.log(rsiCollection);
 
 
-        if (testWithHistoricalData === true && enableCreateOrders === false) {
+        if (testWithHistoricalData === true) {
             const historicalBullishDivergenceCandles = calculate.calculateBullishHistoricalDivergences(
                 closePriceList,
                 candleObjectList,
@@ -84,7 +85,8 @@ async function runInTerminal() {
                 candleMinimumDeclingPercentage,
                 takeLossPercentage,
                 takeProfitPercentage,
-                orderConditionName
+                orderConditionName,
+                enableCreateOrders
             );
             bullishDivergenceCandles.forEach(hit => {
                 excelFileContent.push(hit);
@@ -92,27 +94,27 @@ async function runInTerminal() {
         }
     };
 
+    /*
+        TODO: hier verder gaan en via Binance een order inschieten.
+            - hoe willen we die loggen? Een entry in een Excel file? Of willen we dat in een txt bestand?
+                (Eerste optie heeft mijn voorkeur)
+
+
+    */
+    if (enableCreateOrders) {
+        // binance.runBinance();
+    }
+
+
     // STEP 3 - Generate Excel file AND/OR create a order in case of production
-    let amountOfSuccessfulTrades;
-    let amountOfUnsuccessfulTrades;
-    let amounfOfUnknownTrades;
 
     console.log(`----- ${config.testWithHistoricalData === false ? 'REALTIME' : 'HISTORICAL'} bullishDivergenceCandles -----`);
     console.log(`Amount of bullish divergence(s): ${excelFileContent.length}`);
+
+    let tradeInfo;
     if (testWithHistoricalData === true) {
-        amountOfSuccessfulTrades = calculate.calcAmountOfSuccessfulTrades(excelFileContent, 'profitable');
-        amountOfSuccessfulTrades = amountOfSuccessfulTrades ? amountOfSuccessfulTrades : 0;
-
-        amountOfUnsuccessfulTrades = calculate.calcAmountOfSuccessfulTrades(excelFileContent, 'unsuccessful');
-        amountOfUnsuccessfulTrades = amountOfUnsuccessfulTrades ? amountOfUnsuccessfulTrades : 0;
-
-        amounfOfUnknownTrades = calculate.calcAmountOfSuccessfulTrades(excelFileContent, 'Unable');
-        amounfOfUnknownTrades = amounfOfUnknownTrades ? amounfOfUnknownTrades : 0;
-
-        console.log(`Of those trades ${amountOfSuccessfulTrades} would have been profitable`);
-        console.log(`For ${amounfOfUnknownTrades} was it not possible to say if it would have been profitable`);
+        tradeInfo = calculate.calcTradeOutcomes(excelFileContent);
     }
-
 
     if (generateExcelFile === true) {
         const metaDataContent = [
@@ -120,21 +122,17 @@ async function runInTerminal() {
                 amount: `${excelFileContent.length}`,
                 succesfull: testWithHistoricalData === false
                     ? `N/A`
-                    : `${amountOfSuccessfulTrades}`,
+                    : `${tradeInfo.amountOfSuccessfulTrades}`,
                 unsuccesfull: testWithHistoricalData === false
                     ? `N/A`
-                    : `${amountOfUnsuccessfulTrades}`,
+                    : `${tradeInfo.amountOfUnsuccessfulTrades}`,
                 unable: testWithHistoricalData === false
                     ? `N/A`
-                    : `${amounfOfUnknownTrades}`,
+                    : `${tradeInfo.amounfOfUnknownTrades}`,
                 numberOffApiCalls: numberOffApiCalls,
                 configuration: JSON.stringify(config)
             }
         ];
-
-        // console.log('--------------- excelFileContent  ---------------');
-        // console.log(excelFileContent);
-
         excel.exporDivergencesToExcel(excelFileContent, metaDataContent);
     }
 }

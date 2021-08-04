@@ -3,14 +3,14 @@ const path = require('path');
 const fs = require('fs');
 
 const exportExcel = (data, dataSecondSheet, workSheetColumnNames, workSheetColumnTwoNames) => {
-    if (!fs.existsSync('./logs')) {
-        fs.mkdir('./logs', (err) => {
+    if (!fs.existsSync('./testRunLogs')) {
+        fs.mkdir('./testRunLogs', (err) => {
             if (err) throw err;
         });
     }
     const date = new Date();
     const fileName = `log ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()} ${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
-    const filePath = `./logs/${fileName}.xlsx`;
+    const filePath = `./testRunLogs/${fileName}.xlsx`;
 
 
     const workBook = xlsx.utils.book_new();
