@@ -1,7 +1,7 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
     "numberOfCandlesToRetrieve": 1000,
-    "enableCreateOrders": true,    
+    "enableCreateOrders": false,    
 
     "test": {
         "testWithHistoricalData": true,

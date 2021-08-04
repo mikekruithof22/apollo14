@@ -3,20 +3,28 @@ const rsiHelper = require('./helpers/rsi');
 const candleHelper = require('./helpers/candle');
 const calculate = require('./helpers/calculate');
 const excel = require('./services/exportService');
+const configChecker = require('./helpers/config-sanity-check');
 
 async function runInTerminal() {
     let excelFileContent = [];
     let numberOffApiCalls = 0;
 
-    // STEP 01 - prepare config data
+    // STEP 1 - Prepare configuration data and execute a sanity check
+    const configCheck = configChecker.checkConfigData(config);
+
+    if (configCheck.closeProgram === true) {
+        console.log(configCheck.message);
+        return;
+    }
+
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+    const enableCreateOrders = config.enableCreateOrders;
     const testWithHistoricalData = config.test.testWithHistoricalData;
     const generateExcelFile = config.test.generateExcelFile;
-    // const tradingPair = config.tradingPair;
     const orderConditions = config.orderConditions;
 
-    // STEP 02 - retrieve RSI & calculate bullish divergence
+    // STEP 2 - Retrieve RSI & calculate bullish divergence
     for await (let order of orderConditions) {
         const orderConditionName = order.name;
         const tradingPair = order.tradingPair;
@@ -47,7 +55,8 @@ async function runInTerminal() {
         // console.log('---------------rsiCollection ---------------');
         // console.log(rsiCollection);
 
-        if (testWithHistoricalData === true) {
+
+        if (testWithHistoricalData === true && enableCreateOrders === false) {
             const historicalBullishDivergenceCandles = calculate.calculateBullishHistoricalDivergences(
                 closePriceList,
                 candleObjectList,
@@ -83,7 +92,7 @@ async function runInTerminal() {
         }
     };
 
-    // STEP 03 - generate Excel file AND/OR create a order
+    // STEP 3 - Generate Excel file AND/OR create a order in case of production
     let amountOfSuccessfulTrades;
     let amountOfUnsuccessfulTrades;
     let amounfOfUnknownTrades;
@@ -108,7 +117,7 @@ async function runInTerminal() {
     if (generateExcelFile === true) {
         const metaDataContent = [
             {
-                amount: `Amount of bullish divergence(s): ${excelFileContent.length}`,
+                amount: `${excelFileContent.length}`,
                 succesfull: testWithHistoricalData === false
                     ? `N/A`
                     : `${amountOfSuccessfulTrades}`,
@@ -123,9 +132,8 @@ async function runInTerminal() {
             }
         ];
 
-        console.log('--------------- excelFileContent  ---------------');
-        console.log(excelFileContent);
-
+        // console.log('--------------- excelFileContent  ---------------');
+        // console.log(excelFileContent);
 
         excel.exporDivergencesToExcel(excelFileContent, metaDataContent);
     }
