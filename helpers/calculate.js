@@ -192,7 +192,7 @@ const calcAmountOfSuccessfulTrades = (bullishDivergenceCandles, searchFor) => {
     return count;
 }
 
-const calcTradeOutcomes = (excelFileContent) => {
+const calcTradeOutcomes = (excelFileContent, testWithHistoricalData, numberOffApiCalls) => {
     let amountOfSuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'profitable');
     amountOfSuccessfulTrades = amountOfSuccessfulTrades ? amountOfSuccessfulTrades : 0;
 
@@ -205,11 +205,22 @@ const calcTradeOutcomes = (excelFileContent) => {
     console.log(`Of those trades ${amountOfSuccessfulTrades} would have been profitable`);
     console.log(`For ${amounfOfUnknownTrades} was it not possible to say if it would have been profitable`);
 
-    return {
-        amountOfSuccessfulTrades,
-        amountOfUnsuccessfulTrades,
-        amounfOfUnknownTrades
-    }
+    const metaDataContent = [{
+        amount: `${excelFileContent.length}`,
+        succesfull: testWithHistoricalData === false
+            ? `N/A`
+            : `${amountOfSuccessfulTrades}`,
+        unsuccesfull: testWithHistoricalData === false
+            ? `N/A`
+            : `${amountOfUnsuccessfulTrades}`,
+        unable: testWithHistoricalData === false
+            ? `N/A`
+            : `${amounfOfUnknownTrades}`,
+        numberOffApiCalls: numberOffApiCalls,
+        configuration: JSON.stringify(config)
+    }];
+
+    return metaDataContent;
 }
 
 const showCalculationLoging = (compareWithRsiValue, mostRecentRsiValue, compareWithCandle, mostRecentCandle, i, rsiChange, closePriceChange) => {

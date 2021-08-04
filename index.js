@@ -20,7 +20,7 @@ async function runInTerminal() {
 
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
-    const enableCreateOrders = config.enableCreateOrders;
+    const enableCreateOrders = config.production.enableCreateOrders;
     const testWithHistoricalData = config.test.testWithHistoricalData;
     const generateExcelFile = config.test.generateExcelFile;
     const orderConditions = config.orderConditions;
@@ -98,41 +98,25 @@ async function runInTerminal() {
         TODO: hier verder gaan en via Binance een order inschieten.
             - hoe willen we die loggen? Een entry in een Excel file? Of willen we dat in een txt bestand?
                 (Eerste optie heeft mijn voorkeur)
-
-
     */
+
+    // STEP 3 - Create real or test orders          
     if (enableCreateOrders) {
         // binance.runBinance();
     }
 
 
-    // STEP 3 - Generate Excel file AND/OR create a order in case of production
+    // STEP 4 - Generate Excel file 
 
-    console.log(`----- ${config.testWithHistoricalData === false ? 'REALTIME' : 'HISTORICAL'} bullishDivergenceCandles -----`);
+    console.log(`----- ${testWithHistoricalData === false ? 'REALTIME' : 'HISTORICAL'} bullishDivergenceCandles -----`);
     console.log(`Amount of bullish divergence(s): ${excelFileContent.length}`);
 
-    let tradeInfo;
+    let metaDataContent;
     if (testWithHistoricalData === true) {
-        tradeInfo = calculate.calcTradeOutcomes(excelFileContent);
+        metaDataContent = calculate.calcTradeOutcomes(excelFileContent, testWithHistoricalData, numberOffApiCalls);
     }
 
     if (generateExcelFile === true) {
-        const metaDataContent = [
-            {
-                amount: `${excelFileContent.length}`,
-                succesfull: testWithHistoricalData === false
-                    ? `N/A`
-                    : `${tradeInfo.amountOfSuccessfulTrades}`,
-                unsuccesfull: testWithHistoricalData === false
-                    ? `N/A`
-                    : `${tradeInfo.amountOfUnsuccessfulTrades}`,
-                unable: testWithHistoricalData === false
-                    ? `N/A`
-                    : `${tradeInfo.amounfOfUnknownTrades}`,
-                numberOffApiCalls: numberOffApiCalls,
-                configuration: JSON.stringify(config)
-            }
-        ];
         excel.exporDivergencesToExcel(excelFileContent, metaDataContent);
     }
 }

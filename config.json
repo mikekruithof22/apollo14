@@ -1,9 +1,11 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
     "numberOfCandlesToRetrieve": 1000,
-    "enableCreateOrders": false,    
-
+    "production": {
+        "enableCreateOrders": false   
+    },
     "test": {
+        "realTimeTest": false,
         "testWithHistoricalData": true,
         "consoleLogSteps": false,
         "generateExcelFile": true
