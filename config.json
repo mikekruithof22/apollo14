@@ -1,13 +1,17 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
     "numberOfCandlesToRetrieve": 1000,
-    "logBullishDivergenceCalculation": false,
-    "testWithHistoricalData": true,    
-    "generateExcelFile": true,
-    "tradingPair": "BTCUSDT",
+    "enableCreateOrders": true,    
+
+    "test": {
+        "testWithHistoricalData": true,
+        "consoleLogSteps": false,
+        "generateExcelFile": true
+    },
     "orderConditions": [
         {
-            "name": "Order condition name one",
+            "name": "BTCUSDT - option A",
+            "tradingPair": "BTCUSDT",
             "interval": "1h",
             "rsi": {
                 "minimumRisingPercentage": 2.00,
@@ -23,11 +27,14 @@
             "stopLossOrder": {
                 "takeProfitPercentage": 5,
                 "takeLossPercentage": 2,
-                "candleAmountToLookIntoTheFuture": 10
+                "candleAmountToLookIntoTheFuture": 10,
+                "maxUsdtBuyAmount": 1000,
+                "maxPercentageOffBalance": 33
             }
         },
         {
-            "name": "Order condition name two",
+            "name": "BTCUSDT - option B",
+            "tradingPair": "BTCUSDT",
             "interval": "15m",
             "rsi": {
                 "minimumRisingPercentage": 4.00,
@@ -43,7 +50,55 @@
             "stopLossOrder": {
                 "takeProfitPercentage": 3,
                 "takeLossPercentage": 4,
-                "candleAmountToLookIntoTheFuture": 15
+                "candleAmountToLookIntoTheFuture": 15,
+                "maxUsdtBuyAmount": 1000,
+                "maxPercentageOffBalance": 33
+            }
+        },
+        {
+            "name": "LTCUSDT - option A",
+            "tradingPair": "LTCUSDT",
+            "interval": "1h",
+            "rsi": {
+                "minimumRisingPercentage": 2.00,
+                "calculationLength": 14
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 50
+            },
+            "stopLossOrder": {
+                "takeProfitPercentage": 5,
+                "takeLossPercentage": 2,
+                "candleAmountToLookIntoTheFuture": 10,
+                "maxUsdtBuyAmount": 1000,
+                "maxPercentageOffBalance": 33
+            }
+        },
+        {
+            "name": "ETHUSDT - option A",
+            "tradingPair": "ETHUSDT",
+            "interval": "1h",
+            "rsi": {
+                "minimumRisingPercentage": 2.00,
+                "calculationLength": 14
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 50
+            },
+            "stopLossOrder": {
+                "takeProfitPercentage": 5,
+                "takeLossPercentage": 2,
+                "candleAmountToLookIntoTheFuture": 10,
+                "maxUsdtBuyAmount": 1000,
+                "maxPercentageOffBalance": 33
             }
         }
     ]

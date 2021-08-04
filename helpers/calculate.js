@@ -13,6 +13,8 @@ const calculateBullishDivergence = (
     takeProfitPercentage,
     orderConditionName
 ) => {
+    const consoleLogSteps = config.test.consoleLogSteps;
+
     let bullishDivergenceCandles = [];
 
     for (var i = startCount; i < closePriceList.length; i++) {
@@ -37,15 +39,16 @@ const calculateBullishDivergence = (
 
             // STEP 2 - calculate priceListDelta
             const closePriceChange = calculatePercentageChange(compareWithCandle, mostRecentCandle);
-            showCalculationLoging(compareWithRsiValue, mostRecentRsiValue, compareWithCandle, mostRecentCandle, i, rsiChange, closePriceChange);
-
+            if (consoleLogSteps === true) {
+                showCalculationLoging(compareWithRsiValue, mostRecentRsiValue, compareWithCandle, mostRecentCandle, i, rsiChange, closePriceChange);
+            }
             // STEP 3 - determine if there is a bullish divergence
             if (
                 rsiChange >= rsiMinimumRisingPercentage &&
                 closePriceChange <= candleMinimumDeclingPercentage &&
                 candleList !== undefined
             ) {
-                if (config.logBullishDivergenceCalculation === true) {
+                if (consoleLogSteps === true) {
                     console.log('JACKPOT! - <<<<< BullishDivergence - BullishDivergence - BullishDivergence >>>>> - JACKPOT!');
                 }
 
@@ -79,6 +82,8 @@ const calculateBullishHistoricalDivergences = (
     takeProfitPercentage,
     orderConditionName
 ) => {
+    const consoleLogSteps = config.test.consoleLogSteps;
+
     let bullishDivergenceCandles = [];
 
     for (var i = startCount; i < closePriceList.length; i++) {
@@ -105,14 +110,16 @@ const calculateBullishHistoricalDivergences = (
 
                 // STEP 2 - calculate priceListDelta
                 const closePriceChange = calculatePercentageChange(compareWithCandle, currentCandle);
-                showCalculationLoging(compareWithRsiValue, currentRsiValue, compareWithCandle, currentCandle, i + j);
+                if (consoleLogSteps === true) {
+                    showCalculationLoging(compareWithRsiValue, currentRsiValue, compareWithCandle, currentCandle, i + j);
+                }
 
                 // STEP 3 - determine if there is a bullish divergence
                 if (
                     rsiChange >= rsiMinimumRisingPercentage &&
                     closePriceChange <= candleMinimumDeclingPercentage
                 ) {
-                    if (config.logBullishDivergenceCalculation === true) {
+                    if (consoleLogSteps === true) {
                         console.log('JACKPOT! - <<<<< BullishDivergence - BullishDivergence - BullishDivergence >>>>> - JACKPOT!');
                     }
                     const firstIndex = currentCandleIndex + 1;
@@ -178,25 +185,23 @@ const calcAmountOfSuccessfulTrades = (bullishDivergenceCandles, searchFor) => {
 }
 
 const showCalculationLoging = (compareWithRsiValue, mostRecentRsiValue, compareWithCandle, mostRecentCandle, i, rsiChange, closePriceChange) => {
-    if (config.logBullishDivergenceCalculation === true) {
-        console.log('');
-        console.log('**************************');
-        console.log('--------------- START---------------');
-        console.log('Amount off candles looking back:');
-        console.log(i);
-        console.log('Configured minimal RSI slope: ' + config.rsi.minimumRisingPercentage);
-        console.log('Configured minimal CANDLE slope: ' + config.candle.minimumDeclingPercentage);
+    console.log('');
+    console.log('**************************');
+    console.log('--------------- START---------------');
+    console.log('Amount off candles looking back:');
+    console.log(i);
+    console.log('Configured minimal RSI slope: ' + config.rsi.minimumRisingPercentage);
+    console.log('Configured minimal CANDLE slope: ' + config.candle.minimumDeclingPercentage);
 
-        console.log('--------------- RSI INFO ---------------');
-        console.log('Compare with data point: ' + compareWithRsiValue);
-        console.log('Most recent data point: ' + mostRecentRsiValue);
-        console.log('Percentage change: ' + Math.round(rsiChange * 100) / 100 + '%');
+    console.log('--------------- RSI INFO ---------------');
+    console.log('Compare with data point: ' + compareWithRsiValue);
+    console.log('Most recent data point: ' + mostRecentRsiValue);
+    console.log('Percentage change: ' + Math.round(rsiChange * 100) / 100 + '%');
 
-        console.log('--------------- CANDLE INFO ---------------');
-        console.log('Compare with close price: ' + compareWithCandle);
-        console.log('Most recent close price: ' + mostRecentCandle);
-        console.log('Percentage change: ' + Math.round(closePriceChange * 100) / 100 + '%');
-    }
+    console.log('--------------- CANDLE INFO ---------------');
+    console.log('Compare with close price: ' + compareWithCandle);
+    console.log('Most recent close price: ' + mostRecentCandle);
+    console.log('Percentage change: ' + Math.round(closePriceChange * 100) / 100 + '%');
 }
 
 module.exports = {

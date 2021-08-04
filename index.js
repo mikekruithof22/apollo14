@@ -2,7 +2,6 @@ const config = require('./config.json');
 const rsiHelper = require('./helpers/rsi');
 const candleHelper = require('./helpers/candle');
 const calculate = require('./helpers/calculate');
-
 const excel = require('./services/exportService');
 
 async function runInTerminal() {
@@ -12,14 +11,15 @@ async function runInTerminal() {
     // STEP 01 - prepare config data
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
-    const testWithHistoricalData = config.testWithHistoricalData;
-    const generateExcelFile = config.generateExcelFile;
-    const tradingPair = config.tradingPair;
+    const testWithHistoricalData = config.test.testWithHistoricalData;
+    const generateExcelFile = config.test.generateExcelFile;
+    // const tradingPair = config.tradingPair;
     const orderConditions = config.orderConditions;
 
     // STEP 02 - retrieve RSI & calculate bullish divergence
     for await (let order of orderConditions) {
         const orderConditionName = order.name;
+        const tradingPair = order.tradingPair;
         const candleInterval = order.interval;
 
         const rsiMinimumRisingPercentage = order.rsi.minimumRisingPercentage;
@@ -83,7 +83,7 @@ async function runInTerminal() {
         }
     };
 
-    // STEP 03 - generate Excel file
+    // STEP 03 - generate Excel file AND/OR create a order
     let amountOfSuccessfulTrades;
     let amountOfUnsuccessfulTrades;
     let amounfOfUnknownTrades;
