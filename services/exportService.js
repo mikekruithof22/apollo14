@@ -3,15 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const exportTestExcel = (data, dataSecondSheet, workSheetColumnNames, workSheetColumnTwoNames) => {
-    if (!fs.existsSync('./testRunLogs')) {
-        fs.mkdir('./testRunLogs', (err) => {
-            if (err) throw err;
-        });
-    }
-    const date = new Date();
-    const fileName = `log ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()} ${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
-    const filePath = `./testRunLogs/${fileName}.xlsx`;
-
+    const filePath = generateFileNameAndDirectory('testRunLogs');
 
     const workBook = xlsx.utils.book_new();
     const workSheetOneData = [
@@ -113,35 +105,30 @@ const exportHistoricalTest = (data, metaDataContent) => {
     exportTestExcel(dataFirstSheet, dataSecondSheet, workSheetColumnOneNames, workSheetColumnTwoNames);
 }
 
-const exportRealTimeTest = (data, excelFileTestOrderContent) => {
+const exportRealTimeTest = (data) => {
     const dataFirstSheet = data.map(data => {
         return [
-            data.orderConditionName,
+            data.candle.orderConditionName,
             '',
-            data.startWithCandle.openTime,
-            data.startWithCandle.open,
-            data.startRsiValue,
+            data.candle.startWithCandle.openTime,
+            data.candle.startWithCandle.open,
+            data.candle.startRsiValue,
             '',
-            data.endingCandle.openTime,
-            data.endingCandle.open,
-            data.endiRsiValue,
+            data.candle.endingCandle.openTime,
+            data.candle.endingCandle.open,
+            data.candle.endiRsiValue,
             '',
+            data.testOrder.message,
+            data.testOrder.time,
+            data.testOrder.symbol,
+            data.testOrder.side,
+            data.testOrder.type,
+            data.testOrder.newClientOrderId,
+            data.testOrder.response
         ];
     });
 
-    const dataSecondSheet = excelFileTestOrderContent.map(excelFileTestOrderContent => {
-        return [
-            excelFileTestOrderContent.message,
-            excelFileTestOrderContent.time,
-            excelFileTestOrderContent.symbol,
-            excelFileTestOrderContent.side,
-            excelFileTestOrderContent.type,
-            excelFileTestOrderContent.newClientOrderId,
-            excelFileTestOrderContent.response
-        ];
-    });
-
-    const workSheetColumnOneNames = [
+    const workSheetColumnNames = [
         'ORDER NAME',
         ' * ',
         'FIRST CANDLE',
@@ -152,9 +139,6 @@ const exportRealTimeTest = (data, excelFileTestOrderContent) => {
         'OPEN',
         'RSI',
         ' * ',
-    ];
-
-    const workSheetColumnTwoNames = [
         'MESSAGE',
         'CREATED TIME',
         'SYMBOL',
@@ -164,7 +148,36 @@ const exportRealTimeTest = (data, excelFileTestOrderContent) => {
         'RESPONSE'
     ];
 
-    exportTestExcel(dataFirstSheet, dataSecondSheet, workSheetColumnOneNames, workSheetColumnTwoNames);
+    exportRealTimeTestExcel(dataFirstSheet, workSheetColumnNames);
+}
+
+const exportRealTimeTestExcel = (data, workSheetColumnNames) => {
+    const filePath = generateFileNameAndDirectory('realTimeTestLogs');
+
+    const workBook = xlsx.utils.book_new();
+    const workSheetOneData = [
+        workSheetColumnNames,
+        ...data
+    ];
+
+    const workSheet = xlsx.utils.aoa_to_sheet(workSheetOneData);
+    xlsx.utils.book_append_sheet(workBook, workSheet, 'Test orders');
+    xlsx.writeFile(workBook, path.resolve(filePath));
+
+}
+
+const generateFileNameAndDirectory = (directoryName) => {
+    if (!fs.existsSync(`./${directoryName}`)) {
+        fs.mkdir(`./${directoryName}`, (err) => {
+            if (err) throw err;
+        });
+    }
+
+    const date = new Date();
+    const fileName = `log ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()} ${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
+    const filePath = `./${directoryName}/${fileName}.xlsx`;
+
+    return filePath;
 }
 
 module.exports = {

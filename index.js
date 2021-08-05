@@ -8,7 +8,6 @@ const binance = require('./binance/binance');
 
 async function runInTerminal() {
     let excelFileContent = [];
-    let excelFileTestOrderContent = [];
     let numberOffApiCalls = 0;
 
     // STEP 1 - Prepare configuration data and execute a sanity check
@@ -30,8 +29,6 @@ async function runInTerminal() {
 
     // STEP 2 - Retrieve RSI & calculate bullish divergence
     for await (let order of orderConditions) {
-        let executeTestOrder = false;
-
         const orderConditionName = order.name;
         const tradingPair = order.tradingPair;
         const candleInterval = order.interval;
@@ -92,22 +89,31 @@ async function runInTerminal() {
                 orderConditionName,
                 returnAfterOneItem
             );
-            bullishDivergenceCandles.forEach(hit => {
-                if (hit !== []) {
-                    excelFileContent.push(hit);
-                    executeTestOrder = true;
-                }
-            });
 
-            // STEP 3 option (A) - Create test orders          
-            if (realTimeTest === true && executeTestOrder) {
-                const binanceRest = binance.generateBinanceRest(); 
-                const testOrder = await binance.generateTestOrder(binanceRest, tradingPair); 
-                excelFileTestOrderContent.push(testOrder);
+            for await (let hit of bullishDivergenceCandles) {
+                if (hit !== []) {
+                    // STEP 3 option (A) - Create test orders          
+                    if (realTimeTest === true) {
+                        const binanceRest = binance.generateBinanceRest();
+                        const testOrder = await binance.generateTestOrder(binanceRest, tradingPair);
+
+                        let obj = {
+                            testOrder: testOrder,
+                            candle: hit
+                        }
+                        excelFileContent.push(obj);
+                        obj = {};
+                    } else {
+                        excelFileContent.push(hit);
+                    }
+                }
             }
-            executeTestOrder = false;
         }
     };
+
+
+    console.log('----------- excelFileContent ------------');
+    console.log(excelFileContent);
          
     // STEP 4 - Generate/update Excel file 
     if (generateExcelFile === true && excelFileContent.length >= 1) {
@@ -119,7 +125,7 @@ async function runInTerminal() {
         }
 
         if (realTimeTest === true) {
-            excel.exportRealTimeTest(excelFileContent, excelFileTestOrderContent);
+            excel.exportRealTimeTest(excelFileContent);
         }
     }
 }
