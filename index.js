@@ -20,14 +20,26 @@ async function runInTerminal() {
 
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
-    const enableCreateOrders = config.production.enableCreateOrders;
+    const isProduction = config.production.active;
 
     const realTimeTest = config.test.realTimeTest;
     const testWithHistoricalData = config.test.testWithHistoricalData;
-    const generateExcelFile = config.test.generateExcelFile;
+    const generateExcelFile = config.generateExcelFile;
     const orderConditions = config.orderConditions;
 
-    // STEP 2 - Retrieve RSI & calculate bullish divergence
+    // STEP 2 - When in 'production' mode execute several checks here
+    if (realTimeTest === true || isProduction === true) {
+        const binanceRest = binance.generateBinanceRest();
+
+        // stap 1 - controlleer het banksaldo en order status, onder bepaalde omstandigheden afsluiten!
+
+
+        // stap 2 - indien stap 1 succesvol doorlopen dan... 
+
+    }
+
+
+    // STEP 3 - Retrieve RSI & calculate bullish divergence
     for await (let order of orderConditions) {
         const orderConditionName = order.name;
         const tradingPair = order.tradingPair;
@@ -77,7 +89,7 @@ async function runInTerminal() {
                 }
             });
         } else { // REAL TIME 
-            const returnAfterOneItem = realTimeTest || enableCreateOrders;
+            const returnAfterOneItem = realTimeTest || isProduction;
             const bullishDivergenceCandles = calculate.calculateBullishDivergence(
                 closePriceList,
                 candleObjectList,
@@ -92,9 +104,19 @@ async function runInTerminal() {
 
             for await (let hit of bullishDivergenceCandles) {
                 if (hit !== []) {
-                    // STEP 3 option (A) - Create test orders          
-                    if (realTimeTest === true) {
-                        const binanceRest = binance.generateBinanceRest();
+                    // STEP 3 - Create (test) orders          
+                    if (production === true) {
+                        // STEP 3.A - Realtime orders on production
+
+
+
+                        
+
+                    } else if (realTimeTest === true) {
+                         // STEP 3.B - Realtime TEST orders
+
+                        // TODO: kan deze weg omdat ie bij een eerdere stap wordt aangemaakt? 
+                        const binanceRest = binance.generateBinanceRest(); 
                         const testOrder = await binance.generateTestOrder(binanceRest, tradingPair);
 
                         let obj = {
