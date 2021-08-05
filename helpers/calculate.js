@@ -9,8 +9,6 @@ const calculateBullishDivergence = (
     stopCount,
     rsiMinimumRisingPercentage,
     candleMinimumDeclingPercentage,
-    takeLossPercentage,
-    takeProfitPercentage,
     orderConditionName,
     enableCreateOrders
 

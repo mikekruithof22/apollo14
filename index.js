@@ -8,6 +8,7 @@ const binance = require('./binance/binance');
 
 async function runInTerminal() {
     let excelFileContent = [];
+    let excelFileTestOrderContent = [];
     let numberOffApiCalls = 0;
 
     // STEP 1 - Prepare configuration data and execute a sanity check
@@ -21,12 +22,16 @@ async function runInTerminal() {
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
     const enableCreateOrders = config.production.enableCreateOrders;
+
+    const realTimeTest = config.test.realTimeTest;
     const testWithHistoricalData = config.test.testWithHistoricalData;
     const generateExcelFile = config.test.generateExcelFile;
     const orderConditions = config.orderConditions;
 
     // STEP 2 - Retrieve RSI & calculate bullish divergence
     for await (let order of orderConditions) {
+        let executeTestOrder = false;
+
         const orderConditionName = order.name;
         const tradingPair = order.tradingPair;
         const candleInterval = order.interval;
@@ -53,9 +58,6 @@ async function runInTerminal() {
         const closePriceList = candleHelper.generateClosePricesList(candleList);
 
         const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
-        // console.log('---------------rsiCollection ---------------');
-        // console.log(rsiCollection);
-
 
         if (testWithHistoricalData === true) {
             const historicalBullishDivergenceCandles = calculate.calculateBullishHistoricalDivergences(
@@ -69,12 +71,16 @@ async function runInTerminal() {
                 candleAmountToLookIntoTheFuture,
                 takeLossPercentage,
                 takeProfitPercentage,
-                orderConditionName
+                orderConditionName,
+                tradingPair
             );
             historicalBullishDivergenceCandles.forEach(hit => {
-                excelFileContent.push(hit);
+                if (hit !== []) {
+                    excelFileContent.push(hit);
+                }
             });
         } else { // REAL TIME 
+            const returnAfterOneItem = realTimeTest || enableCreateOrders;
             const bullishDivergenceCandles = calculate.calculateBullishDivergence(
                 closePriceList,
                 candleObjectList,
@@ -83,44 +89,39 @@ async function runInTerminal() {
                 stopCount,
                 rsiMinimumRisingPercentage,
                 candleMinimumDeclingPercentage,
-                takeLossPercentage,
-                takeProfitPercentage,
                 orderConditionName,
-                enableCreateOrders
+                returnAfterOneItem
             );
             bullishDivergenceCandles.forEach(hit => {
-                excelFileContent.push(hit);
+                if (hit !== []) {
+                    excelFileContent.push(hit);
+                    executeTestOrder = true;
+                }
             });
+
+            // STEP 3 option (A) - Create test orders          
+            if (realTimeTest === true && executeTestOrder) {
+                const binanceRest = binance.generateBinanceRest(); 
+                const testOrder = await binance.generateTestOrder(binanceRest, tradingPair); 
+                excelFileTestOrderContent.push(testOrder);
+            }
+            executeTestOrder = false;
         }
     };
+         
+    // STEP 4 - Generate/update Excel file 
+    if (generateExcelFile === true && excelFileContent.length >= 1) {
+        console.log(`----- ${testWithHistoricalData === false ? 'REALTIME' : 'HISTORICAL'} bullishDivergenceCandles -----`);
+        console.log(`Amount of bullish divergence(s): ${excelFileContent.length}`);
+        if (testWithHistoricalData === true) {
+            const metaDataContent = calculate.calcTradeOutcomes(excelFileContent, testWithHistoricalData, numberOffApiCalls);
+            excel.exportHistoricalTest(excelFileContent, metaDataContent);
+        }
 
-    /*
-        TODO: hier verder gaan en via Binance een order inschieten.
-            - hoe willen we die loggen? Een entry in een Excel file? Of willen we dat in een txt bestand?
-                (Eerste optie heeft mijn voorkeur)
-    */
-
-    // STEP 3 - Create real or test orders          
-    if (enableCreateOrders) {
-        // binance.runBinance();
-    }
-
-
-    // STEP 4 - Generate Excel file 
-
-    console.log(`----- ${testWithHistoricalData === false ? 'REALTIME' : 'HISTORICAL'} bullishDivergenceCandles -----`);
-    console.log(`Amount of bullish divergence(s): ${excelFileContent.length}`);
-
-    let metaDataContent;
-    if (testWithHistoricalData === true) {
-        metaDataContent = calculate.calcTradeOutcomes(excelFileContent, testWithHistoricalData, numberOffApiCalls);
-    }
-
-    if (generateExcelFile === true) {
-        excel.exporDivergencesToExcel(excelFileContent, metaDataContent);
+        if (realTimeTest === true) {
+            excel.exportRealTimeTest(excelFileContent, excelFileTestOrderContent);
+        }
     }
 }
 
 runInTerminal();
-
-

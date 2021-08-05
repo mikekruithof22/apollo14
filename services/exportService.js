@@ -2,7 +2,7 @@ const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 
-const exportExcel = (data, dataSecondSheet, workSheetColumnNames, workSheetColumnTwoNames) => {
+const exportTestExcel = (data, dataSecondSheet, workSheetColumnNames, workSheetColumnTwoNames) => {
     if (!fs.existsSync('./testRunLogs')) {
         fs.mkdir('./testRunLogs', (err) => {
             if (err) throw err;
@@ -26,12 +26,12 @@ const exportExcel = (data, dataSecondSheet, workSheetColumnNames, workSheetColum
 
     const workSheet = xlsx.utils.aoa_to_sheet(workSheetOneData);
     const workSheetTwo = xlsx.utils.aoa_to_sheet(workSheetTwoData);
-    xlsx.utils.book_append_sheet(workBook, workSheet, 'Results');
-    xlsx.utils.book_append_sheet(workBook, workSheetTwo, 'Meta data');
+    xlsx.utils.book_append_sheet(workBook, workSheet, 'Candles');
+    xlsx.utils.book_append_sheet(workBook, workSheetTwo, 'Data');
     xlsx.writeFile(workBook, path.resolve(filePath));
 }
 
-const exporDivergencesToExcel = (data, metaDataContent) => {
+const exportHistoricalTest = (data, metaDataContent) => {
     const dataFirstSheet = data.map(data => {
         return [
             //data.id,
@@ -110,9 +110,64 @@ const exporDivergencesToExcel = (data, metaDataContent) => {
         'CONFIGURATION OBJECT'
     ];
 
-    exportExcel(dataFirstSheet, dataSecondSheet, workSheetColumnOneNames, workSheetColumnTwoNames);
+    exportTestExcel(dataFirstSheet, dataSecondSheet, workSheetColumnOneNames, workSheetColumnTwoNames);
+}
+
+const exportRealTimeTest = (data, excelFileTestOrderContent) => {
+    const dataFirstSheet = data.map(data => {
+        return [
+            data.orderConditionName,
+            '',
+            data.startWithCandle.openTime,
+            data.startWithCandle.open,
+            data.startRsiValue,
+            '',
+            data.endingCandle.openTime,
+            data.endingCandle.open,
+            data.endiRsiValue,
+            '',
+        ];
+    });
+
+    const dataSecondSheet = excelFileTestOrderContent.map(excelFileTestOrderContent => {
+        return [
+            excelFileTestOrderContent.message,
+            excelFileTestOrderContent.time,
+            excelFileTestOrderContent.symbol,
+            excelFileTestOrderContent.side,
+            excelFileTestOrderContent.type,
+            excelFileTestOrderContent.newClientOrderId,
+            excelFileTestOrderContent.response
+        ];
+    });
+
+    const workSheetColumnOneNames = [
+        'ORDER NAME',
+        ' * ',
+        'FIRST CANDLE',
+        'OPEN',
+        'RSI',
+        ' * ',
+        'SECOND CANDLE',
+        'OPEN',
+        'RSI',
+        ' * ',
+    ];
+
+    const workSheetColumnTwoNames = [
+        'MESSAGE',
+        'CREATED TIME',
+        'SYMBOL',
+        'SIDE',
+        'TYPE',
+        'ORDERID',
+        'RESPONSE'
+    ];
+
+    exportTestExcel(dataFirstSheet, dataSecondSheet, workSheetColumnOneNames, workSheetColumnTwoNames);
 }
 
 module.exports = {
-    exporDivergencesToExcel
+    exportHistoricalTest,
+    exportRealTimeTest
 };
