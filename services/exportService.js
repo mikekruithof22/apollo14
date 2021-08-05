@@ -47,6 +47,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
             data.endiRsiValue,
             '',
             data.totalCandles,
+            '',
             data.highestNextCandle,
             data.lowestCandle,
             data.stopLossMsg
@@ -88,6 +89,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
 
         ' * ',
         'CANDLES DIFFERENCE',
+        ' * ',
         'HIGHEST NEXT CANDLE',
         'LOWEST NEXT CANDLE',
         'MOST LIKELY OUTCOME'
