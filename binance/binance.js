@@ -106,7 +106,7 @@ const generateTestOrder = async (binanceRest, tradingPair) => {
                 side: 'BUY',
                 type: 'MARKET',
                 newClientOrderId: customOrderId,
-                response: response
+                response: JSON.stringify(response)
             }
             return orderResult;
         })
@@ -118,7 +118,7 @@ const generateTestOrder = async (binanceRest, tradingPair) => {
                 side: 'BUY',
                 type: 'MARKET',
                 newClientOrderId: customOrderId,
-                response: err
+                response: JSON.stringify(err)
             }
             return orderResult;
         });
