@@ -78,7 +78,50 @@ const generateBinanceRest = () => {
     return binanceRest;
 }
 
-const generateTestOrder = async (binanceRest, tradingPair) => {
+const getAccountBalances = async(binanceRest) => {
+    const options = {
+        timestamp: new Date().getTime()
+    }
+    binanceRest
+        .account(options)
+        .then(response => {
+            return response.balances;
+        }).catch(err => {
+            console.log(err);
+        });
+    /*
+        Example response:
+        {
+            "makerCommission": 15,
+            "takerCommission": 15,
+            "buyerCommission": 0,
+            "sellerCommission": 0,
+            "canTrade": true,
+            "canWithdraw": true,
+            "canDeposit": true,
+            "updateTime": 123456789,
+            "accountType": "SPOT",
+            "balances": [
+                {
+                "asset": "BTC",
+                "free": "4723846.89208129",
+                "locked": "0.00000000"
+                },
+                {
+                "asset": "LTC",
+                "free": "4763368.68006011",
+                "locked": "0.00000000"
+                }
+            ],
+                "permissions": [
+                "SPOT"
+            ]
+        }
+    */
+}
+
+
+const generateTestOrder = async(binanceRest, tradingPair) => {
     let orderResult;
 
     const customOrderId = binanceRest.generateNewOrderId();
@@ -118,7 +161,7 @@ const generateTestOrder = async (binanceRest, tradingPair) => {
         });
 }
 
-const retrieveOrderBook = (binanceRest, symbol, limit) => {
+const getOrderBook = async(binanceRest, symbol, limit) => {
     const options = {
         symbol: symbol,
         limit: limit
@@ -149,7 +192,7 @@ const retrieveOrderBook = (binanceRest, symbol, limit) => {
     */
 }
 
-const retrieveAllOpenOrders = (binanceRest, symbol) => {
+const retrieveAllOpenOrders = async(binanceRest, symbol) => {
     const options = {
         symbol: symbol
     }
@@ -187,7 +230,7 @@ const retrieveAllOpenOrders = (binanceRest, symbol) => {
 */
 }
 
-const checkOrderStatus = (binanceRest, symbol, orderId, timestamp) => {
+const checkOrderStatus = async(binanceRest, symbol, orderId, timestamp) => {
     const options = {
         symbol: symbol,
         orderId: orderId,
@@ -224,7 +267,7 @@ const checkOrderStatus = (binanceRest, symbol, orderId, timestamp) => {
     */
 }
 
-const cancelOrder = (binanceRest, symbol, orderId, timestamp) => {
+const cancelOrder = async(binanceRest, symbol, orderId, timestamp) => {
     const options = {
         symbol: symbol,
         orderId: orderId,
@@ -258,7 +301,7 @@ const cancelOrder = (binanceRest, symbol, orderId, timestamp) => {
     */
 }
 
-const createOrder = (binanceRest, symbol, orderId, timestamp) => {
+const createOrder = async(binanceRest, symbol, orderId, timestamp) => {
     /*
         TODO: hier nieuwe orders aanmaken!
             1. pak eerst de juiste options..., zie onderstaande hieronder
@@ -337,8 +380,9 @@ const generateStopLossOrderOptions = (symbol, quantity, minPrice, stopPrice) => 
 
 module.exports = {
     generateBinanceRest,
+    getAccountBalances,
     generateTestOrder,
-    retrieveOrderBook,
+    getOrderBook,
     retrieveAllOpenOrders,
     checkOrderStatus,
     cancelOrder,

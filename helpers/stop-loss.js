@@ -10,16 +10,16 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
         const profitPercentage = calculatePercentageChange(startCandle.close, nextCandlesAfterHit[i].high);
 
         if (lossPercentage >= takeLossPercentage && profitPercentage >= takeProfitPercentage) {
-            message = `Profit limit and sell limit occured inside the same candle --> Unable tell if it is a profit or loss`;
+            message = `Unknown - Profit limit and sell limit occured inside the same candle`;
             break;
         } else if (profitPercentage >= takeProfitPercentage) {
-            message = `Trade was profitable. We sold for: ${nextCandlesAfterHit[i].high}. Candle closeDate: ${nextCandlesAfterHit[i].closeTime}`;
+            message = `Profitable - Sold for: ${nextCandlesAfterHit[i].high} at ${nextCandlesAfterHit[i].closeTime}`;
             break;
         } else if (lossPercentage >= takeLossPercentage) {
-            message = `Trade was unsuccessful. We sold for: ${nextCandlesAfterHit[i].low}. Candle closeDate: ${nextCandlesAfterHit[i].closeTime}`;
+            message = `Unprofitable - Sold for: ${nextCandlesAfterHit[i].low} at ${nextCandlesAfterHit[i].closeTime}`;
             break;
         } else {
-            message = `Unable to calculate if there would have been a profit or loss`;
+            message = `Unknown - Unable to calculate`;
         }
 
     }
@@ -35,7 +35,7 @@ const findHighestCandle = (nextCandlesAfterHit) => {
             return (prev.high > current.high) ? prev : current
         });
 
-        message = `${candleWithHighstPrice.high} on ${candleWithHighstPrice.openTime}`;
+        message = `${candleWithHighstPrice.high} at ${candleWithHighstPrice.openTime}`;
     }
     return message;
 }
@@ -49,7 +49,7 @@ const findLowestCandle = (nextCandlesAfterHit) => {
             return (prev.low > current.low) ? prev : current
         });
 
-        message = `${candleWithLowestPrice.low} on ${candleWithLowestPrice.openTime} `;
+        message = `${candleWithLowestPrice.low} at ${candleWithLowestPrice.openTime} `;
     }
 
     return message;

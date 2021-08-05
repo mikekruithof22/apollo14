@@ -9,7 +9,8 @@
     "test": {
         "realTimeTest": false,
         "testWithHistoricalData": true,
-        "consoleLogSteps": false
+        "consoleLogSteps": false,
+        "candleAmountToLookIntoTheFuture": 50
     },
     "orderConditions": [
         {
@@ -32,7 +33,6 @@
                 "takeLossPercentage": 1,
                 "maxUsdtBuyAmount": 1000,
                 "maxPercentageOffBalance": 33,
-                "candleAmountToLookIntoTheFuture": 50,
                 "closePositionAfterAmountOfCandles": 500
             }
         },
@@ -56,7 +56,6 @@
                 "takeLossPercentage": 4,
                 "maxUsdtBuyAmount": 1000,
                 "maxPercentageOffBalance": 33,
-                "candleAmountToLookIntoTheFuture": 50,
                 "closePositionAfterAmountOfCandles": 500
             }
         },
@@ -80,7 +79,6 @@
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 1000,
                 "maxPercentageOffBalance": 33,
-                "candleAmountToLookIntoTheFuture": 50,
                 "closePositionAfterAmountOfCandles": 500
             }
         }

@@ -24,6 +24,8 @@ async function runInTerminal() {
 
     const realTimeTest = config.test.realTimeTest;
     const testWithHistoricalData = config.test.testWithHistoricalData;
+    const candleAmountToLookIntoTheFuture = config.test.candleAmountToLookIntoTheFuture;
+
     const generateExcelFile = config.generateExcelFile;
     const orderConditions = config.orderConditions;
 
@@ -54,7 +56,6 @@ async function runInTerminal() {
 
         const takeProfitPercentage = order.stopLossOrder.takeProfitPercentage;
         const takeLossPercentage = order.stopLossOrder.takeLossPercentage;
-        const candleAmountToLookIntoTheFuture = order.stopLossOrder.candleAmountToLookIntoTheFuture;
 
         const url = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
         numberOffApiCalls = numberOffApiCalls + 1;

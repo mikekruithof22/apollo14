@@ -191,13 +191,13 @@ const calcAmountOfSuccessfulTrades = (bullishDivergenceCandles, searchFor) => {
 }
 
 const calcTradeOutcomes = (excelFileContent, testWithHistoricalData, numberOffApiCalls) => {
-    let amountOfSuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'profitable');
+    let amountOfSuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Profitable');
     amountOfSuccessfulTrades = amountOfSuccessfulTrades ? amountOfSuccessfulTrades : 0;
 
-    let amountOfUnsuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'unsuccessful');
+    let amountOfUnsuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Unprofitable');
     amountOfUnsuccessfulTrades = amountOfUnsuccessfulTrades ? amountOfUnsuccessfulTrades : 0;
 
-    let amounfOfUnknownTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Unable');
+    let amounfOfUnknownTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Unknown');
     amounfOfUnknownTrades = amounfOfUnknownTrades ? amounfOfUnknownTrades : 0;
 
     console.log(`Of those trades ${amountOfSuccessfulTrades} would have been profitable`);
