@@ -2,10 +2,18 @@ const checkConfigData = (config) => {
     let message = `----- Roger Ver wants to tell you someting: -----`;
     let closeProgram = false;
 
-    if (config.production.enableCreateOrders === true && config.test.testWithHistoricalData === true) {
+    if (config.production.active === true && config.test.testWithHistoricalData === true) {
         message += `
                     ERROR: The config values 
-                    "enableCreateOrders" and "testWithHistoricalData" 
+                    "production.active" and "testWithHistoricalData" 
+                    are not allowed to be both true. `;
+        closeProgram = true;
+    }
+
+    if (config.production.active === true && config.test.realTimeTest === true) {
+        message += `
+                    ERROR: The config values 
+                    "production.active" and "realTimeTest" 
                     are not allowed to be both true. `;
         closeProgram = true;
     }
@@ -18,7 +26,7 @@ const checkConfigData = (config) => {
         closeProgram = true;
     }
 
-    if (message.includes('ERROR')) {
+    if (production === true) {
         message += `
         The program closed after the config.json file was checked.
         Don't forget to buy the REAL Bitcoin!

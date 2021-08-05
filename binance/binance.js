@@ -15,20 +15,16 @@ require('dotenv').config();
             https://binance-docs.github.io/apidocs/spot/en/#change-log
 */
 
-
-    /* TODO: hier wat order inleg gedachten. 
+ /* TODO: hier wat order inleg gedachten. 
     STEP 0 - 
        Interval bepalen wanneer het programma draait, althans het gedeelte wat windows task schedular dat moet doen
            ==> De laagste orderConditions.interval gaat het worden....
            ==> dit moet een mens door door naar de config te kijken. 
-   */
-
-    /* STEP 1 - start binance
+   
+    STEP 1 - start binance
         Per dag een log file maken
-    */
 
-
-    /* STEP 2 - check account balance
+    STEP 2 - check account balance
         WE GAAN IEDERE KEER VAN 1000 EURO/USDT UIT
 
         scenario's
@@ -40,14 +36,12 @@ require('dotenv').config();
 
             3. AL HET GELD
                 DEEL HIERVAN INVERSTEREN
-    */
 
-
-    /* STEP 3 - ORDERS, LIEFST OCO 
+     STEP 3 - ORDERS, LIEFST OCO 
         (dat kan volgens de documentatie inleggen)
 
-
     */
+
 
 
 const generateBinanceRest = () => {
@@ -88,7 +82,7 @@ const generateTestOrder = async (binanceRest, tradingPair) => {
     let orderResult;
 
     const customOrderId = binanceRest.generateNewOrderId();
-    const orderObject = {
+    const options = {
         symbol: `${tradingPair}`,
         quantity: 0.1,
         side: 'BUY',
@@ -97,7 +91,7 @@ const generateTestOrder = async (binanceRest, tradingPair) => {
     }
 
     return binanceRest
-        .testOrder(orderObject)
+        .testOrder(options)
         .then(response => {
             orderResult = {
                 message: 'Order created successfully',
@@ -124,8 +118,233 @@ const generateTestOrder = async (binanceRest, tradingPair) => {
         });
 }
 
+const retrieveOrderBook = (binanceRest, symbol, limit) => {
+    const options = {
+        symbol: symbol,
+        limit: limit
+    }
+    return binanceRest
+        .depth(options)
+        .then(response => {
+            return response;
+        }).catch(err => {
+            console.log(err);
+        });
+    /*  Example response::
+        {
+            "lastUpdateId": 1027024,
+            "bids": [
+                [
+                "4.00000000",     // PRICE
+                "431.00000000"    // QTY
+                ]
+            ],
+            "asks": [
+                [
+                "4.00000200",
+                "12.00000000"
+                ]
+            ]
+        }
+    */
+}
+
+const retrieveAllOpenOrders = (binanceRest, symbol) => {
+    const options = {
+        symbol: symbol
+    }
+    return binanceRest
+        .openOrders(options)
+        .then(response => {
+            return response;
+        }).catch(err => {
+            console.log(err);
+        });
+     /*
+   Example response:
+  [
+       {
+           "symbol": "LTCBTC",
+           "orderId": 1,
+           "orderListId": -1, //Unless OCO, the value will always be -1
+           "clientOrderId": "myOrder1",
+           "price": "0.1",
+           "origQty": "1.0",
+           "executedQty": "0.0",
+           "cummulativeQuoteQty": "0.0",
+           "status": "NEW",
+           "timeInForce": "GTC",
+           "type": "LIMIT",
+           "side": "BUY",
+           "stopPrice": "0.0",
+           "icebergQty": "0.0",
+           "time": 1499827319559,
+           "updateTime": 1499827319559,
+           "isWorking": true,
+           "origQuoteOrderQty": "0.000000"
+       }
+   ]
+*/
+}
+
+const checkOrderStatus = (binanceRest, symbol, orderId, timestamp) => {
+    const options = {
+        symbol: symbol,
+        orderId: orderId,
+        timestamp: timestamp
+    }
+    return binanceRest
+        .queryOrder(options)
+        .then(response => {
+            return response;
+        }).catch(err => {
+            console.log(err);
+        });
+    /*  Example response::
+        {
+            "symbol": "LTCBTC",
+            "orderId": 1,
+            "orderListId": -1 //Unless part of an OCO, the value will always be -1.
+            "clientOrderId": "myOrder1",
+            "price": "0.1",
+            "origQty": "1.0",
+            "executedQty": "0.0",
+            "cummulativeQuoteQty": "0.0",
+            "status": "NEW",
+            "timeInForce": "GTC",
+            "type": "LIMIT",
+            "side": "BUY",
+            "stopPrice": "0.0",
+            "icebergQty": "0.0",
+            "time": 1499827319559,
+            "updateTime": 1499827319559,
+            "isWorking": true,
+            "origQuoteOrderQty": "0.000000"
+        }
+    */
+}
+
+const cancelOrder = (binanceRest, symbol, orderId, timestamp) => {
+    const options = {
+        symbol: symbol,
+        orderId: orderId,
+        timestamp: timestamp
+    }
+    return binanceRest
+        .cancelOrder(options)
+        .then(response => {
+            return response;
+        }).catch(err => {
+            console.log(err);
+        });
+
+    /*
+    Example response:
+        {
+            "symbol": "LTCBTC",
+            "origClientOrderId": "myOrder1",
+            "orderId": 4,
+            "orderListId": -1, //Unless part of an OCO, the value will always be -1.
+            "clientOrderId": "cancelMyOrder1",
+            "price": "2.00000000",
+            "origQty": "1.00000000",
+            "executedQty": "0.00000000",
+            "cummulativeQuoteQty": "0.00000000",
+            "status": "CANCELED",
+            "timeInForce": "GTC",
+            "type": "LIMIT",
+            "side": "BUY"
+        }
+    */
+}
+
+const createOrder = (binanceRest, symbol, orderId, timestamp) => {
+    /*
+        TODO: hier nieuwe orders aanmaken!
+            1. pak eerst de juiste options..., zie onderstaande hieronder
+    */
+
+
+    return binanceRest
+        .newOrder()
+
+    /*
+        Example response:
+
+        {
+            "symbol": "BTCUSDT",
+            "orderId": 28,
+            "orderListId": -1, //Unless OCO, value will be -1
+            "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+            "transactTime": 1507725176595,
+            "price": "0.00000000",
+            "origQty": "10.00000000",
+            "executedQty": "10.00000000",
+            "cummulativeQuoteQty": "10.00000000",
+            "status": "FILLED",
+            "timeInForce": "GTC",
+            "type": "MARKET",
+            "side": "SELL"
+        }
+
+    */
+}
+
+const generateLimitBuyOrderOptions = (symbol, quantity, maxPrice) => {
+    const options = {
+        symbol: symbol,
+        side: 'BUY',
+        type: 'LIMIT',
+        timeInForce: 'DAY',
+        quantity: quantity,
+        price: maxPrice, // TODO: uitzoeken of dit hetzelfde is!
+        newOrderRespType: 'RESULT'
+    }
+    return options;
+    // TODO: laten verwijzen naar een generieke order functie?
+    // dus per order soort een specifieke functie en deze laten uitvoeren door een generieke functie?
+
+}
+
+const generateLimitSellOrderOptions  = (symbol, quantity, minPrice) => {
+    const options = {
+        symbol: symbol,
+        side: 'SEL',
+        type: 'LIMIT',
+        timeInForce: 'DAY',
+        quantity: quantity,
+        price: minPrice, // TODO: uitzoeken of dit hetzelfde is!
+        newOrderRespType: 'RESULT'
+
+    }
+    return options;
+}
+
+const generateStopLossOrderOptions = (symbol, quantity, minPrice, stopPrice) => {
+    const options = {
+        symbol: symbol,
+        side: 'SEL',
+        type: 'STOP_LOSS',
+        timeInForce: 'DAY',
+        quantity: quantity,
+        price: minPrice, 
+        stopPrice: stopPrice,
+        newOrderRespType: 'RESULT'
+
+    }
+    return options;
+} 
+
 module.exports = {
     generateBinanceRest,
-    generateTestOrder
+    generateTestOrder,
+    retrieveOrderBook,
+    retrieveAllOpenOrders,
+    checkOrderStatus,
+    cancelOrder,
+    createOrder,
+    generateLimitBuyOrderOptions,
+    generateLimitSellOrderOptions,
+    generateStopLossOrderOptions,
 };
 
