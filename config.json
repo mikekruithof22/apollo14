@@ -7,8 +7,8 @@
         "logCreateInterval": "dialy, weekly, hourly, etc."   
     },
     "test": {
-        "realTimeTest": true,
-        "testWithHistoricalData": false,
+        "realTimeTest": false,
+        "testWithHistoricalData": true,
         "consoleLogSteps": false
     },
     "orderConditions": [
@@ -25,13 +25,14 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 250
+                "numberOfMaximumIntervals": 50
             },
             "stopLossOrder": {
-                "takeProfitPercentage": 5,
-                "takeLossPercentage": 2,
+                "takeProfitPercentage": 2,
+                "takeLossPercentage": 1,
                 "maxUsdtBuyAmount": 1000,
                 "maxPercentageOffBalance": 33,
+                "candleAmountToLookIntoTheFuture": 50,
                 "closePositionAfterAmountOfCandles": 500
             }
         },
@@ -51,10 +52,11 @@
                 "numberOfMaximumIntervals": 50
             },
             "stopLossOrder": {
-                "takeProfitPercentage": 3,
+                "takeProfitPercentage": 2,
                 "takeLossPercentage": 4,
                 "maxUsdtBuyAmount": 1000,
                 "maxPercentageOffBalance": 33,
+                "candleAmountToLookIntoTheFuture": 50,
                 "closePositionAfterAmountOfCandles": 500
             }
         },
@@ -74,33 +76,11 @@
                 "numberOfMaximumIntervals": 50
             },
             "stopLossOrder": {
-                "takeProfitPercentage": 5,
+                "takeProfitPercentage": 2,
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 1000,
                 "maxPercentageOffBalance": 33,
-                "closePositionAfterAmountOfCandles": 500
-            }
-        },
-        {
-            "name": "ETHUSDT - option A",
-            "tradingPair": "ETHUSDT",
-            "interval": "1h",
-            "rsi": {
-                "minimumRisingPercentage": 2.00,
-                "calculationLength": 14
-            },
-            "candle": {
-                "minimumDeclingPercentage": -2.00
-            },
-            "calcBullishDivergence": {
-                "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 50
-            },
-            "stopLossOrder": {
-                "takeProfitPercentage": 5,
-                "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 1000,
-                "maxPercentageOffBalance": 33,
+                "candleAmountToLookIntoTheFuture": 50,
                 "closePositionAfterAmountOfCandles": 500
             }
         }

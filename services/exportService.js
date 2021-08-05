@@ -57,7 +57,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
         return [
             metaDataContent.amount,
             metaDataContent.succesfull,
-            metaDataContent.succesfull,
+            metaDataContent.unsuccesfull,
             metaDataContent.unable,
             metaDataContent.numberOffApiCalls,
             metaDataContent.configuration
@@ -89,7 +89,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
         ' * ',
         'CANDLES DIFFERENCE',
         'HIGHEST NEXT CANDLE',
-        'LOWEST CANDLE',
+        'LOWEST NEXT CANDLE',
         'MOST LIKELY OUTCOME'
     ];
 
@@ -97,7 +97,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
         'DIVERGENCES',
         'SUCCESSFULL TRADES',
         'UNSUCCESSFULL TRADES',
-        'UNABLE TO DECIDE TRADES TRADES',
+        'UNABLE TO DECIDE TRADES',
         'NUMBER OF API CALLS',
         'CONFIGURATION OBJECT'
     ];

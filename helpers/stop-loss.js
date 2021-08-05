@@ -10,7 +10,7 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
         const profitPercentage = calculatePercentageChange(startCandle.close, nextCandlesAfterHit[i].high);
 
         if (lossPercentage >= takeLossPercentage && profitPercentage >= takeProfitPercentage) {
-            message = `Profit limit and sell limit occured inside the same candle --> Cannot tell if it is a profit or loss`;
+            message = `Profit limit and sell limit occured inside the same candle --> Unable tell if it is a profit or loss`;
             break;
         } else if (profitPercentage >= takeProfitPercentage) {
             message = `Trade was profitable. We sold for: ${nextCandlesAfterHit[i].high}. Candle closeDate: ${nextCandlesAfterHit[i].closeTime}`;
@@ -27,20 +27,31 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
 }
 
 const findHighestCandle = (nextCandlesAfterHit) => {
-    const candleWithHighstPrice = nextCandlesAfterHit.reduce(function (prev, current) {
-        return (prev.high > current.high) ? prev : current
-    });
+    let message;
+    if (nextCandlesAfterHit.length === 0) {
+        message = `No candle after hit found. Something might be wrong.`;
+    } else {
+        const candleWithHighstPrice = nextCandlesAfterHit.reduce(function (prev, current) {
+            return (prev.high > current.high) ? prev : current
+        });
 
-    const message = `Highest 'high' price after hit ${candleWithHighstPrice.high} on ${candleWithHighstPrice.openTime}`;
+        message = `${candleWithHighstPrice.high} on ${candleWithHighstPrice.openTime}`;
+    }
     return message;
 }
 
 const findLowestCandle = (nextCandlesAfterHit) => {
-    const candleWithLowestPrice = nextCandlesAfterHit.reduce(function (prev, current) {
-        return (prev.low > current.low) ? prev : current
-    });
+    let message;
+    if (nextCandlesAfterHit.length === 0) {
+        message = `No candle after hit found. Something might be wrong.`;
+    } else {
+        const candleWithLowestPrice = nextCandlesAfterHit.reduce(function (prev, current) {
+            return (prev.low > current.low) ? prev : current
+        });
 
-    const message = `Lowest 'low' price after hit ${candleWithLowestPrice.low} on ${candleWithLowestPrice.openTime} `;
+        message = `${candleWithLowestPrice.low} on ${candleWithLowestPrice.openTime} `;
+    }
+
     return message;
 }
 

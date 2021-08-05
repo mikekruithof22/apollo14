@@ -105,7 +105,7 @@ async function runInTerminal() {
             for await (let hit of bullishDivergenceCandles) {
                 if (hit !== []) {
                     // STEP 3 - Create (test) orders          
-                    if (production === true) {
+                    if (isProduction === true) {
                         // STEP 3.A - Realtime orders on production
 
 
@@ -132,10 +132,6 @@ async function runInTerminal() {
             }
         }
     };
-
-
-    console.log('----------- excelFileContent ------------');
-    console.log(excelFileContent);
          
     // STEP 4 - Generate/update Excel file 
     if (generateExcelFile === true && excelFileContent.length >= 1) {

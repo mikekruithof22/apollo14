@@ -26,7 +26,7 @@ const checkConfigData = (config) => {
         closeProgram = true;
     }
 
-    if (production === true) {
+    if (closeProgram === true) {
         message += `
         The program closed after the config.json file was checked.
         Don't forget to buy the REAL Bitcoin!
