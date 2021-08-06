@@ -279,10 +279,10 @@ const cancelOrder = async (binanceRest, symbol, orderId, timestamp) => {
     return binanceRest
         .cancelOrder(options)
         .then(response => {
+            txtLogger.writeToLogFile(`CancelOrder() ${response}`, LogLevel.INFO);
             return response;
         }).catch(err => {
             txtLogger.writeToLogFile(`Method: cancelOrder() ${err}`, LogLevel.ERROR);
-            console.log(err);
         });
 
     /*
@@ -305,15 +305,42 @@ const cancelOrder = async (binanceRest, symbol, orderId, timestamp) => {
     */
 }
 
-const createOrder = async (binanceRest, symbol, orderId, timestamp) => {
-    /*
-        TODO: hier nieuwe orders aanmaken!
-            1. pak eerst de juiste options..., zie onderstaande hieronder
-    */
+const createOrder = async (
+    binanceRest,
+    orderType,
+    symbol,
+    quantity,
+    orderPrice,
+    stopPrice = 0
+) => {
 
+    let options;
+
+    switch (orderType) {
+        case OrderType.LIMITSELL:
+            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITBUY:
+            options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITBUY:
+            options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
+            break;
+        default:
+            txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
+            return;
+    }
+
+    txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
 
     return binanceRest
-        .newOrder()
+        .newOrder(options)
+        .then(response => {
+            txtLogger.writeToLogFile(`createOrder() was successfull  ${JSON.stringify(response)}`, LogLevel.INFO);
+            return response;
+        }).catch(err => {
+            txtLogger.writeToLogFile(`Method: createOrder() failed${err}`, LogLevel.ERROR);
+        });
 
     /*
         Example response:
@@ -382,6 +409,14 @@ const generateStopLossOrderOptions = (symbol, quantity, minPrice, stopPrice) => 
     return options;
 }
 
+const OrderType = {
+    LIMITSELL: 'Limit sell',
+    LIMITBUY: 'Limit buy',
+    STOPLOSS: 'Stoploss',
+    MARKET: 'Market'
+
+}
+
 module.exports = {
     generateBinanceRest,
     getAccountBalances,
@@ -394,5 +429,6 @@ module.exports = {
     generateLimitBuyOrderOptions,
     generateLimitSellOrderOptions,
     generateStopLossOrderOptions,
+    OrderType
 };
 

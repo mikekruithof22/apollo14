@@ -7,7 +7,6 @@ const checkConfigData = (config) => {
                     ERROR: The config values 
                     "production.active" and "testWithHistoricalData" 
                     are not allowed to be both true. `;
-        closeProgram = true;
     }
 
     if (config.production.active === true && config.test.realTimeTest === true) {
@@ -15,7 +14,6 @@ const checkConfigData = (config) => {
                     ERROR: The config values 
                     "production.active" and "realTimeTest" 
                     are not allowed to be both true. `;
-        closeProgram = true;
     }
 
     if (config.test.realTimeTest === true && config.test.testWithHistoricalData === true) {
@@ -23,7 +21,6 @@ const checkConfigData = (config) => {
                 ERROR: The config values 
                 "realTimeTest" and "testWithHistoricalData" 
                 are not allowed to be both true. `;
-        closeProgram = true;
     }
 
     const totalPercentageCountConfigured = calcTotalPercentageAmountOffOrders(config.orderConditions);
@@ -36,11 +33,12 @@ const checkConfigData = (config) => {
         closeProgram = true;
     }
 
-    if (closeProgram === true) {
+    if (message.includes('ERROR')) {
         message += `
         The program closed after the config.json file was checked.
         Don't forget to buy the REAL Bitcoin!
         ------------------------------------------------`;
+        closeProgram = true;
     }
 
     return {
@@ -55,7 +53,6 @@ const calcTotalPercentageAmountOffOrders = (orderConditions) => {
         count = count + order.order.maxPercentageOffBalance;
     }
     return count;
-
 }
 
 module.exports = {
