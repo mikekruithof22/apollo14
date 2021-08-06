@@ -4,6 +4,7 @@ const candleHelper = require('./helpers/candle');
 const calculate = require('./helpers/calculate');
 const excel = require('./services/exportService');
 const configChecker = require('./helpers/config-sanity-check');
+const txtLogger = require('./helpers/txt-logger');
 const binance = require('./binance/binance');
 
 async function runInTerminal() {
@@ -20,7 +21,9 @@ async function runInTerminal() {
 
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+    
     const isProduction = config.production.active;
+    const minimumUSDTorderAmount = config.production.actiminimumUSDTorderAmountve;
 
     const realTimeTest = config.test.realTimeTest;
     const testWithHistoricalData = config.test.testWithHistoricalData;
@@ -31,13 +34,31 @@ async function runInTerminal() {
 
     // STEP 2 - When in 'production' mode execute several checks here
     if (realTimeTest === true || isProduction === true) {
-        const binanceRest = binance.generateBinanceRest();
+        txtLogger.writeToLogFile(` ******************** Program started ********************`);
 
         // stap 1 - controlleer het banksaldo en order status, onder bepaalde omstandigheden afsluiten!
+        const binanceRest = binance.generateBinanceRest();
+        const balance = await binance.getAccountBalances(binanceRest);
+        const currentUSDTBalance = balance.find(b => b.asset === 'USDT');
+        const freeAmount = currentUSDTBalance.free;
+        
+        console.log('-----------STEP 01 - check balance account------------');
+        // console.log('balance');
+        // console.log(balance);
+        // console.log('currentUSDTBalance');
+        // console.log(currentUSDTBalance);
+        // console.log('freeAmount');
+        // console.log(freeAmount);
+
+        txtLogger.writeToLogFile(`Current USDT balance: ${JSON.stringify(currentUSDTBalance)}`);
+        txtLogger.writeToLogFile(`Free USDT amount: ${JSON.stringify(freeAmount)}`);
 
 
-        // stap 2 - indien stap 1 succesvol doorlopen dan... 
-
+        if (freeAmount < minimumUSDTorderAmount) {
+            txtLogger.writeToLogFile(`Program closed. Reason: balance was lower- ${currentUSDTBalance} - than configured - ${minimumUSDTorderAmount}`);
+            return;
+        }
+        
     }
 
 

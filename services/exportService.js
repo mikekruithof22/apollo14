@@ -174,11 +174,9 @@ const generateFileNameAndDirectory = (directoryName) => {
             if (err) throw err;
         });
     }
-
     const date = new Date();
     const fileName = `log ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()} ${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
     const filePath = `./${directoryName}/${fileName}.xlsx`;
-
     return filePath;
 }
 
