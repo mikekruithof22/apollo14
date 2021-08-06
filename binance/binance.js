@@ -1,6 +1,9 @@
 const dateHelper = require('../helpers/date');
 const api = require('binance');
-const config = require('../config.json');
+const txtLogger = require('../helpers/txt-logger');
+const LogLevel = require('../helpers/txt-logger').LogLevel;
+
+
 require('dotenv').config();
 
 /*
@@ -85,13 +88,9 @@ const getAccountBalances = async (binanceRest) => {
     return binanceRest
         .account(options)
         .then(response => {
-            // console.log('getAccountBalances() ******** server response ');
-            // console.log(response);
-
             return response.balances;
         }).catch(err => {
-            console.log('getAccountBalances() ******** server response ');
-            console.log(err);
+            txtLogger.writeToLogFile(`Method: getAccountBalances() ${err}`, LogLevel.ERROR);
         });
     /*
         Example response:
@@ -175,7 +174,7 @@ const getOrderBook = async (binanceRest, symbol, limit) => {
         .then(response => {
             return response;
         }).catch(err => {
-            console.log(err);
+            txtLogger.writeToLogFile(`Method: getOrderBook() ${err}`, LogLevel.ERROR);
         });
     /*  Example response::
         {
@@ -205,7 +204,7 @@ const retrieveAllOpenOrders = async (binanceRest, symbol) => {
         .then(response => {
             return response;
         }).catch(err => {
-            console.log(err);
+            txtLogger.writeToLogFile(`Method: retrieveAllOpenOrders() ${err}`, LogLevel.ERROR);
         });
     /*
   Example response:
@@ -245,7 +244,7 @@ const checkOrderStatus = async (binanceRest, symbol, orderId, timestamp) => {
         .then(response => {
             return response;
         }).catch(err => {
-            console.log(err);
+            txtLogger.writeToLogFile(`Method: checkOrderStatus() ${err}`, LogLevel.ERROR);
         });
     /*  Example response::
         {
@@ -282,6 +281,7 @@ const cancelOrder = async (binanceRest, symbol, orderId, timestamp) => {
         .then(response => {
             return response;
         }).catch(err => {
+            txtLogger.writeToLogFile(`Method: cancelOrder() ${err}`, LogLevel.ERROR);
             console.log(err);
         });
 

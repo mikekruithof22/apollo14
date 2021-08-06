@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const writeToLogFile = (message, logLevel = 'INFO') => {
+const writeToLogFile = (message, logLevel = LogLevel.INFO) => {
     const fileLocation = generateFilePath();
     const date = new Date();
     message = `\n ${logLevel} - ${date.toGMTString()} - ${message}`;
@@ -26,7 +26,18 @@ const generateFilePath = () => {
     return filePath;
 }
 
+const LogLevel = {
+    INFO: 'INFO',
+    DEBUG: 'DEBUG',
+    TRACE: 'TRACE',
+    NOTICE: 'NOTICE',
+    WARN: 'WARN',
+    ERROR: 'ERROR',
+    FATAL: 'FATAL'   
+}
+
 module.exports = {
     generateFilePath,
-    writeToLogFile
+    writeToLogFile,
+    LogLevel
 }
