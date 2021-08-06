@@ -3,12 +3,13 @@
     "numberOfCandlesToRetrieve": 1000,
     "generateExcelFile": true,
     "production": {
-        "active": false,
-        "logCreateInterval": "dialy, weekly, hourly, etc."   
+        "active": true,
+        "createLogFileInterval": "dialy, weekly, hourly, etc.",
+        "minimumUSDTorderAmount": 10   
     },
     "test": {
         "realTimeTest": false,
-        "testWithHistoricalData": true,
+        "testWithHistoricalData": false,
         "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 50
     },
@@ -28,7 +29,7 @@
                 "numberOfMinimumIntervals": 5,
                 "numberOfMaximumIntervals": 50
             },
-            "stopLossOrder": {
+            "order": {
                 "takeProfitPercentage": 2,
                 "takeLossPercentage": 1,
                 "maxUsdtBuyAmount": 1000,
@@ -51,7 +52,7 @@
                 "numberOfMinimumIntervals": 5,
                 "numberOfMaximumIntervals": 50
             },
-            "stopLossOrder": {
+            "order": {
                 "takeProfitPercentage": 2,
                 "takeLossPercentage": 4,
                 "maxUsdtBuyAmount": 1000,
@@ -74,7 +75,7 @@
                 "numberOfMinimumIntervals": 5,
                 "numberOfMaximumIntervals": 50
             },
-            "stopLossOrder": {
+            "order": {
                 "takeProfitPercentage": 2,
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 1000,

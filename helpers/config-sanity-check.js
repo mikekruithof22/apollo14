@@ -1,5 +1,5 @@
 const checkConfigData = (config) => {
-    let message = `----- Roger Ver wants to tell you someting: -----`;
+    let message = `----- Roger Ver wants to say someting: -----`;
     let closeProgram = false;
 
     if (config.production.active === true && config.test.testWithHistoricalData === true) {
@@ -31,7 +31,7 @@ const checkConfigData = (config) => {
     if (totalPercentageCountConfigured > 100) {
         message += `
             ERROR: The total amount off all 
-            'maxPercentageOffBalance' values is larger 100%.
+            'maxPercentageOffBalance' values is larger than 100%.
             The current total is right now: ${totalPercentageCountConfigured}%.`;
         closeProgram = true;
     }
@@ -52,10 +52,8 @@ const checkConfigData = (config) => {
 const calcTotalPercentageAmountOffOrders = (orderConditions) => {
     let count = 0;
     for (let order of orderConditions) {
-        count = count + order.stopLossOrder.maxPercentageOffBalance;
+        count = count + order.order.maxPercentageOffBalance;
     }
-    console.log('----------- count die we returnen ------------');
-    console.log(count);
     return count;
 
 }
