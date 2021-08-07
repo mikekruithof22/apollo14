@@ -6,18 +6,23 @@ const excel = require('./services/exportService');
 const configChecker = require('./helpers/config-sanity-check');
 const txtLogger = require('./helpers/txt-logger');
 const binance = require('./binance/binance');
+const binanceOrder = require('./binance/order');
+const binancenStream = require('./binance/stream');
+const exchangeLogic = require('./binance/logic');
+
+const LogLevel = require('./helpers/txt-logger').LogLevel;
+const OrderType = require('./binance/order').OrderType;
 
 async function runInTerminal() {
     let excelFileContent = [];
     let numberOffApiCalls = 0;
 
+    // Production variables
+    let currentFreeUSDTAmount = 0;
+    let binanceRest;
+
     // STEP 1 - Prepare configuration data and execute a sanity check
     const configCheck = configChecker.checkConfigData(config);
-
-    if (configCheck.closeProgram === true) {
-        console.log(configCheck.message);
-        return;
-    }
 
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
@@ -32,33 +37,39 @@ async function runInTerminal() {
     const generateExcelFile = config.generateExcelFile;
     const orderConditions = config.orderConditions;
 
+    if (isProduction === true) {
+        txtLogger.writeToLogFile(`--------------- Program started---------------`);
+    }
+
+    if (configCheck.closeProgram === true) {
+        if (isProduction === true) {
+            txtLogger.writeToLogFile(configCheck.message, LogLevel.ERROR);
+        }
+        return;
+    }
+
     // STEP 2 - When in 'production' mode execute several checks here
-    if (realTimeTest === true || isProduction === true) {
-        txtLogger.writeToLogFile(` ******************** Program started ********************`);
+    if (isProduction === true) {
 
         // stap 1 - controlleer het banksaldo en order status, onder bepaalde omstandigheden afsluiten!
-        const binanceRest = binance.generateBinanceRest();
+        binanceRest = binance.generateBinanceRest();
+
         const balance = await binance.getAccountBalances(binanceRest);
         const currentUSDTBalance = balance.find(b => b.asset === 'USDT');
-        const freeAmount = currentUSDTBalance.free;
-        
-        console.log('-----------STEP 01 - check balance account------------');
-        // console.log('balance');
-        // console.log(balance);
-        // console.log('currentUSDTBalance');
-        // console.log(currentUSDTBalance);
-        // console.log('freeAmount');
-        // console.log(freeAmount);
+        currentFreeUSDTAmount = currentUSDTBalance.free;
+
+        // TODO: testmike code, om verder te kunnen. ONDERSTAANDE NOOIT OP PRODUCTIE ZETTEN!
+        freeAmount = 3000.00000000;
+        //////////////////////////////////////////////////////////////////////////
 
         txtLogger.writeToLogFile(`Current USDT balance: ${JSON.stringify(currentUSDTBalance)}`);
-        txtLogger.writeToLogFile(`Free USDT amount: ${JSON.stringify(freeAmount)}`);
-
+        txtLogger.writeToLogFile(`Free USDT amount: ${freeAmount}`);
 
         if (freeAmount < minimumUSDTorderAmount) {
             txtLogger.writeToLogFile(`Program closed. Reason: balance was lower- ${currentUSDTBalance} - than configured - ${minimumUSDTorderAmount}`);
             return;
         }
-        
+        return; // TODO: tmp testmike return, weghalen in REAL LIVE!
     }
 
 
@@ -75,8 +86,10 @@ async function runInTerminal() {
         const startCount = order.calcBullishDivergence.numberOfMinimumIntervals;
         const stopCount = order.calcBullishDivergence.numberOfMaximumIntervals;
 
-        const takeProfitPercentage = order.stopLossOrder.takeProfitPercentage;
-        const takeLossPercentage = order.stopLossOrder.takeLossPercentage;
+        const takeProfitPercentage = order.order.takeProfitPercentage;
+        const takeLossPercentage = order.order.takeLossPercentage;
+        const maxUsdtBuyAmount = order.order.maxUsdtBuyAmount;
+        const maxPercentageOffBalance = order.order.maxPercentageOffBalance;
 
         const url = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
         numberOffApiCalls = numberOffApiCalls + 1;
@@ -125,21 +138,29 @@ async function runInTerminal() {
             );
 
             for await (let hit of bullishDivergenceCandles) {
+              
                 if (hit !== []) {
                     // STEP 3 - Create (test) orders          
                     if (isProduction === true) {
                         // STEP 3.A - Realtime orders on production
+                        const currentOpenOrders = await binance.retrieveAllOpenOrders(tradingPair);
+                        const totalOpenAmountValue = exchangeLogic.calcCurrentOpenOrderAmount(currentOpenOrders);
+                        const amountToSpend =  exchangeLogic.checkIfNewOrderIsAllowed(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
 
+                        /*
+                            TODO: hier verder gaan: bepaal de volgende parameters: 
+                                quantity,
+                                orderPrice
 
-
-                        
-
+                                Doe het volgende:
+                                    1. orderbook ophalen en kijk net zolang tot je quantity gevuld is. 
+                                    2. Bouw methode bij 'logic.js' die hetvolgende teruggeeft: 'quantity', 'orderPrice'
+                        */
+                        binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair)
                     } else if (realTimeTest === true) {
                          // STEP 3.B - Realtime TEST orders
-
-                        // TODO: kan deze weg omdat ie bij een eerdere stap wordt aangemaakt? 
-                        const binanceRest = binance.generateBinanceRest(); 
-                        const testOrder = await binance.generateTestOrder(binanceRest, tradingPair);
+                        const binanceTestRest = binance.generateBinanceRest(); 
+                        const testOrder = await binanceOrder.generateTestOrder(binanceTestRest, tradingPair, OrderType.LIMITBUY, 1, 100);      
 
                         let obj = {
                             testOrder: testOrder,
