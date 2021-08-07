@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node test/delta.js"
+    "test": "node test-order.js"
   },
   "author": "",
   "license": "ISC",

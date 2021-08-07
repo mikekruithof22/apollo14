@@ -11,7 +11,6 @@ const writeToLogFile = (message, logLevel = LogLevel.INFO) => {
     return fs.appendFileSync(`${fileLocation}`, `${message}`)
 }
 
-
 const generateFilePath = () => {
     const directoryName = 'production-logs';
     if (!fs.existsSync(`./${directoryName}`)) {
@@ -33,7 +32,7 @@ const LogLevel = {
     NOTICE: 'NOTICE',
     WARN: 'WARN',
     ERROR: 'ERROR',
-    FATAL: 'FATAL'   
+    FATAL: 'FATAL'
 }
 
 module.exports = {

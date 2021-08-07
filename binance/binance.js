@@ -80,8 +80,14 @@ const createOrder = async (
         case OrderType.LIMITBUY:
             options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
             break;
-        case OrderType.LIMITBUY:
+        case OrderType.STOPLOSSLIMIT:
             options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
+            break;
+        case OrderType.MARKETBUY:
+            options = generateMarketBuyOrderOptions(symbol, quantity);
+            break;
+        case OrderType.MARKETSELL:
+            options = generateMarketSellOrderOptions(symbol, quantity);
             break;
         default:
             txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
@@ -135,16 +141,6 @@ const generateTestOrder = async (
     stopPrice = 0
 ) => {
     let orderResult;
-
-    // const customOrderId = binanceRest.generateNewOrderId();
-    // const options = {
-    //     symbol: `${tradingPair}`,
-    //     quantity: 0.1,
-    //     side: 'BUY',
-    //     type: 'MARKET',
-    //     newClientOrderId: customOrderId,
-    // }
-
     let options;
 
     switch (orderType) {
@@ -154,8 +150,14 @@ const generateTestOrder = async (
         case OrderType.LIMITBUY:
             options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
             break;
-        case OrderType.LIMITBUY:
+        case OrderType.STOPLOSSLIMIT:
             options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
+            break;
+        case OrderType.MARKETBUY:
+            options = generateMarketBuyOrderOptions(symbol, quantity);
+            break;
+        case OrderType.MARKETSELL:
+            options = generateMarketSellOrderOptions(symbol, quantity);
             break;
         default:
             txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
@@ -186,7 +188,7 @@ const generateTestOrder = async (
         })
         .catch(err => {
             orderResult = {
-                message: 'Order creation failed',
+                message: 'ERROR: Order creation failed',
                 time: dateHelper.formatLongDate(new Date()),
                 symbol: symbol,
                 orderPrice: orderPrice,
@@ -389,42 +391,62 @@ const generateLimitBuyOrderOptions = (symbol, quantity, maxPrice) => {
         symbol: symbol,
         side: 'BUY',
         type: 'LIMIT',
-        timeInForce: 'DAY',
+        timeInForce: 'GTC',
         quantity: quantity,
-        price: maxPrice, // TODO: uitzoeken of dit hetzelfde is!
+        price: maxPrice,
         newOrderRespType: 'RESULT'
     }
     return options;
-    // TODO: laten verwijzen naar een generieke order functie?
-    // dus per order soort een specifieke functie en deze laten uitvoeren door een generieke functie?
-
 }
 
-const generateLimitSellOrderOptions = (symbol, quantity, minPrice) => {
+const generateLimitSellOrderOptions = (symbol, quantity, orderPrice) => {
     const options = {
         symbol: symbol,
-        side: 'SEL',
+        side: 'SELL',
         type: 'LIMIT',
-        timeInForce: 'DAY',
+        timeInForce: 'GTC',
         quantity: quantity,
-        price: minPrice, // TODO: uitzoeken of dit hetzelfde is!
+        price: orderPrice,
         newOrderRespType: 'RESULT'
 
     }
     return options;
 }
 
-const generateStopLossOrderOptions = (symbol, quantity, minPrice, stopPrice) => {
+const generateStopLossOrderOptions = (symbol, quantity, orderPrice, stopPrice) => {
     const options = {
         symbol: symbol,
-        side: 'SEL',
-        type: 'STOP_LOSS',
-        timeInForce: 'DAY',
+        side: 'SELL',
+        type: 'STOP_LOSS_LIMIT',
+        timeInForce: "GTC",
+        price: orderPrice,
+        stopPrice: stopPrice,
         quantity: quantity,
-        price: minPrice,
         stopPrice: stopPrice,
         newOrderRespType: 'RESULT'
+    }
+    return options;
+}
 
+const generateMarketBuyOrderOptions = (symbol, quantity) => {
+    const options = {
+        symbol: symbol,
+        side: 'BUY',
+        type: 'MARKET',
+        quantity: quantity,
+        newOrderRespType: 'RESULT'
+
+    }
+    return options;
+}
+
+const generateMarketSellOrderOptions = (symbol, quantity) => {
+    const options = {
+        symbol: symbol,
+        side: 'SELL',
+        type: 'MARKET',
+        quantity: quantity,
+        newOrderRespType: 'RESULT'
     }
     return options;
 }
@@ -432,9 +454,10 @@ const generateStopLossOrderOptions = (symbol, quantity, minPrice, stopPrice) => 
 const OrderType = {
     LIMITSELL: 'Limit sell',
     LIMITBUY: 'Limit buy',
-    STOPLOSS: 'Stoploss',
-    MARKET: 'Market'
-
+    STOPLOSSLIMIT: 'Stoploss limit',
+    MARKETBUY: 'Market buy',
+    MARKETSELL: 'Market sell',
+    OCO: 'oco'
 }
 
 module.exports = {
