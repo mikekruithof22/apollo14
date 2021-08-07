@@ -143,7 +143,7 @@ async function runInTerminal() {
                     // STEP 3 - Create (test) orders          
                     if (isProduction === true) {
                         // STEP 3.A - Realtime orders on production
-                        const currentOpenOrders = await binance.retrieveAllOpenOrders(tradingPair);
+                        const currentOpenOrders = await binance.retrieveAllOpenOrders(binanceRest, tradingPair);
                         const totalOpenAmountValue = exchangeLogic.calcCurrentOpenOrderAmount(currentOpenOrders);
                         const amountToSpend =  exchangeLogic.checkIfNewOrderIsAllowed(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
 

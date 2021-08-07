@@ -103,10 +103,9 @@ const getAccountBalances = async (binanceRest) => {
     */
 }
 
-const getOrderBook = async (binanceRest, symbol, limit) => {
+const getOrderBook = async (binanceRest, symbol) => {
     const options = {
-        symbol: symbol,
-        limit: limit
+        symbol: symbol
     }
     return binanceRest
         .depth(options)
@@ -147,6 +146,8 @@ const retrieveAllOpenOrders = async (binanceRest, symbol) => {
         });
     /*
   Example response:
+
+  // IF FILLED, otherwise an emtpy array: []!
  [
       {
           "symbol": "LTCBTC",

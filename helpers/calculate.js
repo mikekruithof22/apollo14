@@ -98,7 +98,6 @@ const calculateBullishHistoricalDivergences = (
         const currentRsiValue = rsiItems[rsiItems.length - i];
 
         for (var j = startCount; j < stopCount; j++) {
-            // for (var j = startCount; j < stopCount; j++) {
             const compareWithCandle = closePriceList[closePriceList.length - (j + i)];
             const compareWithCandleIndex = closePriceList.length - (j + i);
             const compareWithRsiValue = rsiItems[rsiItems.length - (j + i)];
