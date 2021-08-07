@@ -23,26 +23,6 @@ require('dotenv').config();
       Interval bepalen wanneer het programma draait, althans het gedeelte wat windows task schedular dat moet doen
           ==> De laagste orderConditions.interval gaat het worden....
           ==> dit moet een mens door door naar de config te kijken. 
-  
-   STEP 1 - start binance
-       Per dag een log file maken
-
-   STEP 2 - check account balance
-       WE GAAN IEDERE KEER VAN 1000 EURO/USDT UIT
-
-       scenario's
-           1. GEEN GELD 
-               STOPPEN & DIT LOGGEN
-
-           2. EEN DEEL VAN HET GELD
-               DEEL HIERVAN HERINVERSTEREN
-
-           3. AL HET GELD
-               DEEL HIERVAN INVERSTEREN
-
-    STEP 3 - ORDERS, LIEFST OCO 
-       (dat kan volgens de documentatie inleggen)
-
    */
 
 
@@ -80,6 +60,146 @@ const generateBinanceRest = () => {
     });
     return binanceRest;
 }
+
+
+const createOrder = async (
+    binanceRest,
+    orderType,
+    symbol,
+    quantity,
+    orderPrice,
+    stopPrice = 0
+) => {
+
+    let options;
+
+    switch (orderType) {
+        case OrderType.LIMITSELL:
+            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITBUY:
+            options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITBUY:
+            options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
+            break;
+        default:
+            txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
+            return;
+    }
+
+    const customOrderId = binanceRest.generateNewOrderId();
+    options['newClientOrderId'] = customOrderId;
+
+
+    txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
+
+    return binanceRest
+        .newOrder(options)
+        .then(response => {
+            txtLogger.writeToLogFile(`createOrder() was successfull  ${JSON.stringify(response)}`, LogLevel.INFO);
+            return response;
+        }).catch(err => {
+            txtLogger.writeToLogFile(`Method: createOrder() failed${err}`, LogLevel.ERROR);
+        });
+
+    /*
+        Example response:
+
+        {
+            "symbol": "BTCUSDT",
+            "orderId": 28,
+            "orderListId": -1, //Unless OCO, value will be -1
+            "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+            "transactTime": 1507725176595,
+            "price": "0.00000000",
+            "origQty": "10.00000000",
+            "executedQty": "10.00000000",
+            "cummulativeQuoteQty": "10.00000000",
+            "status": "FILLED",
+            "timeInForce": "GTC",
+            "type": "MARKET",
+            "side": "SELL"
+        }
+
+    */
+}
+
+
+const generateTestOrder = async (
+    binanceRest,
+    orderType,
+    symbol,
+    quantity,
+    orderPrice,
+    stopPrice = 0
+) => {
+    let orderResult;
+
+    // const customOrderId = binanceRest.generateNewOrderId();
+    // const options = {
+    //     symbol: `${tradingPair}`,
+    //     quantity: 0.1,
+    //     side: 'BUY',
+    //     type: 'MARKET',
+    //     newClientOrderId: customOrderId,
+    // }
+
+    let options;
+
+    switch (orderType) {
+        case OrderType.LIMITSELL:
+            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITBUY:
+            options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITBUY:
+            options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
+            break;
+        default:
+            txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
+            return;
+    }
+
+    const customOrderId = binanceRest.generateNewOrderId();
+    options['newClientOrderId'] = customOrderId;
+
+    console.log(`--------------- generateTestOrder() - OPTIONS ---------------`);
+    console.log(options);
+
+    return binanceRest
+        .testOrder(options)
+        .then(response => {
+            orderResult = {
+                message: 'Order created successfully',
+                time: dateHelper.formatLongDate(new Date()),
+                symbol: symbol,
+                orderPrice: orderPrice,
+                quantity: quantity,
+                orderType: orderType,
+                newClientOrderId: customOrderId,
+                stopPrice: stopPrice ? stopPrice : 'N/A',
+                response: JSON.stringify(response)
+            }
+            return orderResult;
+        })
+        .catch(err => {
+            orderResult = {
+                message: 'Order creation failed',
+                time: dateHelper.formatLongDate(new Date()),
+                symbol: symbol,
+                orderPrice: orderPrice,
+                quantity: quantity,
+                orderType: orderType,
+                newClientOrderId: customOrderId,
+                stopPrice: stopPrice ? stopPrice : 'N/A',
+                response: JSON.stringify(err)
+            }
+            return orderResult;
+        });
+}
+
 
 const getAccountBalances = async (binanceRest) => {
     const options = {
@@ -121,47 +241,6 @@ const getAccountBalances = async (binanceRest) => {
             ]
         }
     */
-}
-
-
-const generateTestOrder = async (binanceRest, tradingPair) => {
-    let orderResult;
-
-    const customOrderId = binanceRest.generateNewOrderId();
-    const options = {
-        symbol: `${tradingPair}`,
-        quantity: 0.1,
-        side: 'BUY',
-        type: 'MARKET',
-        newClientOrderId: customOrderId,
-    }
-
-    return binanceRest
-        .testOrder(options)
-        .then(response => {
-            orderResult = {
-                message: 'Order created successfully',
-                time: dateHelper.formatLongDate(new Date()),
-                symbol: tradingPair,
-                side: 'BUY',
-                type: 'MARKET',
-                newClientOrderId: customOrderId,
-                response: JSON.stringify(response)
-            }
-            return orderResult;
-        })
-        .catch(err => {
-            orderResult = {
-                message: 'Order creation failed',
-                time: dateHelper.formatLongDate(new Date()),
-                symbol: tradingPair,
-                side: 'BUY',
-                type: 'MARKET',
-                newClientOrderId: customOrderId,
-                response: JSON.stringify(err)
-            }
-            return orderResult;
-        });
 }
 
 const getOrderBook = async (binanceRest, symbol, limit) => {
@@ -302,65 +381,6 @@ const cancelOrder = async (binanceRest, symbol, orderId, timestamp) => {
             "type": "LIMIT",
             "side": "BUY"
         }
-    */
-}
-
-const createOrder = async (
-    binanceRest,
-    orderType,
-    symbol,
-    quantity,
-    orderPrice,
-    stopPrice = 0
-) => {
-
-    let options;
-
-    switch (orderType) {
-        case OrderType.LIMITSELL:
-            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
-            break;
-        case OrderType.LIMITBUY:
-            options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
-            break;
-        case OrderType.LIMITBUY:
-            options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
-            break;
-        default:
-            txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
-            return;
-    }
-
-    txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
-
-    return binanceRest
-        .newOrder(options)
-        .then(response => {
-            txtLogger.writeToLogFile(`createOrder() was successfull  ${JSON.stringify(response)}`, LogLevel.INFO);
-            return response;
-        }).catch(err => {
-            txtLogger.writeToLogFile(`Method: createOrder() failed${err}`, LogLevel.ERROR);
-        });
-
-    /*
-        Example response:
-
-        {
-            "symbol": "BTCUSDT",
-            "orderId": 28,
-            "orderListId": -1, //Unless OCO, value will be -1
-            "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
-            "transactTime": 1507725176595,
-            "price": "0.00000000",
-            "origQty": "10.00000000",
-            "executedQty": "10.00000000",
-            "cummulativeQuoteQty": "10.00000000",
-            "status": "FILLED",
-            "timeInForce": "GTC",
-            "type": "MARKET",
-            "side": "SELL"
-        }
-
     */
 }
 

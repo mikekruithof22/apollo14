@@ -11,7 +11,8 @@
         "realTimeTest": false,
         "testWithHistoricalData": false,
         "consoleLogSteps": false,
-        "candleAmountToLookIntoTheFuture": 50
+        "candleAmountToLookIntoTheFuture": 50,
+        "orderType": "market"
     },
     "orderConditions": [
         {
