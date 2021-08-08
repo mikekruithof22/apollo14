@@ -14,8 +14,11 @@ async function runTestOrderScript() {
         return;
     }
 
-
+    // proxy waardes voor echte config waardes   
     const tradingPair = "LTCUSDT";
+    const takeProfitPercentage = config.orderConditions[0].order.takeProfitPercentage;
+    const takeLossPercentage = config.orderConditions[0].order.takeLossPercentage;
+
 
     const currentCryptoTradingPair = tradingPair.replace('USDT', '');
     const cancelOrderWhenUSDTValueIsBelow = config.production.cancelOrderWhenUSDTValueIsBelow;
@@ -98,8 +101,12 @@ async function runTestOrderScript() {
     const orderAmount = orderPriceAndAmount.amount;
     txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately. Price: ${orderPrice}. Amount: ${orderAmount}`);
 
+    // STEP 3 - Create buy order (and wait until it has been filled for several seconds?)
+    txtLogger.writeToLogFile(`STEP 3 - Create buy order`);
+    const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
 
-    /*
+    
+    /*  TESTMIKE HIERO VERDER GAAN!
         TODO: alles is klaar, nu alleen nog maar de order inleggen. 
 
         wat gebeurt er:
@@ -110,7 +117,19 @@ async function runTestOrderScript() {
             C. Order niet wordt gevuld...
     */
 
-    binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
+    // STEP 4 - Create stoploss and sell order 
+    // orderAmount moet huidige free balance zijn       
+    const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
+    const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
+ 
+
+    const sellOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITSELL, tradingPair, orderAmount, orderPrice);
+    const stopLossLimitOrder = await binanceOrder.createOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, orderAmount, orderPrice);
+
+
+    takeProfitPercentage
+takeLossPercentage
+
 
 
 
@@ -142,23 +161,25 @@ async function testOrderTypes(binanceRest) {
     const tradingPair = "LTCUSDT";
 
 
-    const limitSellTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.LIMITSELL, tradingPair, quantity, orderPrice);
-    const limitBuyTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.LIMITBUY, tradingPair, quantity, orderPrice);
-    const stopLossLimitTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, quantity, orderPrice, stopPrice);
-    const marketByTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.MARKETBUY, tradingPair, quantity);
-    const marketSellTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.MARKETSELL, tradingPair, quantity);
-
+    // const limitSellTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.LIMITSELL, tradingPair, quantity, orderPrice);
+    // const limitBuyTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.LIMITBUY, tradingPair, quantity, orderPrice);
+    // const stopLossLimitTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, quantity, orderPrice, stopPrice);
+    // const marketByTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.MARKETBUY, tradingPair, quantity);
+    // const marketSellTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.MARKETSELL, tradingPair, quantity);
+    // const stopLossTestOrder = await binanceOrder.generateTestOrder(binanceRest, OrderType.STOPLOSS, tradingPair, quantity, undefined, stopPrice);
     console.log(`--------------- TESTORDER RESULT(S) ---------------`);
-    console.log('limitSellTestOrder');
-    console.log(limitSellTestOrder);
-    console.log('limitBuyTestOrder');
-    console.log(limitBuyTestOrder);
-    console.log('stopLossLimitTestOrder');
-    console.log(stopLossLimitTestOrder);
-    console.log('marketByTestOrder');
-    console.log(marketByTestOrder);
-    console.log('marketSellTestOrder');
-    console.log(marketSellTestOrder);
+    // console.log('limitSellTestOrder');
+    // console.log(limitSellTestOrder);
+    // console.log('limitBuyTestOrder');
+    // console.log(limitBuyTestOrder);
+    // console.log('stopLossLimitTestOrder');
+    // console.log(stopLossLimitTestOrder);
+    // console.log('marketByTestOrder');
+    // console.log(marketByTestOrder);
+    // console.log('marketSellTestOrder');
+    // console.log(marketSellTestOrder);
+    // console.log('stopLossTestOrder');
+    // console.log(stopLossTestOrder);
 }
 
 

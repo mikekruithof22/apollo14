@@ -143,20 +143,7 @@ async function runInTerminal() {
                     // STEP 3 - Create (test) orders          
                     if (isProduction === true) {
                         // STEP 3.A - Realtime orders on production
-                        const currentOpenOrders = await binance.retrieveAllOpenOrders(binanceRest, tradingPair);
-                        const totalOpenAmountValue = exchangeLogic.calcCurrentOpenOrderAmount(currentOpenOrders);
-                        const amountToSpend =  exchangeLogic.checkIfNewOrderIsAllowed(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
-
-                        /*
-                            TODO: hier verder gaan: bepaal de volgende parameters: 
-                                quantity,
-                                orderPrice
-
-                                Doe het volgende:
-                                    1. orderbook ophalen en kijk net zolang tot je quantity gevuld is. 
-                                    2. Bouw methode bij 'logic.js' die hetvolgende teruggeeft: 'quantity', 'orderPrice'
-                        */
-                        binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair)
+                        // DOE IETS HIERO
                     } else if (realTimeTest === true) {
                          // STEP 3.B - Realtime TEST orders
                         const binanceTestRest = binance.generateBinanceRest(); 

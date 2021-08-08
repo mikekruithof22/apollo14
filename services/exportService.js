@@ -97,7 +97,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
     ];
 
     const workSheetColumnTwoNames = [
-        'DIVERGENCES',
+        'TOTAL TRADES',
         'SUCCESSFULL TRADES',
         'UNSUCCESSFULL TRADES',
         'UNABLE TO DECIDE TRADES - SAME CANDLE',
