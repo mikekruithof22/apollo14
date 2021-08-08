@@ -37,7 +37,6 @@ const createOrder = async (
     const customOrderId = binanceRest.generateNewOrderId();
     options['newClientOrderId'] = customOrderId;
 
-
     txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
 
     return binanceRest
@@ -98,6 +97,9 @@ const generateTestOrder = async (
         case OrderType.MARKETSELL:
             options = generateMarketSellOrderOptions(symbol, quantity);
             break;
+        // case OrderType.STOPLOSS:
+        //     options = generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
+        //     break;
         default:
             txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
             return;
@@ -174,7 +176,6 @@ const generateStopLossOrderOptions = (symbol, quantity, orderPrice, stopPrice) =
         price: orderPrice,
         stopPrice: stopPrice,
         quantity: quantity,
-        stopPrice: stopPrice,
         newOrderRespType: 'RESULT'
     }
     return options;
@@ -203,12 +204,26 @@ const generateMarketSellOrderOptions = (symbol, quantity) => {
     return options;
 }
 
+// ERROR:   response: '{"code":-1013,"msg":"Stop loss orders are not supported for this symbol."}'
+// const generateStopLossSellOrderOptions = (symbol, quantity, stopPrice) => {
+//     const options = {
+//         symbol: symbol,
+//         side: 'SELL',
+//         type: 'STOP_LOSS',
+//         quantity: quantity,
+//         stopPrice: stopPrice,
+//         newOrderRespType: 'RESULT'
+//     }
+//     return options;
+// }
+
 const OrderType = {
     LIMITSELL: 'Limit sell',
     LIMITBUY: 'Limit buy',
     STOPLOSSLIMIT: 'Stoploss limit',
     MARKETBUY: 'Market buy',
     MARKETSELL: 'Market sell',
+    STOPLOSS: 'Stop loss'
 }
 
 module.exports = {

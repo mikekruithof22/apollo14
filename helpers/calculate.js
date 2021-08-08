@@ -196,8 +196,11 @@ const calcTradeOutcomes = (excelFileContent, testWithHistoricalData, numberOffAp
     let amountOfUnsuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Unprofitable');
     amountOfUnsuccessfulTrades = amountOfUnsuccessfulTrades ? amountOfUnsuccessfulTrades : 0;
 
-    let amounfOfUnknownTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Unknown');
+    let amounfOfUnknownTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Unable to calculate');
     amounfOfUnknownTrades = amounfOfUnknownTrades ? amounfOfUnknownTrades : 0;
+
+    let amounfOfUnknownSameCandleTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'same candle');
+    amounfOfUnknownSameCandleTrades = amounfOfUnknownSameCandleTrades ? amounfOfUnknownSameCandleTrades : 0;
 
     console.log(`Of those trades ${amountOfSuccessfulTrades} would have been profitable`);
     console.log(`For ${amounfOfUnknownTrades} was it not possible to say if it would have been profitable`);
@@ -210,7 +213,10 @@ const calcTradeOutcomes = (excelFileContent, testWithHistoricalData, numberOffAp
         unsuccesfull: testWithHistoricalData === false
             ? `N/A`
             : `${amountOfUnsuccessfulTrades}`,
-        unable: testWithHistoricalData === false
+        unableSameCandle: testWithHistoricalData === false
+            ? `N/A`
+            : `${amounfOfUnknownSameCandleTrades}`,
+        unableUnknown: testWithHistoricalData === false
             ? `N/A`
             : `${amounfOfUnknownTrades}`,
         numberOffApiCalls: numberOffApiCalls,
