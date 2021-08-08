@@ -15,7 +15,7 @@ const calcCurrentOpenOrderAmount = (currentOpenOrders) => {
     return totalOpenAmountValue;
 }
 
-const checkIfNewOrderIsAllowed = (currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance) => {
+const calcAmountToSpend = (currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance) => {
     const currentAllowedOrderAmount = (currentFreeUSDTAmount / maxPercentageOffBalance) * 10;
     const amountToSpend = currentAllowedOrderAmount > maxUsdtBuyAmount
         ? maxUsdtBuyAmount
@@ -24,9 +24,9 @@ const checkIfNewOrderIsAllowed = (currentFreeUSDTAmount, maxUsdtBuyAmount, maxPe
     return amountToSpend;
 }
 
-const calcOrderAmountAndPrice = (bids, amountToSpend) => {
+const calcOrderAmountAndPrice = (bids, amountToSpend, currentFreeCryptoBalanceAmount = 0) => {
+    let amount = 0 + currentFreeCryptoBalanceAmount;
     let price = 0;
-    let amount = 0;
     let tmpAmount = 0;
 
     for (var i = 0; i < bids.length; i++) {
@@ -69,7 +69,7 @@ const bidsToObject = (bids) => {
 
 module.exports = {
     calcCurrentOpenOrderAmount,
-    checkIfNewOrderIsAllowed,
+    calcAmountToSpend,
     calcOrderAmountAndPrice,
     bidsToObject
 };
