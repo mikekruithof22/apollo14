@@ -39,7 +39,7 @@ const checkConfigData = (config) => {
         Don't forget to buy the REAL Bitcoin!
         ------------------------------------------------`;
         closeProgram = true;
-        console.log(configCheck.message);
+        console.log(message);
     }
 
     return {
