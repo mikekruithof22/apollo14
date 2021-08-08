@@ -145,7 +145,7 @@ const calculateBullishHistoricalDivergences = (
                         startRsiValue: compareWithRsiValue,
                         endingCandle: candleList[currentCandleIndex],
                         endiRsiValue: currentRsiValue,
-                        balance: balance, 
+                        balance: isNaN(balance) ? 'Unknown' : balance, 
                         stopLossMsg: stopLossMessage,
                         orderConditionName: orderConditionName,
                         totalCandles: currentCandleIndex - compareWithCandleIndex
