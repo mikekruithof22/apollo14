@@ -33,6 +33,7 @@ async function runInTerminal() {
     const realTimeTest = config.test.realTimeTest;
     const testWithHistoricalData = config.test.testWithHistoricalData;
     const candleAmountToLookIntoTheFuture = config.test.candleAmountToLookIntoTheFuture;
+    const testStartBalance = config.test.startBalance; // TODO: config werkend maken
 
     const generateExcelFile = config.generateExcelFile;
     const orderConditions = config.orderConditions;
@@ -162,6 +163,8 @@ async function runInTerminal() {
             }
         }
     };
+
+  
          
     // STEP 4 - Generate/update Excel file 
     if (generateExcelFile === true && excelFileContent.length >= 1) {

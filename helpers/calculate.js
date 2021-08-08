@@ -91,6 +91,7 @@ const calculateBullishHistoricalDivergences = (
     const consoleLogSteps = config.test.consoleLogSteps;
 
     let bullishDivergenceCandles = [];
+    let balance = 1000;
 
     for (var i = startCount; i < closePriceList.length; i++) {
         const currentCandle = closePriceList[closePriceList.length - i];
@@ -130,10 +131,13 @@ const calculateBullishHistoricalDivergences = (
                     const firstIndex = currentCandleIndex + 1;
                     const lastIndex = firstIndex + candleAmountToLookIntoTheFuture;
                     const nextCandlesAfterHit = candleList.slice(firstIndex, lastIndex);
-                    const stopLossMessage = stopLoss.stopLossCalculation(candleList[currentCandleIndex], nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage);
+                    const stopLossResult = stopLoss.stopLossCalculation(candleList[currentCandleIndex], nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage);
 
+                    const stopLossMessage = stopLossResult.message;
                     const highestNextCandleAfterHit = stopLoss.findHighestCandle(nextCandlesAfterHit);
                     const lowestCandleAfterHit = stopLoss.findLowestCandle(nextCandlesAfterHit);
+
+                    balance = balance * (1 + stopLossResult.profitOrLossPercentage); 
 
                     let obj = {
                         id: candleList[compareWithCandleIndex].openTime,
@@ -141,8 +145,7 @@ const calculateBullishHistoricalDivergences = (
                         startRsiValue: compareWithRsiValue,
                         endingCandle: candleList[currentCandleIndex],
                         endiRsiValue: currentRsiValue,
-                        highestNextCandle: highestNextCandleAfterHit,
-                        lowestCandle: lowestCandleAfterHit,
+                        balance: balance, 
                         stopLossMsg: stopLossMessage,
                         orderConditionName: orderConditionName,
                         totalCandles: currentCandleIndex - compareWithCandleIndex

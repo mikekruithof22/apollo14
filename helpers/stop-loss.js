@@ -2,28 +2,35 @@ const config = require('../config.json');
 
 const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage) => {
     let message;
+    let sellResult;
+
+    const takeLossPercentageInPercentage = takeLossPercentage / 100;
+    const takeLossPrice = (1 - takeLossPercentageInPercentage) * startCandle.close;
+
+    const takeProfitPercentageInPercentage = takeProfitPercentage / 100;
+    const takeProfitPrice = (1 + takeProfitPercentageInPercentage) * startCandle.close;
 
     for (var i = 0; i < nextCandlesAfterHit.length; i++) {
-        // In case of loss, check the "lowest"
-        const lossPercentage = calculatePercentageChange(startCandle.close, nextCandlesAfterHit[i].low);
-        // In case of profit, check the "highest",
-        const profitPercentage = calculatePercentageChange(startCandle.close, nextCandlesAfterHit[i].high);
-
-        if (lossPercentage >= takeLossPercentage && profitPercentage >= takeProfitPercentage) {
-            message = `Unknown - Profit limit and sell limit occured inside the same candle`;
+        let comparisonCandle = Object.assign({}, nextCandlesAfterHit[i]);
+        if (comparisonCandle.low <= takeLossPrice && comparisonCandle.high >= takeProfitPrice) {
+            message = `Unknown - Profit limit and sell limit occured inside the same candle.`;
             break;
-        } else if (profitPercentage >= takeProfitPercentage) {
-            message = `Profitable - Sold for: ${nextCandlesAfterHit[i].high} at ${nextCandlesAfterHit[i].closeTime}`;
+        } else if (comparisonCandle.high >= takeProfitPrice) {
+            message = `Profitable - After ${i} candles sold for: ${takeProfitPrice} at ${nextCandlesAfterHit[i].openTime}`;
+            sellResult = takeProfitPercentageInPercentage;
             break;
-        } else if (lossPercentage >= takeLossPercentage) {
-            message = `Unprofitable - Sold for: ${nextCandlesAfterHit[i].low} at ${nextCandlesAfterHit[i].closeTime}`;
+        } else if (comparisonCandle.low <= takeLossPrice) {
+            message = `Unprofitable -  After ${i} candles sold for: ${takeLossPrice} at ${nextCandlesAfterHit[i].openTime}`;
+            sellResult = - takeLossPercentageInPercentage;
             break;
         } else {
             message = `Unknown - Unable to calculate`;
         }
-
     }
-    return message;
+    return {
+        message: message,
+        profitOrLossPercentage: sellResult
+    };
 }
 
 const findHighestCandle = (nextCandlesAfterHit) => {
@@ -53,20 +60,6 @@ const findLowestCandle = (nextCandlesAfterHit) => {
     }
 
     return message;
-}
-
-const calculatePercentageChange = (a, b) => {
-    let percent;
-    if (b !== 0) {
-        if (a !== 0) {
-            percent = (b - a) / a * 100;
-        } else {
-            percent = b * 100;
-        }
-    } else {
-        percent = - a * 100;
-    }
-    return percent;
 }
 
 module.exports = {

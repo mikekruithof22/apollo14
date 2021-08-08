@@ -48,8 +48,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
             '',
             data.totalCandles,
             '',
-            data.highestNextCandle,
-            data.lowestCandle,
+            data.balance,
             data.stopLossMsg
         ];
     });
@@ -91,8 +90,7 @@ const exportHistoricalTest = (data, metaDataContent) => {
         ' * ',
         'CANDLES DIFFERENCE',
         ' * ',
-        'HIGHEST NEXT CANDLE',
-        'LOWEST NEXT CANDLE',
+        'BALANCE',
         'MOST LIKELY OUTCOME'
     ];
 

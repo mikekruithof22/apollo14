@@ -55,7 +55,7 @@ const calcOrderAmountAndPrice = (bids, amountToSpend, currentFreeCryptoBalanceAm
 
 const calcProfitPrice = (buyOrderPrice, takeProfitPercentage) => {
     const percentage = (takeProfitPercentage / 100) + 1;
-    let limitOrderPrice = buyOrderPrice * percentage
+    let limitOrderPrice = buyOrderPrice * percentage;
     return limitOrderPrice.toFixed(5);
 }
 
