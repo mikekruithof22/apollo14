@@ -2,6 +2,8 @@ const binanceOrder = require('./binance/order');
 const binance = require('./binance/binance');
 const exchangeLogic = require('./binance/logic');
 const LogLevel = require('./helpers/txt-logger').LogLevel;
+const txtLogger = require('./helpers/txt-logger');
+
 
 
 const config = require('./config.json');
@@ -103,9 +105,23 @@ async function runTestOrderScript() {
 
     // STEP 3 - Create buy order (and wait until it has been filled for several seconds?)
     txtLogger.writeToLogFile(`STEP 3 - Create buy order`);
-    const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
+    // const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
+    const buyOrder =  {
+        "symbol": "BTCUSDT",
+        "orderId": 28,
+        "orderListId": -1, //Unless OCO, value will be -1
+        "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+        "transactTime": 1507725176595,
+        "price": "125.00000000",
+        "origQty": "10.00000000",
+        "executedQty": "10.00000000",
+        "cummulativeQuoteQty": "10.00000000",
+        "status": "FILLED",
+        "timeInForce": "GTC",
+        "type": "MARKET",
+        "side": "SELL"
+    }
 
-    
     /*  TESTMIKE HIERO VERDER GAAN!
         TODO: alles is klaar, nu alleen nog maar de order inleggen. 
 
@@ -118,7 +134,11 @@ async function runTestOrderScript() {
     */
 
     // STEP 4 - Create stoploss and sell order 
-    // orderAmount moet huidige free balance zijn       
+    // orderAmount moet huidige free balance zijn  
+    if (buyOrder.price === undefined) {
+        txtLogger.writeToLogFile(`Program closed because 'buyOrder.price' is undefined`);
+        return;
+    }     
     const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
     const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
  
@@ -127,28 +147,25 @@ async function runTestOrderScript() {
     const stopLossLimitOrder = await binanceOrder.createOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, orderAmount, orderPrice);
 
 
-    takeProfitPercentage
-takeLossPercentage
-
 
 
 
     console.log(`--------------- ACOUNT AND BALANCE STUFF ---------------`);
 
-    console.log('currentOpenOrders');
-    console.log(currentOpenOrders);
-    console.log('totalOpenAmountValue');
-    console.log(totalOpenAmountValue);
-    console.log('amountToSpend');
-    console.log(amountToSpend);
+    console.log('buyOrder');
+    console.log(buyOrder);
+    console.log('sellOrder');
+    console.log(sellOrder);
+    console.log('stopLossLimitOrder');
+    console.log(stopLossLimitOrder);
     // console.log('currentOrderBook');
     // console.log(currentOrderBook);
     // console.log('currentOrderBookBids');
     // console.log(currentOrderBookBids);
-    console.log('orderAndAmount.price');
-    console.log(orderAndAmount.price);
-    console.log('orderAndAmount.amount');
-    console.log(orderAndAmount.amount);
+    // console.log('orderAndAmount.price');
+    // console.log(orderAndAmount.price);
+    // console.log('orderAndAmount.amount');
+    // console.log(orderAndAmount.amount);
 
 
 }
