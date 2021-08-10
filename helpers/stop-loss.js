@@ -2,13 +2,14 @@ const config = require('../config.json');
 
 const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage) => {
     let message;
-    let sellResult;
+    let sellResult = 0;
 
     const takeLossPercentageInPercentage = takeLossPercentage / 100;
     const takeLossPrice = (1 - takeLossPercentageInPercentage) * startCandle.close;
 
     const takeProfitPercentageInPercentage = takeProfitPercentage / 100;
-    const takeProfitPrice = (1 + takeProfitPercentageInPercentage) * startCandle.close;
+    let takeProfitPrice = (1 + takeProfitPercentageInPercentage) * startCandle.close;
+    takeProfitPrice = takeProfitPrice.toFixed(5)
 
     for (var i = 0; i < nextCandlesAfterHit.length; i++) {
         let comparisonCandle = Object.assign({}, nextCandlesAfterHit[i]);
@@ -24,7 +25,7 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
             sellResult = - takeLossPercentageInPercentage;
             break;
         } else {
-            message = `Unknown - Unable to calculate`;
+            message = `UNKOWN - UNABLE TO CALCULATE!`;
         }
     }
     return {

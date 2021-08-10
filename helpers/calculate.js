@@ -91,7 +91,6 @@ const calculateBullishHistoricalDivergences = (
     const consoleLogSteps = config.test.consoleLogSteps;
 
     let bullishDivergenceCandles = [];
-    let balance = 1000;
 
     for (var i = startCount; i < closePriceList.length; i++) {
         const currentCandle = closePriceList[closePriceList.length - i];
@@ -131,13 +130,6 @@ const calculateBullishHistoricalDivergences = (
                     const firstIndex = currentCandleIndex + 1;
                     const lastIndex = firstIndex + candleAmountToLookIntoTheFuture;
                     const nextCandlesAfterHit = candleList.slice(firstIndex, lastIndex);
-                    const stopLossResult = stopLoss.stopLossCalculation(candleList[currentCandleIndex], nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage);
-
-                    const stopLossMessage = stopLossResult.message;
-                    const highestNextCandleAfterHit = stopLoss.findHighestCandle(nextCandlesAfterHit);
-                    const lowestCandleAfterHit = stopLoss.findLowestCandle(nextCandlesAfterHit);
-
-                    balance = balance * (1 + stopLossResult.profitOrLossPercentage); 
 
                     let obj = {
                         id: candleList[compareWithCandleIndex].openTime,
@@ -145,10 +137,10 @@ const calculateBullishHistoricalDivergences = (
                         startRsiValue: compareWithRsiValue,
                         endingCandle: candleList[currentCandleIndex],
                         endiRsiValue: currentRsiValue,
-                        balance: isNaN(balance) ? 'Unknown' : balance, 
-                        stopLossMsg: stopLossMessage,
                         orderConditionName: orderConditionName,
-                        totalCandles: currentCandleIndex - compareWithCandleIndex
+                        totalCandles: currentCandleIndex - compareWithCandleIndex,
+                        nextCandlesAfterHit: nextCandlesAfterHit,
+                        startCandle: candleList[currentCandleIndex]
                     }
 
                     bullishDivergenceCandles.push(obj);
@@ -166,7 +158,38 @@ const calculateBullishHistoricalDivergences = (
         .map(id => {
             return bullishDivergenceCandles.find(a => a.id === id)
         });
-    return uniquebullishDivergenceCandles;
+    const candleInfo = uniquebullishDivergenceCandles.reverse();
+    const finalCandles = addBalanceCalcProperties(candleInfo, takeLossPercentage, takeProfitPercentage);
+    return finalCandles;
+}
+
+const addBalanceCalcProperties = (candleInfo, takeLossPercentage, takeProfitPercentage) => {
+    let balance = 1000;
+
+    let bullishDivergenceCandles = [];
+
+    for (var i = 0; i < candleInfo.length; i++) {
+
+        const stopLossResult = stopLoss.stopLossCalculation(candleInfo[i].startCandle, candleInfo[i].nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage);
+        const stopLossMessage = stopLossResult.message;
+        balance = balance * (1 + stopLossResult.profitOrLossPercentage);
+        let obj = {
+            id: candleInfo[i].id,
+            startWithCandle: candleInfo[i].startWithCandle,
+            startRsiValue: candleInfo[i].startRsiValue,
+            endingCandle: candleInfo[i].endingCandle,
+            endiRsiValue: candleInfo[i].endiRsiValue,
+            balance: isNaN(balance) ? 1000 : balance,
+            stopLossMsg: stopLossMessage,
+            orderConditionName: candleInfo[i].orderConditionName,
+            totalCandles: candleInfo[i].totalCandles,
+
+        }
+
+        bullishDivergenceCandles.push(obj);
+        obj = {};
+    }
+    return bullishDivergenceCandles;
 }
 
 const calculatePercentageChange = (a, b) => {
