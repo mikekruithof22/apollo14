@@ -22,7 +22,7 @@ async function runTestInTerminal() {
     const generateExcelFile = config.generateExcelFile;
     const orderConditions = config.orderConditions;
 
-    // STEP 3 - Retrieve RSI & calculate bullish divergence
+    // STEP 3 - Retrieve RSI & calculate bullish divergence foreach order condition
     for await (let order of orderConditions) {
         const orderConditionName = order.name;
         const tradingPair = order.tradingPair;

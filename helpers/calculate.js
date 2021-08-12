@@ -9,14 +9,8 @@ const calculateBullishDivergence = (
     stopCount,
     rsiMinimumRisingPercentage,
     candleMinimumDeclingPercentage,
-    orderConditionName,
-    enableCreateOrders
-
+    orderConditionName
 ) => {
-    const consoleLogSteps = config.test.consoleLogSteps;
-
-    let bullishDivergenceCandles = [];
-
     for (var i = startCount; i < closePriceList.length; i++) {
         const mostRecentCandle = closePriceList[closePriceList.length - 1];
         const mostRecenCandleIndex = closePriceList.length - 1;
@@ -39,20 +33,14 @@ const calculateBullishDivergence = (
 
             // STEP 2 - calculate priceListDelta
             const closePriceChange = calculatePercentageChange(compareWithCandle, mostRecentCandle);
-            if (consoleLogSteps === true) {
-                showCalculationLoging(compareWithRsiValue, mostRecentRsiValue, compareWithCandle, mostRecentCandle, i, rsiChange, closePriceChange);
-            }
+
             // STEP 3 - determine if there is a bullish divergence
             if (
                 rsiChange >= rsiMinimumRisingPercentage &&
                 closePriceChange <= candleMinimumDeclingPercentage &&
                 candleList !== undefined
             ) {
-                if (consoleLogSteps === true) {
-                    console.log('JACKPOT! - <<<<< BullishDivergence - BullishDivergence - BullishDivergence >>>>> - JACKPOT!');
-                }
-
-                let obj = {
+                return obj = {
                     startWithCandle: candleList[compareWithCandleIndex],
                     startRsiValue: compareWithRsiValue,
                     endingCandle: candleList[mostRecenCandleIndex],
@@ -60,19 +48,11 @@ const calculateBullishDivergence = (
                     orderConditionName: orderConditionName,
                     totalCandles: mostRecenCandleIndex - compareWithCandleIndex
                 }
-                bullishDivergenceCandles.push(obj);
-
-                // In case 'enableCreateOrders' is equal to 'true' immediately return
-                // so that you can create an order as fast as possible.
-                if (enableCreateOrders === true) {
-                    break;
-                }
             }
         } else {
             break;
         }
     }
-    return bullishDivergenceCandles;
 }
 
 const calculateBullishHistoricalDivergences = (

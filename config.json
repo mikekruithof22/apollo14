@@ -9,7 +9,6 @@
         "cancelOrderWhenUSDTValueIsBelow": 10   
     },
     "test": {
-        "realTimeTest": false,
         "testWithHistoricalData": true,
         "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 100,

@@ -8,6 +8,11 @@ const writeToLogFile = (message, logLevel = LogLevel.INFO) => {
     if (message.includes('Program started')) {
         message = `\n\n ${message}`;
     }
+
+    if (message.includes('Starting ordering logic method')) {
+        message = `\n ${message} \n`;
+    }
+
     return fs.appendFileSync(`${fileLocation}`, `${message}`)
 }
 
