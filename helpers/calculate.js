@@ -132,7 +132,7 @@ const calculateBullishHistoricalDivergences = (
                     const nextCandlesAfterHit = candleList.slice(firstIndex, lastIndex);
 
                     let obj = {
-                        id: candleList[compareWithCandleIndex].openTime,
+                        id: candleList[currentCandleIndex].openTime,
                         startWithCandle: candleList[compareWithCandleIndex],
                         startRsiValue: compareWithRsiValue,
                         endingCandle: candleList[currentCandleIndex],
@@ -182,8 +182,7 @@ const addBalanceCalcProperties = (candleInfo, takeLossPercentage, takeProfitPerc
             balance: isNaN(balance) ? 1000 : balance,
             stopLossMsg: stopLossMessage,
             orderConditionName: candleInfo[i].orderConditionName,
-            totalCandles: candleInfo[i].totalCandles,
-
+            totalCandles: candleInfo[i].totalCandles
         }
 
         bullishDivergenceCandles.push(obj);
@@ -215,7 +214,7 @@ const calcAmountOfSuccessfulTrades = (bullishDivergenceCandles, searchFor) => {
     return count;
 }
 
-const calcTradeOutcomes = (excelFileContent, testWithHistoricalData, numberOffApiCalls) => {
+const calcTradeOutcomes = (excelFileContent, numberOffApiCalls) => {
     let amountOfSuccessfulTrades = calcAmountOfSuccessfulTrades(excelFileContent, 'Profitable');
     amountOfSuccessfulTrades = amountOfSuccessfulTrades ? amountOfSuccessfulTrades : 0;
 
@@ -233,18 +232,10 @@ const calcTradeOutcomes = (excelFileContent, testWithHistoricalData, numberOffAp
 
     const metaDataContent = [{
         amount: `${excelFileContent.length}`,
-        succesfull: testWithHistoricalData === false
-            ? `N/A`
-            : `${amountOfSuccessfulTrades}`,
-        unsuccesfull: testWithHistoricalData === false
-            ? `N/A`
-            : `${amountOfUnsuccessfulTrades}`,
-        unableSameCandle: testWithHistoricalData === false
-            ? `N/A`
-            : `${amounfOfUnknownSameCandleTrades}`,
-        unableUnknown: testWithHistoricalData === false
-            ? `N/A`
-            : `${amounfOfUnknownTrades}`,
+        succesfull: `${amountOfSuccessfulTrades}`,
+        unsuccesfull: `${amountOfUnsuccessfulTrades}`,
+        unableSameCandle: `${amounfOfUnknownSameCandleTrades}`,
+        unableUnknown: `${amounfOfUnknownTrades}`,
         numberOffApiCalls: numberOffApiCalls,
         configuration: JSON.stringify(config)
     }];

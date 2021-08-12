@@ -1,6 +1,5 @@
 .env
 node_modules
 logs
-testRunLogs
-realTimeTestLogs
+testLogs
 production-logs

@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const exportTestExcel = (data, dataSecondSheet, workSheetColumnNames, workSheetColumnTwoNames) => {
-    const filePath = generateFileNameAndDirectory('testRunLogs');
+    const filePath = generateFileNameAndDirectory('testLogs');
 
     const workBook = xlsx.utils.book_new();
     const workSheetOneData = [
@@ -107,67 +107,6 @@ const exportHistoricalTest = (data, metaDataContent) => {
     exportTestExcel(dataFirstSheet, dataSecondSheet, workSheetColumnOneNames, workSheetColumnTwoNames);
 }
 
-const exportRealTimeTest = (data) => {
-    const dataFirstSheet = data.map(data => {
-        return [
-            data.candle.orderConditionName,
-            '',
-            data.candle.startWithCandle.openTime,
-            data.candle.startWithCandle.open,
-            data.candle.startRsiValue,
-            '',
-            data.candle.endingCandle.openTime,
-            data.candle.endingCandle.open,
-            data.candle.endiRsiValue,
-            '',
-            data.testOrder.message,
-            data.testOrder.time,
-            data.testOrder.symbol,
-            data.testOrder.side,
-            data.testOrder.type,
-            data.testOrder.newClientOrderId,
-            data.testOrder.response
-        ];
-    });
-
-    const workSheetColumnNames = [
-        'ORDER NAME',
-        ' * ',
-        'FIRST CANDLE',
-        'OPEN',
-        'RSI',
-        ' * ',
-        'SECOND CANDLE',
-        'OPEN',
-        'RSI',
-        ' * ',
-        'MESSAGE',
-        'CREATED TIME',
-        'SYMBOL',
-        'SIDE',
-        'TYPE',
-        'ORDERID',
-        'RESPONSE'
-    ];
-
-    exportRealTimeTestExcel(dataFirstSheet, workSheetColumnNames);
-}
-
-const exportRealTimeTestExcel = (data, workSheetColumnNames) => {
-    const filePath = generateFileNameAndDirectory('realTimeTestLogs');
-
-    const workBook = xlsx.utils.book_new();
-    const workSheetOneData = [
-        workSheetColumnNames,
-        ...data
-    ];
-
-    const workSheet = xlsx.utils.aoa_to_sheet(workSheetOneData);
-    xlsx.utils.book_append_sheet(workBook, workSheet, 'Test orders');
-    xlsx.writeFile(workBook, path.resolve(filePath));
-
-}
-
 const generateFileNameAndDirectory = (directoryName) => {
     if (!fs.existsSync(`./${directoryName}`)) {
         fs.mkdir(`./${directoryName}`, (err) => {
@@ -182,5 +121,5 @@ const generateFileNameAndDirectory = (directoryName) => {
 
 module.exports = {
     exportHistoricalTest,
-    exportRealTimeTest
+
 };

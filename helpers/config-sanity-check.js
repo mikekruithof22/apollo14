@@ -1,4 +1,4 @@
-const checkConfigData = (config) => {
+const checkConfigData = (config, isTest = false) => {
     let message = `----- Roger Ver wants to say someting: -----`;
     let closeProgram = false;
 
@@ -9,18 +9,11 @@ const checkConfigData = (config) => {
                     are not allowed to be both true. `;
     }
 
-    if (config.production.active === true && config.test.realTimeTest === true) {
+    if (isTest && config.test.testWithHistoricalData === false) {
         message += `
-                    ERROR: The config values 
-                    "production.active" and "realTimeTest" 
-                    are not allowed to be both true. `;
-    }
-
-    if (config.test.realTimeTest === true && config.test.testWithHistoricalData === true) {
-        message += `
-                ERROR: The config values 
-                "realTimeTest" and "testWithHistoricalData" 
-                are not allowed to be both true. `;
+            ERROR: The config value
+            'testWithHistoricalData' 
+            is not equal to true therefor the program will quit. `;
     }
 
     const totalPercentageCountConfigured = calcTotalPercentageAmountOffOrders(config.orderConditions);
