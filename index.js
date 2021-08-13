@@ -29,6 +29,8 @@ async function runProgram() {
     const brokerApiUrl = config.brokerApiUrl;
     const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
     const orderConditions = config.orderConditions;
+    const minimumUSDTorderAmount = config.production.minimumUSDTorderAmount;
+    const cancelOrderWhenUSDTValueIsBelow = config.production.cancelOrderWhenUSDTValueIsBelow;
 
     // STEP 3 - Retrieve RSI & calculate bullish divergence foreach order condition
     txtLogger.writeToLogFile(`Checking bullish divergence foreach order condition`);
@@ -72,7 +74,11 @@ async function runProgram() {
 
             txtLogger.writeToLogFile(`Bullish divergence detected ${orderConditionName}.`);
             txtLogger.writeToLogFile(`${JSON.stringify(bullishDivergenceCandle)}`);
-            orderingLogic(order);
+            orderingLogic(
+                order,
+                minimumUSDTorderAmount,
+                cancelOrderWhenUSDTValueIsBelow
+            );
         } else {
             txtLogger.writeToLogFile(`No bullish divergence detected for ${orderConditionName}.`);
         }
@@ -85,21 +91,86 @@ async function runProgram() {
     }
 }
 
-async function orderingLogic(order) {
+async function orderingLogic(
+    order,
+    minimumUSDTorderAmount,
+    cancelOrderWhenUSDTValueIsBelow
+) {
     txtLogger.writeToLogFile(`Starting ordering logic method`);
 
     // STEP I. Prepare config.json order data 
-    const orderConditionName = order.name;
     const tradingPair = order.tradingPair;
     const takeProfitPercentage = order.order.takeProfitPercentage;
     const takeLossPercentage = order.order.takeLossPercentage;
+    const maxUsdtBuyAmount = order.order.maxUsdtBuyAmount;
+    const maxPercentageOffBalance = order.order.maxPercentageOffBalance;
 
-    // STEP II. bla bla bla bla bla bla bla bla bla bl
+    const checkOrderStatusMaxRetryCount = order.order.checkOrderStatusMaxRetryCount;
+    const checkOrderStatusRetryTime = order.order.checkOrderStatusRetryTime;
+
+    // STEP II. Check open orders & cancel or close orders if necessary
     const binanceRest = binance.generateBinanceRest();
-    /* 
-        TODO: hier de logic van 'test-order.js' neerzetten zodat Ronald ver kan gaan. 
+
+    const currentOpenOrders = await binance.retrieveAllOpenOrders(binanceRest, tradingPair);
+    txtLogger.writeToLogFile(`Current open orders lengt is equal to: ${currentOpenOrders.length}`);
+    txtLogger.writeToLogFile(`Current open order details: ${JSON.stringify(currentOpenOrders)}`);
+    if (currentOpenOrders.length >= 1) {
+        // TODO: hier cancelen en/of posities sluiten
+        // if(currentOpenOrders.length >= 1) {
+        //     currentOpenOrders.forEach(order => {
+        //         if (cancelOrderWhenUSDTValueIsBelow)
+
+        //     });
+        // }
+    }
+
+    // STEP III. Check currrent free USDT trade balance
+    const balance = await binance.getAccountBalances(binanceRest);
+
+    const currentUSDTBalance = parseFloat(balance.find(b => b.asset === 'USDT'));
+    currentFreeUSDTAmount = currentUSDTBalance.free;
+    txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
+
+    if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
+        txtLogger.writeToLogFile(`Program quit because:`);
+        txtLogger.writeToLogFile(`Current free USDT trade amount - ${currentFreeUSDTAmount} - is lower than the minimum configured ${minimumUSDTorderAmount}.`);
+        return;
+    }
+
+    const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
+    txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
+
+    // STEP IV. Retrieve bid prices
+    const currentOrderBook = await binance.getOrderBook(binanceRest, tradingPair);
+    const currentOrderBookBids = exchangeLogic.bidsToObject(currentOrderBook.bids);
+
+    // STEP V. Determine how much you can spend at which price based on the order book
+    const orderPriceAndAmount = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend);
+    const orderPrice = orderPriceAndAmount.price;
+    const orderAmount = orderPriceAndAmount.amount;
+    txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
+    txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
+
+    // STEP VI. Create the order 
+    const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
+
+
+    // STEP VII. MAKE SURE THE BUY ORDER IS FILLED OF IETS DERGELIJKS!
+
+
+    // STEP VIII. Create a stoploss and a sell order
+    const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
+    const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
+    const sellOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITSELL, tradingPair, orderAmount, orderPrice);
+    const stopLossLimitOrder = await binanceOrder.createOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, orderAmount, orderPrice);
+
+
+    // STEP VII. 
+    /*  
+        MAKE SURE THAT:
+            A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
+            b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
     */
-   
 
 }
 
