@@ -30,7 +30,7 @@ const calcOrderAmountAndPrice = (bids, amountToSpend, currentFreeCryptoBalanceAm
     let tmpAmount = 0;
 
     for (var i = 0; i < bids.length; i++) {
-        let breakOutOfFirstLoop = false;
+        let breakOutOfLoop = false;
         for (var j = 0; j <= i; j++) {
             amount = amount + bids[j].amount;
             tmpAmount = amount * bids[i].price;
@@ -40,7 +40,7 @@ const calcOrderAmountAndPrice = (bids, amountToSpend, currentFreeCryptoBalanceAm
                 break;
             }
         }
-        if (breakOutOfFirstLoop) {
+        if (breakOutOfLoop) {
             break;
         }
     }
@@ -96,8 +96,7 @@ const determineOrderFilled = async (
     let retryCount = 0;
     while (orderFilled === false && retryCount < checkOrderStatusMaxRetryCount) {
         // params
-        var date = new Date();
-        var timestamp = date.getTime();
+        const timestamp = new Date().getTime();;
         // request
         const orderStatus = await binance.checkOrderStatus(binanceRest, tradingPair, clientOrderId, timestamp);
         switch (orderStatus.status) {

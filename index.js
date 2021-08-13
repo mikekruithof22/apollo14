@@ -105,7 +105,6 @@ async function orderingLogic(
     const takeLossPercentage = order.order.takeLossPercentage;
     const maxUsdtBuyAmount = order.order.maxUsdtBuyAmount;
     const maxPercentageOffBalance = order.order.maxPercentageOffBalance;
-
     const checkOrderStatusMaxRetryCount = order.order.checkOrderStatusMaxRetryCount;
     const checkOrderStatusRetryTime = order.order.checkOrderStatusRetryTime;
 
@@ -116,21 +115,19 @@ async function orderingLogic(
     txtLogger.writeToLogFile(`Current open orders lengt is equal to: ${currentOpenOrders.length}`);
     txtLogger.writeToLogFile(`Current open order details: ${JSON.stringify(currentOpenOrders)}`);
     if (currentOpenOrders.length >= 1) {
-        // TODO: hier cancelen en/of posities sluiten
-        // if(currentOpenOrders.length >= 1) {
-        //     currentOpenOrders.forEach(order => {
-        //         if (cancelOrderWhenUSDTValueIsBelow)
-
-        //     });
-        // }
+        currentOpenOrders.forEach(order => {
+            if (order.side === 'BUY') { // TODO: testmike, wil je ook niet stopLoss en verkoop orders cancelen?
+                const timestamp = new Date().getTime();
+                const oldOrderDetails = await binance.cancelOrder(binanceRest, tradingPair, order.orderId, timestamp);
+                txtLogger.writeToLogFile(`Canceled open BUY order for: ${oldOrderDetails.origClientOrderId}`);
+            }
+        });
     }
 
     // STEP III. Check currrent free USDT trade balance
     const balance = await binance.getAccountBalances(binanceRest);
-
     const currentUSDTBalance = parseFloat(balance.find(b => b.asset === 'USDT'));
     currentFreeUSDTAmount = currentUSDTBalance.free;
-
     txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
 
     if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
@@ -141,7 +138,7 @@ async function orderingLogic(
 
     // STEP IV. Check free amount off current crypto and add it later to the 'orderPriceAndAmount.amount'
     const currentCryptoPairBalance = parseFloat(balance.find(b => b.asset === tradingPair.replace('USDT', ''))) || 0;
-    currentCryptoPairAmount = typeof currentCryptoPairAmount === 'number'
+    currentCryptoPairAmount = !isNaN(currentCryptoPairBalance)
         ? currentCryptoPairBalance.free
         : 0;
 
@@ -186,6 +183,8 @@ async function orderingLogic(
             orderStatusAfterCreation
         );
         // TODO: wat is ie maar half gevuld is... Of op 95% na... 
+        // Ter info: de methode() determineOrderFilled heeft maar een x aantal rondes..
+        // na die rondes is nog niet per definitie alles gevuld. 
     }
 
 
@@ -209,6 +208,9 @@ async function orderingLogic(
 
                     Een stream opzetten of iets dergelijks?
                         - Per order krijg je dan een stream. Zie 'stream.js'
+
+                        ==> waarschijnlijk wil je die stream returnen!, mogelijk met een optie om over te gaan
+                        om alles te verkopen. Bijvoorbeeld nadat je te lang heb gewacht. Candles configuren in de config.json?
         */
 
         const iets = exchangeLogic.monitorSellAndStopLossOrder();
