@@ -1,4 +1,3 @@
-const dateHelper = require('../helpers/date');
 const api = require('binance');
 const txtLogger = require('../helpers/txt-logger');
 const LogLevel = require('../helpers/txt-logger').LogLevel;
@@ -17,15 +16,6 @@ require('dotenv').config();
         C.) Binance V3 (zelfde als GitHub, alleen dan slechter?)
             https://binance-docs.github.io/apidocs/spot/en/#change-log
 */
-
-/* TODO: hier wat order inleg gedachten. 
-   STEP 0 - 
-      Interval bepalen wanneer het programma draait, althans het gedeelte wat windows task schedular dat moet doen
-          ==> De laagste orderConditions.interval gaat het worden....
-          ==> dit moet een mens door door naar de config te kijken. 
-   */
-
-
 
 const generateBinanceRest = () => {
     const binanceRest = new api.BinanceRest({

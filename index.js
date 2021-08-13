@@ -6,7 +6,7 @@ const configChecker = require('./helpers/config-sanity-check');
 const txtLogger = require('./helpers/txt-logger');
 const binance = require('./binance/binance');
 const binanceOrder = require('./binance/order');
-const binancenStream = require('./binance/stream');
+const websocket = require('./binance/websocket');
 const exchangeLogic = require('./binance/logic');
 
 const LogLevel = require('./helpers/txt-logger').LogLevel;
@@ -216,6 +216,8 @@ async function orderingLogic(
         const iets = exchangeLogic.monitorSellAndStopLossOrder();
         //   
 
+       const websocketClient = websocket.generateWebsocketClient();
+    
     }
 }
 
