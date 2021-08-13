@@ -229,11 +229,22 @@ const OrderType = {
     STOPLOSS: 'Stop loss'
 }
 
+const orderStatus = {
+    CANCELED: 'CANCELED',
+    EXPIRED: 'EXPIRED',
+    FILLED: 'FILLED',
+    NEW: 'NEW',
+    PENDING_CANCEL: 'PENDING_CANCEL',
+    PARTIALLY_FILLED: 'PARTIALLY_FILLED',
+    REJECTED: 'REJECTED'
+}
+
 module.exports = {
     generateTestOrder,
     createOrder,
     generateLimitBuyOrderOptions,
     generateLimitSellOrderOptions,
     generateStopLossOrderOptions,
-    OrderType
+    OrderType,
+    orderStatus
 };

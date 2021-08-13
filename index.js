@@ -11,6 +11,7 @@ const exchangeLogic = require('./binance/logic');
 
 const LogLevel = require('./helpers/txt-logger').LogLevel;
 const OrderType = require('./binance/order').OrderType;
+const OrderStatus = require('./binance/order').OrderStatus;
 
 async function runProgram() {
     let foundAtLeastOneBullishDivergence = false;
@@ -129,49 +130,91 @@ async function orderingLogic(
 
     const currentUSDTBalance = parseFloat(balance.find(b => b.asset === 'USDT'));
     currentFreeUSDTAmount = currentUSDTBalance.free;
+
     txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
 
     if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
-        txtLogger.writeToLogFile(`Program quit because:`);
+        txtLogger.writeToLogFile(`Program quit the orderingLogic() method because:`);
         txtLogger.writeToLogFile(`Current free USDT trade amount - ${currentFreeUSDTAmount} - is lower than the minimum configured ${minimumUSDTorderAmount}.`);
         return;
     }
 
+    // STEP IV. Check free amount off current crypto and add it later to the 'orderPriceAndAmount.amount'
+    const currentCryptoPairBalance = parseFloat(balance.find(b => b.asset === tradingPair.replace('USDT', ''))) || 0;
+    currentCryptoPairAmount = typeof currentCryptoPairAmount === 'number'
+        ? currentCryptoPairBalance.free
+        : 0;
+
     const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
     txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
 
-    // STEP IV. Retrieve bid prices
+    // STEP V. Retrieve bid prices
     const currentOrderBook = await binance.getOrderBook(binanceRest, tradingPair);
     const currentOrderBookBids = exchangeLogic.bidsToObject(currentOrderBook.bids);
 
-    // STEP V. Determine how much you can spend at which price based on the order book
+    // STEP VI. Determine how much you can spend at which price based on the order book
     const orderPriceAndAmount = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend);
     const orderPrice = orderPriceAndAmount.price;
-    const orderAmount = orderPriceAndAmount.amount;
+    const orderAmount = orderPriceAndAmount.amount + currentCryptoPairAmount;
     txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
     txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
 
-    // STEP VI. Create the order 
+    // STEP VII. Create the order 
     const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
 
+    // STEP VIII. MAKE SURE THE BUY ORDER IS FILLED OF IETS DERGELIJKS!
+    txtLogger.writeToLogFile(`Buy order created. Details: `);
+    txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}`);
+    const orderStatusAfterCreation = buyOrder.status;
+    if (orderStatusAfterCreation === OrderStatus.REJECTED || orderStatusAfterCreation === OrderStatus.EXPIRED) {
+        txtLogger.writeToLogFile(`Program quit the orderingLogic() method because:`);
+        txtLogger.writeToLogFile(`The just created buy order status is equal to: ${orderStatusAfterCreation}`);
+        return;
+    }
 
-    // STEP VII. MAKE SURE THE BUY ORDER IS FILLED OF IETS DERGELIJKS!
+    let orderFilled = buyOrder.status === OrderStatus.FILLED;
+    if (orderFilled === false) {
+        txtLogger.writeToLogFile(`Order was not immediately filled after the creation`);
+        txtLogger.writeToLogFile(`Retry amount: ${checkOrderStatusMaxRetryCount}. Retry time ${checkOrderStatusRetryTime}`);
+
+        orderFilled = await exchangeLogic.determineOrderFilled(
+            binanceRest,
+            tradingPair,
+            buyOrder.clientOrderId,
+            checkOrderStatusMaxRetryCount,
+            checkOrderStatusRetryTime,
+            orderStatusAfterCreation
+        );
+        // TODO: wat is ie maar half gevuld is... Of op 95% na... 
+    }
 
 
-    // STEP VIII. Create a stoploss and a sell order
-    const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
-    const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
-    const sellOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITSELL, tradingPair, orderAmount, orderPrice);
-    const stopLossLimitOrder = await binanceOrder.createOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, orderAmount, orderPrice);
+    // STEP IX. Create a stoploss and a sell order    
+    if (orderFilled === true) {
+        const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
+        const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
+        const sellOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITSELL, tradingPair, orderAmount, orderPrice);
+        const stopLossLimitOrder = await binanceOrder.createOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, orderAmount, orderPrice);
 
 
-    // STEP VII. 
-    /*  
-        MAKE SURE THAT:
-            A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
-            b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
-    */
+        // STEP X. Monitor the stoploss and sell order. Once one got filled, the other one should be canceled.
+        /*  
+            MAKE SURE THAT:
+                A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
+                b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
 
+                TODO: hoe monitor ik dat dit gebeurt? 
+                    Peramanent een while loop laten draaien, het met gevaar dat deze methode 
+                    uren/dagen doorgaat.
+
+                    Een stream opzetten of iets dergelijks?
+                        - Per order krijg je dan een stream. Zie 'stream.js'
+        */
+
+        const iets = exchangeLogic.monitorSellAndStopLossOrder();
+        //   
+
+    }
 }
 
 

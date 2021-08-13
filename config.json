@@ -6,7 +6,7 @@
         "active": false,
         "createLogFileInterval": "dialy, weekly, hourly, etc.",
         "minimumUSDTorderAmount": 10,
-        "cancelOrderWhenUSDTValueIsBelow": 10   
+        "cancelOrderWhenUSDTValueIsBelow": 10
     },
     "test": {
         "testWithHistoricalData": true,
@@ -33,9 +33,10 @@
             "order": {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 1000,
+                "maxUsdtBuyAmount": 5000,
                 "maxPercentageOffBalance": 20,
-                "closePositionAfterAmountOfCandles": 500
+                "checkOrderStatusMaxRetryCount": 5,
+                "checkOrderStatusRetryTime": 2500
             }
         },
         {
@@ -56,9 +57,10 @@
             "order": {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 1000,
+                "maxUsdtBuyAmount": 5000,
                 "maxPercentageOffBalance": 20,
-                "closePositionAfterAmountOfCandles": 500
+                "checkOrderStatusMaxRetryCount": 5,
+                "checkOrderStatusRetryTime": 2500
             }
         },
         {
@@ -79,9 +81,10 @@
             "order": {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 1000,
+                "maxUsdtBuyAmount": 5000,
                 "maxPercentageOffBalance": 20,
-                "closePositionAfterAmountOfCandles": 500
+                "checkOrderStatusMaxRetryCount": 5,
+                "checkOrderStatusRetryTime": 2500
             }
         },
         {
@@ -102,9 +105,10 @@
             "order": {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 1000,
+                "maxUsdtBuyAmount": 5000,
                 "maxPercentageOffBalance": 20,
-                "closePositionAfterAmountOfCandles": 500
+                "checkOrderStatusMaxRetryCount": 5,
+                "checkOrderStatusRetryTime": 2500
             }
         },
         {
@@ -125,10 +129,11 @@
             "order": {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 1000,
+                "maxUsdtBuyAmount": 5000,
                 "maxPercentageOffBalance": 20,
-                "closePositionAfterAmountOfCandles": 500
+                "checkOrderStatusMaxRetryCount": 5,
+                "checkOrderStatusRetryTime": 2500
             }
-        }   
+        }
     ]
 }
