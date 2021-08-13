@@ -1,14 +1,14 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
-    "numberOfCandlesToRetrieve": 1000,
-    "generateExcelFile": true,
     "production": {
+        "numberOfCandlesToRetrieve": 50, 
         "active": false,
-        "createLogFileInterval": "dialy, weekly, hourly, etc.",
         "minimumUSDTorderAmount": 10,
         "cancelOrderWhenUSDTValueIsBelow": 10
     },
     "test": {
+        "numberOfCandlesToRetrieve": 1000,
+        "generateExcelFile": true,
         "testWithHistoricalData": true,
         "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 100,

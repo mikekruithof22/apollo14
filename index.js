@@ -28,7 +28,7 @@ async function runProgram() {
 
     // STEP 2 - Prepare configuration data
     const brokerApiUrl = config.brokerApiUrl;
-    const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+    const numberOfCandlesToRetrieve = config.production.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
     const orderConditions = config.orderConditions;
     const minimumUSDTorderAmount = config.production.minimumUSDTorderAmount;
     const cancelOrderWhenUSDTValueIsBelow = config.production.cancelOrderWhenUSDTValueIsBelow;

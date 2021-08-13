@@ -17,9 +17,9 @@ async function runTestInTerminal() {
 
     // STEP 2 - Prepare configuration data 
     const brokerApiUrl = config.brokerApiUrl;
-    const numberOfCandlesToRetrieve = config.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+    const numberOfCandlesToRetrieve = config.test.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
     const candleAmountToLookIntoTheFuture = config.test.candleAmountToLookIntoTheFuture;
-    const generateExcelFile = config.generateExcelFile;
+    const generateExcelFile = config.test.generateExcelFile;
     const orderConditions = config.orderConditions;
 
     // STEP 3 - Retrieve RSI & calculate bullish divergence foreach order condition
