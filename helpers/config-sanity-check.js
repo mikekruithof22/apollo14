@@ -16,17 +16,6 @@ const checkConfigData = (config, isTest = false) => {
             is not equal to true therefor the program will quit. `;
     }
 
-    const totalPercentageCountConfigured = calcTotalPercentageAmountOffOrders(config.orderConditions);
-
-    // TODO: dit wil je mogelijk niet, zie opmerking van Erik: 30 coins bepaalde configuratie
-    // if (totalPercentageCountConfigured > 100) {
-    //     message += `
-    //         ERROR: The total amount off all 
-    //         'maxPercentageOffBalance' values is larger than 100%.
-    //         The current total is right now: ${totalPercentageCountConfigured}%.`;
-    //     closeProgram = true;
-    // }
-
     if (message.includes('ERROR')) {
         message += `
         The program closed after the config.json file was checked.

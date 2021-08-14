@@ -70,7 +70,6 @@ async function runProgram() {
             orderConditionName
         );
 
-        
         if (bullishDivergenceCandle !== undefined) {
             foundAtLeastOneBullishDivergence = true;
 
@@ -127,8 +126,8 @@ async function orderingLogic(
 
     // STEP III. Check currrent free USDT trade balance
     const balance = await binance.getAccountBalances(binanceRest);
-    const currentUSDTBalance = parseFloat(balance.find(b => b.asset === 'USDT'));
-    currentFreeUSDTAmount = currentUSDTBalance.free;
+    const currentUSDTBalance = balance.find(b => b.asset === 'USDT');
+    currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free);
     txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
 
     if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
@@ -139,7 +138,7 @@ async function orderingLogic(
 
     // STEP IV. Check free amount off current crypto and add it later to the 'orderPriceAndAmount.amount'
     const currentCryptoPairBalance = parseFloat(balance.find(b => b.asset === tradingPair.replace('USDT', ''))) || 0;
-    currentCryptoPairAmount = !isNaN(currentCryptoPairBalance)
+    currentRemainingCryptoPairAmount = !isNaN(currentCryptoPairBalance)
         ? currentCryptoPairBalance.free
         : 0;
 
@@ -153,7 +152,7 @@ async function orderingLogic(
     // STEP VI. Determine how much you can spend at which price based on the order book
     const orderPriceAndAmount = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend);
     const orderPrice = orderPriceAndAmount.price;
-    const orderAmount = orderPriceAndAmount.amount + currentCryptoPairAmount;
+    const orderAmount = orderPriceAndAmount.amount;
     txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
     txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
 

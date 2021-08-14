@@ -16,11 +16,10 @@ const calcCurrentOpenOrderAmount = (currentOpenOrders) => {
 }
 
 const calcAmountToSpend = (currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance) => {
-    const currentAllowedOrderAmount = (currentFreeUSDTAmount / maxPercentageOffBalance) * 10;
+    const currentAllowedOrderAmount = currentFreeUSDTAmount * (maxPercentageOffBalance / 100);
     const amountToSpend = currentAllowedOrderAmount > maxUsdtBuyAmount
         ? maxUsdtBuyAmount
         : currentAllowedOrderAmount;
-
     return amountToSpend;
 }
 
