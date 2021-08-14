@@ -60,7 +60,7 @@ const getAccountBalances = async (binanceRest) => {
         .then(response => {
             return response.balances;
         }).catch(err => {
-            txtLogger.writeToLogFile(`Method: getAccountBalances() ${err}`, LogLevel.ERROR);
+            txtLogger.writeToLogFile(`getAccountBalances() ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
     /*
         Example response:
@@ -102,7 +102,7 @@ const getOrderBook = async (binanceRest, symbol) => {
         .then(response => {
             return response;
         }).catch(err => {
-            txtLogger.writeToLogFile(`Method: getOrderBook() ${err}`, LogLevel.ERROR);
+            txtLogger.writeToLogFile(` getOrderBook() ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
     /*  Example response::
         {
@@ -132,7 +132,7 @@ const retrieveAllOpenOrders = async (binanceRest, symbol) => {
         .then(response => {
             return response;
         }).catch(err => {
-            txtLogger.writeToLogFile(`Method: retrieveAllOpenOrders() ${err}`, LogLevel.ERROR);
+            txtLogger.writeToLogFile(` retrieveAllOpenOrders() ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
     /*
   Example response:
@@ -174,7 +174,7 @@ const checkOrderStatus = async (binanceRest, symbol, orderId, timestamp) => {
         .then(response => {
             return response;
         }).catch(err => {
-            txtLogger.writeToLogFile(`Method: checkOrderStatus() ${err}`, LogLevel.ERROR);
+            txtLogger.writeToLogFile(` checkOrderStatus() ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
     /*  Example response::
         {
@@ -212,7 +212,7 @@ const cancelOrder = async (binanceRest, symbol, orderId, timestamp) => {
             txtLogger.writeToLogFile(`CancelOrder() ${response}`, LogLevel.INFO);
             return response;
         }).catch(err => {
-            txtLogger.writeToLogFile(`Method: cancelOrder() ${err}`, LogLevel.ERROR);
+            txtLogger.writeToLogFile(` cancelOrder() ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
 
     /*
