@@ -45,10 +45,9 @@ const createOrder = async (
     return binanceRest
         .newOrder(options)
         .then(response => {
-            txtLogger.writeToLogFile(`createOrder() was successfull  ${JSON.stringify(response)}`, LogLevel.INFO);
             return response;
         }).catch(err => {
-            txtLogger.writeToLogFile(`Method: createOrder() failed${err}`, LogLevel.ERROR);
+            txtLogger.writeToLogFile(`createOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
 
     /*

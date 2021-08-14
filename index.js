@@ -70,6 +70,7 @@ async function runProgram() {
             orderConditionName
         );
 
+        
         if (bullishDivergenceCandle !== undefined) {
             foundAtLeastOneBullishDivergence = true;
 
@@ -115,13 +116,13 @@ async function orderingLogic(
     txtLogger.writeToLogFile(`Current open orders lengt is equal to: ${currentOpenOrders.length}`);
     txtLogger.writeToLogFile(`Current open order details: ${JSON.stringify(currentOpenOrders)}`);
     if (currentOpenOrders.length >= 1) {
-        currentOpenOrders.forEach(order => {
+        for await (let order of currentOpenOrders) {
             if (order.side === 'BUY') { // TODO: testmike, wil je ook niet stopLoss en verkoop orders cancelen?
                 const timestamp = new Date().getTime();
                 const oldOrderDetails = await binance.cancelOrder(binanceRest, tradingPair, order.orderId, timestamp);
                 txtLogger.writeToLogFile(`Canceled open BUY order for: ${oldOrderDetails.origClientOrderId}`);
             }
-        });
+        } 
     }
 
     // STEP III. Check currrent free USDT trade balance
