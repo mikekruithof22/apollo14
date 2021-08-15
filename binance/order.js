@@ -206,18 +206,20 @@ const generateMarketSellOrderOptions = (symbol, quantity) => {
     return options;
 }
 
+const generateStopLossSellOrderOptions = (symbol, quantity, stopPrice) => {
+    const options = {
+        symbol: symbol,
+        side: 'SELL',
+        type: 'STOP_LOSS',
+        quantity: quantity,
+        stopPrice: stopPrice,
+        newOrderRespType: 'RESULT'
+    }
+    return options;
+}
 // ERROR:   response: '{"code":-1013,"msg":"Stop loss orders are not supported for this symbol."}'
-// const generateStopLossSellOrderOptions = (symbol, quantity, stopPrice) => {
-//     const options = {
-//         symbol: symbol,
-//         side: 'SELL',
-//         type: 'STOP_LOSS',
-//         quantity: quantity,
-//         stopPrice: stopPrice,
-//         newOrderRespType: 'RESULT'
-//     }
-//     return options;
-// }
+// TODO: dit werkend krijgen of is dit een package bug?
+
 
 const OrderType = {
     LIMITSELL: 'Limit sell',

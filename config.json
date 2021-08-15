@@ -6,7 +6,7 @@
         "minimumUSDTorderAmount": 10,
         "cancelOrderWhenUSDTValueIsBelow": 10,
         "devTest": {
-            "usePredefinedFakeCandle": true,
+            "triggerOrderingLogic": true,
             "sellCurrentBalance": false
         }
     },

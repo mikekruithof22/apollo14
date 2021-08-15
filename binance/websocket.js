@@ -13,8 +13,6 @@ const generateWebsocketClient = () => {
     wsClient.on('open', (data) => {
         console.log('connection opened open:', data.wsKey, data.ws.target.url);
     });
-
-
     return wsClient;
 }
 

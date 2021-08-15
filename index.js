@@ -32,6 +32,7 @@ async function runProgram() {
     const orderConditions = config.orderConditions;
     const minimumUSDTorderAmount = config.production.minimumUSDTorderAmount;
     const cancelOrderWhenUSDTValueIsBelow = config.production.cancelOrderWhenUSDTValueIsBelow;
+    const triggerOrderingLogic = config.production.devTest.triggerOrderingLogic;
 
     // STEP 3 - Retrieve RSI & calculate bullish divergence foreach order condition
     txtLogger.writeToLogFile(`Checking bullish divergence foreach order condition`);
@@ -40,9 +41,7 @@ async function runProgram() {
         const tradingPair = order.tradingPair;
         const candleInterval = order.interval;
 
-        const usePredefinedTestFakeCandle = config.production.devTest.usePredefinedFakeCandle;
-
-        if (usePredefinedTestFakeCandle === true) { // ONLY use for testing!
+        if (triggerOrderingLogic === true) { // ONLY use for testing!
             txtLogger.writeToLogFile(`Skiping the retrieve candle from server part. Test instead immediately`);
             orderingLogic(
                 order,
@@ -126,7 +125,7 @@ async function orderingLogic(
     const currentOpenOrders = await binance.retrieveAllOpenOrders(binanceRest, tradingPair);
     txtLogger.writeToLogFile(`Current open orders lengt is equal to: ${currentOpenOrders.length}`);
     txtLogger.writeToLogFile(`Current open order details: ${JSON.stringify(currentOpenOrders)}`);
-    if (currentOpenOrders.length >= 1) {
+    if (currentOpenOrders.length >= 1) { // TODO: ronald, deze if nog nooit werkend gezien. Mogelijk handelt de stream dit al af? 
         for await (let order of currentOpenOrders) {
             if (order.side === 'BUY') { // TODO: testmike, wil je ook niet stopLoss en verkoop orders cancelen?
                 const timestamp = new Date().getTime();
@@ -148,7 +147,7 @@ async function orderingLogic(
         return;
     }
 
-    // STEP IV. Check free amount off current crypto and add it later to the 'orderPriceAndAmount.amount'
+    // STEP IV. Check free amount off current crypto TODO: testmike, hoelang wil je oude orders laten staan? 
     const cryptoTicker = tradingPair.replace('USDT', '');
     const currentCryptoPairBalance = parseFloat(balance.find(b => b.asset === cryptoTicker)) || 0;
     const currentFreeCryptoAmount = parseFloat(currentUSDTBalance.free);
@@ -170,22 +169,45 @@ async function orderingLogic(
     txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
     txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
 
-    /*
-        TODO: testmike, hiermee verder gaan. 
-            a. Leg VeThor orders vanwege het lage order bedrag: 
-            b. zorg dat je een automatisch VeThor object heb als parameter voor: 
-
-            c. leg heel kleine orders in, zodat je lekker makkelijk en goedkoop kunt testen 
-            (desnoods een stuk per keer, hooguit een paar cent per oder)
-
-    /*/
-
     // STEP VII. Create the order 
     const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
     if (buyOrder === undefined) {
         txtLogger.writeToLogFile(`Program quit because there was an error creating the buy order`);
         return;
     }
+
+    /*
+        TODO: RONALD: waarschijnlijk kun je onderstaande logica/gedachte veel makelijker afvangen. 
+        in de websocket.js file. 
+
+        a. Leg VeThor orders vanwege het lage order bedrag: 
+            b. zorg dat je een automatisch VeThor object heb als parameter voor: 
+
+            c. leg heel kleine orders in minimaal 10 usdt omdat binance niet kleiner accepteert, 
+            zodat je lekker makkelijk en goedkoop kunt testen 
+            (desnoods een stuk per keer, hooguit een paar cent per oder)
+
+
+             MAKE SURE THAT:
+                A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
+                b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
+                ================
+                TODO: hoe monitor ik dat dit gebeurt? 
+                    Peramanent een while loop laten draaien, het met gevaar dat deze methode 
+                    uren/dagen doorgaat.
+
+                    Een stream opzetten of iets dergelijks?
+                        - Per order krijg je dan een stream. Zie 'stream.js'
+
+                        ==> waarschijnlijk wil je die stream returnen!, mogelijk met een optie om over te gaan
+                        om alles te verkopen. Bijvoorbeeld nadat je te lang heb gewacht. Candles configuren in de config.json?
+
+                ===================    
+            // TODO: wat is ie maar half gevuld is... Of op 95% na... 
+            // Ter info: de methode() determineOrderFilled heeft maar een x aantal rondes..
+            // na die rondes is nog niet per definitie alles gevuld. 
+    */
+
     // STEP VIII. MAKE SURE THE BUY ORDER IS FILLED OF IETS DERGELIJKS!
     txtLogger.writeToLogFile(`Buy order created. Details: `);
     txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}`);
@@ -209,9 +231,6 @@ async function orderingLogic(
             checkOrderStatusRetryTime,
             orderStatusAfterCreation
         );
-        // TODO: wat is ie maar half gevuld is... Of op 95% na... 
-        // Ter info: de methode() determineOrderFilled heeft maar een x aantal rondes..
-        // na die rondes is nog niet per definitie alles gevuld. 
     }
 
 
@@ -224,22 +243,6 @@ async function orderingLogic(
 
 
         // STEP X. Monitor the stoploss and sell order. Once one got filled, the other one should be canceled.
-        /*  
-            MAKE SURE THAT:
-                A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
-                b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
-
-                TODO: hoe monitor ik dat dit gebeurt? 
-                    Peramanent een while loop laten draaien, het met gevaar dat deze methode 
-                    uren/dagen doorgaat.
-
-                    Een stream opzetten of iets dergelijks?
-                        - Per order krijg je dan een stream. Zie 'stream.js'
-
-                        ==> waarschijnlijk wil je die stream returnen!, mogelijk met een optie om over te gaan
-                        om alles te verkopen. Bijvoorbeeld nadat je te lang heb gewacht. Candles configuren in de config.json?
-        */
-
         const iets = exchangeLogic.monitorSellAndStopLossOrder();
         //   
 
