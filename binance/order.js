@@ -32,6 +32,9 @@ const createOrder = async (
         case OrderType.MARKETSELL:
             options = generateMarketSellOrderOptions(symbol, quantity);
             break;
+        case OrderType.STOPLOSS:
+            options = generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
+            break;
         default:
             txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
             return;
@@ -99,9 +102,9 @@ const generateTestOrder = async (
         case OrderType.MARKETSELL:
             options = generateMarketSellOrderOptions(symbol, quantity);
             break;
-        // case OrderType.STOPLOSS:
-        //     options = generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
-        //     break;
+        case OrderType.STOPLOSS:
+            options = generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
+            break;
         default:
             txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
             return;
