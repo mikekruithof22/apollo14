@@ -228,7 +228,7 @@ const OrderType = {
     STOPLOSS: 'Stop loss'
 }
 
-const orderStatus = {
+const OrderStatus = {
     CANCELED: 'CANCELED',
     EXPIRED: 'EXPIRED',
     FILLED: 'FILLED',
@@ -245,5 +245,5 @@ module.exports = {
     generateLimitSellOrderOptions,
     generateStopLossOrderOptions,
     OrderType,
-    orderStatus
+    OrderStatus
 };

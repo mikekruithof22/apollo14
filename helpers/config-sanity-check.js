@@ -2,10 +2,10 @@ const checkConfigData = (config, isTest = false) => {
     let message = `----- Roger Ver wants to say someting: -----`;
     let closeProgram = false;
 
-    if (config.production.active === true && config.test.testWithHistoricalData === true) {
+    if (config.production.active === true && config.production.devTest.usePredefinedFakeCandle === true) {
         message += `
                     ERROR: The config values 
-                    "production.active" and "testWithHistoricalData" 
+                    "production.active" and "usePredefinedFakeCandle" 
                     are not allowed to be both true. `;
     }
 

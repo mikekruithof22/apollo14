@@ -40,6 +40,18 @@ async function runProgram() {
         const tradingPair = order.tradingPair;
         const candleInterval = order.interval;
 
+        const usePredefinedTestFakeCandle = config.production.devTest.usePredefinedFakeCandle;
+
+        if (usePredefinedTestFakeCandle === true) { // ONLY use for testing!
+            txtLogger.writeToLogFile(`Skiping the retrieve candle from server part. Test instead immediately`);
+            orderingLogic(
+                order,
+                minimumUSDTorderAmount,
+                cancelOrderWhenUSDTValueIsBelow
+            );
+            return;
+        }
+
         const rsiMinimumRisingPercentage = order.rsi.minimumRisingPercentage;
         const rsiCalculationLength = order.rsi.calculationLength;
 
@@ -132,18 +144,18 @@ async function orderingLogic(
 
     if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
         txtLogger.writeToLogFile(`Program quit the orderingLogic() method because:`);
-        txtLogger.writeToLogFile(`Current free USDT trade amount - ${currentFreeUSDTAmount} - is lower than the minimum configured ${minimumUSDTorderAmount}.`);
+        txtLogger.writeToLogFile(`Current free USDT trade amount is: ${currentFreeUSDTAmount}. Configured amount: ${minimumUSDTorderAmount}.`);
         return;
     }
 
     // STEP IV. Check free amount off current crypto and add it later to the 'orderPriceAndAmount.amount'
-    const currentCryptoPairBalance = parseFloat(balance.find(b => b.asset === tradingPair.replace('USDT', ''))) || 0;
-    currentRemainingCryptoPairAmount = !isNaN(currentCryptoPairBalance)
-        ? currentCryptoPairBalance.free
-        : 0;
+    const cryptoTicker = tradingPair.replace('USDT', '');
+    const currentCryptoPairBalance = parseFloat(balance.find(b => b.asset === cryptoTicker)) || 0;
+    const currentFreeCryptoAmount = parseFloat(currentUSDTBalance.free);
 
     const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
     txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
+    txtLogger.writeToLogFile(`The amount of crypto ${cryptoTicker} already at the balance is equal to: ${currentFreeCryptoAmount.free}`);
 
     // STEP V. Retrieve bid prices
     const currentOrderBook = await binance.getOrderBook(binanceRest, tradingPair);
@@ -152,20 +164,35 @@ async function orderingLogic(
     // STEP VI. Determine how much you can spend at which price based on the order book
     const orderPriceAndAmount = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend);
     const orderPrice = orderPriceAndAmount.price;
-    const orderAmount = orderPriceAndAmount.amount;
+    let orderAmount = orderPriceAndAmount.amount;
+        // TODO: tmp testmike code, naar beneden afronden. OP TERMIJN ERUIT GOOIEN DIT
+        orderAmount = Math.floor(orderAmount);
     txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
     txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
 
+    /*
+        TODO: testmike, hiermee verder gaan. 
+            a. Leg VeThor orders vanwege het lage order bedrag: 
+            b. zorg dat je een automatisch VeThor object heb als parameter voor: 
+
+            c. leg heel kleine orders in, zodat je lekker makkelijk en goedkoop kunt testen 
+            (desnoods een stuk per keer, hooguit een paar cent per oder)
+
+    /*/
+
     // STEP VII. Create the order 
     const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
-
+    if (buyOrder === undefined) {
+        txtLogger.writeToLogFile(`Program quit because there was an error creating the buy order`);
+        return;
+    }
     // STEP VIII. MAKE SURE THE BUY ORDER IS FILLED OF IETS DERGELIJKS!
     txtLogger.writeToLogFile(`Buy order created. Details: `);
     txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}`);
     const orderStatusAfterCreation = buyOrder.status;
+    txtLogger.writeToLogFile(`The newly created buy order status is equal to: ${orderStatusAfterCreation}`);
     if (orderStatusAfterCreation === OrderStatus.REJECTED || orderStatusAfterCreation === OrderStatus.EXPIRED) {
         txtLogger.writeToLogFile(`Program quit the orderingLogic() method because:`);
-        txtLogger.writeToLogFile(`The just created buy order status is equal to: ${orderStatusAfterCreation}`);
         return;
     }
 

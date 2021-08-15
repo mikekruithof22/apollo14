@@ -4,7 +4,11 @@
         "numberOfCandlesToRetrieve": 50, 
         "active": false,
         "minimumUSDTorderAmount": 10,
-        "cancelOrderWhenUSDTValueIsBelow": 10
+        "cancelOrderWhenUSDTValueIsBelow": 10,
+        "devTest": {
+            "usePredefinedFakeCandle": true,
+            "sellCurrentBalance": false
+        }
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,
@@ -16,8 +20,8 @@
     },
     "orderConditions": [
         {
-            "name": "1.) LTCUSDT",
-            "tradingPair": "LTCUSDT",
+            "name": "1.) VTHOUSDT",
+            "tradingPair": "VTHOUSDT",
             "interval": "30m",
             "rsi": {
                 "minimumRisingPercentage": 1.00,
@@ -34,103 +38,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 20,
-                "checkOrderStatusMaxRetryCount": 5,
-                "checkOrderStatusRetryTime": 2500
-            }
-        },
-        {
-            "name": "2.) ETHUSDT - A",
-            "tradingPair": "ETHUSDT",
-            "interval": "30m",
-            "rsi": {
-                "minimumRisingPercentage": 1.00,
-                "calculationLength": 14
-            },
-            "candle": {
-                "minimumDeclingPercentage": -1.00
-            },
-            "calcBullishDivergence": {
-                "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 25
-            },
-            "order": {
-                "takeProfitPercentage": 1,
-                "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 20,
-                "checkOrderStatusMaxRetryCount": 5,
-                "checkOrderStatusRetryTime": 2500
-            }
-        },
-        {
-            "name": "3.) BNBUSDT",
-            "tradingPair": "BNBUSDT",
-            "interval": "30m",
-            "rsi": {
-                "minimumRisingPercentage": 1.00,
-                "calculationLength": 14
-            },
-            "candle": {
-                "minimumDeclingPercentage": -1.00
-            },
-            "calcBullishDivergence": {
-                "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 25
-            },
-            "order": {
-                "takeProfitPercentage": 1,
-                "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 20,
-                "checkOrderStatusMaxRetryCount": 5,
-                "checkOrderStatusRetryTime": 2500
-            }
-        },
-        {
-            "name": "4.) DOTUSDT",
-            "tradingPair": "DOTUSDT",
-            "interval": "30m",
-            "rsi": {
-                "minimumRisingPercentage": 1.00,
-                "calculationLength": 14
-            },
-            "candle": {
-                "minimumDeclingPercentage": -1.00
-            },
-            "calcBullishDivergence": {
-                "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 25
-            },
-            "order": {
-                "takeProfitPercentage": 1,
-                "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 20,
-                "checkOrderStatusMaxRetryCount": 5,
-                "checkOrderStatusRetryTime": 2500
-            }
-        },
-        {
-            "name": "5.) ADAUSDT",
-            "tradingPair": "ADAUSDT",
-            "interval": "30m",
-            "rsi": {
-                "minimumRisingPercentage": 1.00,
-                "calculationLength": 14
-            },
-            "candle": {
-                "minimumDeclingPercentage": -1.00
-            },
-            "calcBullishDivergence": {
-                "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 25
-            },
-            "order": {
-                "takeProfitPercentage": 1,
-                "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 20,
+                "maxPercentageOffBalance": 75,
                 "checkOrderStatusMaxRetryCount": 5,
                 "checkOrderStatusRetryTime": 2500
             }
