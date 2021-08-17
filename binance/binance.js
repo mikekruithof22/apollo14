@@ -178,10 +178,9 @@ const cancelOrder = async (binanceRest, symbol, orderId, timestamp) => {
     return binanceRest
         .cancelOrder(options)
         .then(response => {
-            txtLogger.writeToLogFile(`CancelOrder() ${response}`, LogLevel.INFO);
             return response;
         }).catch(err => {
-            txtLogger.writeToLogFile(` cancelOrder() ${JSON.stringify(err)}`, LogLevel.ERROR);
+            txtLogger.writeToLogFile(`cancelOrder() ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
 
     /*
@@ -204,6 +203,16 @@ const cancelOrder = async (binanceRest, symbol, orderId, timestamp) => {
     */
 }
 
+const getSpotUserDataListenKey = async (binanceRest) => {
+    return binanceRest
+        .getSpotUserDataListenKey()
+        .then(response => {
+            return response;
+        }).catch(err => {
+            txtLogger.writeToLogFile(` getSpotUserDataListenKey() ${JSON.stringify(err)}`, LogLevel.ERROR);
+        });
+}
+
 
 module.exports = {
     generateBinanceRest,
@@ -212,5 +221,6 @@ module.exports = {
     retrieveAllOpenOrders,
     checkOrderStatus,
     cancelOrder,
+    getSpotUserDataListenKey
 };
 
