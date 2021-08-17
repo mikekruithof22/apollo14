@@ -17,7 +17,7 @@ const generateWebsocketClient = () => {
 }
 
 const listenToAccountOderChanges = (wsClient, listenKey) => {
-    return wsClient.subscribeSpotUserDataStream();
+    return wsClient.subscribeSpotUserDataStream(listenKey);
 }
 
 const closeAccountOderChangesStream = (wsClient, listenKey) => {
