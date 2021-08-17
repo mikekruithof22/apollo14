@@ -2,6 +2,7 @@ const api = require('binance');
 const txtLogger = require('../helpers/txt-logger');
 const LogLevel = require('../helpers/txt-logger').LogLevel;
 
+const { MainClient } = require('binance');
 
 require('dotenv').config();
 
@@ -18,35 +19,9 @@ require('dotenv').config();
 */
 
 const generateBinanceRest = () => {
-    const binanceRest = new api.BinanceRest({
-        key: process.env.API_KEY, // Get this from your account on binance.com
-        secret: process.env.API_SECRET, // Same for this
-        timeout: 15000, // Optional, defaults to 15000, is the request time out in milliseconds
-        recvWindow: 10000, // Optional, defaults to 5000, increase if you're getting timestamp errors
-        disableBeautification: false,
-        /*
-         * Optional, default is false. Binance's API returns objects with lots of one letter keys.  By
-         * default those keys will be replaced with more descriptive, longer ones.
-         */
-        handleDrift: false,
-        /*
-         * Optional, default is false.  If turned on, the library will attempt to handle any drift of
-         * your clock on it's own.  If a request fails due to drift, it'll attempt a fix by requesting
-         * binance's server time, calculating the difference with your own clock, and then reattempting
-         * the request.
-         */
-        baseUrl: 'https://api.binance.com/',
-        /*
-         * Optional, default is 'https://api.binance.com/'. Can be useful in case default url stops working.
-         * In february 2018, Binance had a major outage and when service started to be up again, only
-         * https://us.binance.com was working.
-         */
-        requestOptions: {}
-        /*
-         * Options as supported by the 'request' library
-         * For a list of available options, see:
-         * https://github.com/request/request
-         */
+    const binanceRest = new MainClient({
+        api_key: process.env.API_KEY,
+        api_secret: process.env.API_SECRET,
     });
     return binanceRest;
 }
@@ -56,40 +31,34 @@ const getAccountBalances = async (binanceRest) => {
         timestamp: new Date().getTime()
     }
     return binanceRest
-        .account(options)
+        .getBalances(options)
         .then(response => {
-            return response.balances;
+            // console.log('----- response ----------');
+            // console.log(response)
+            return response;
         }).catch(err => {
             txtLogger.writeToLogFile(`getAccountBalances() ${JSON.stringify(err)}`, LogLevel.ERROR);
         });
     /*
         Example response:
-        {
-            "makerCommission": 15,
-            "takerCommission": 15,
-            "buyerCommission": 0,
-            "sellerCommission": 0,
-            "canTrade": true,
-            "canWithdraw": true,
-            "canDeposit": true,
-            "updateTime": 123456789,
-            "accountType": "SPOT",
-            "balances": [
-                {
-                "asset": "BTC",
-                "free": "4723846.89208129",
-                "locked": "0.00000000"
-                },
-                {
-                "asset": "LTC",
-                "free": "4763368.68006011",
-                "locked": "0.00000000"
-                }
-            ],
-                "permissions": [
-                "SPOT"
-            ]
-        }
+       [{
+            coin: 'WABI',
+            depositAllEnable: true,
+            withdrawAllEnable: true,
+            name: 'TAEL',
+            free: '0',
+            locked: '0',
+            freeze: '0',
+            withdrawing: '0',
+            ipoing: '0',
+            ipoable: '0',
+            storage: '0',
+            isLegalMoney: false,
+            trading: true,
+            networkList: [ [Object] ]
+        },
+        etc.
+        ]
     */
 }
 
@@ -128,7 +97,7 @@ const retrieveAllOpenOrders = async (binanceRest, symbol) => {
         symbol: symbol
     }
     return binanceRest
-        .openOrders(options)
+        .getOpenOrders(options)
         .then(response => {
             return response;
         }).catch(err => {

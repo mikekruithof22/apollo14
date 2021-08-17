@@ -137,7 +137,7 @@ async function orderingLogic(
 
     // STEP III. Check currrent free USDT trade balance
     const balance = await binance.getAccountBalances(binanceRest);
-    const currentUSDTBalance = balance.find(b => b.asset === 'USDT');
+    const currentUSDTBalance = balance.find(b => b.coin === 'USDT');
     currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free);
     txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
 
@@ -149,7 +149,7 @@ async function orderingLogic(
 
     // STEP IV. Check free amount off current crypto TODO: testmike, hoelang wil je oude orders laten staan? 
     const cryptoTicker = tradingPair.replace('USDT', '');
-    const currentCryptoPairBalance = parseFloat(balance.find(b => b.asset === cryptoTicker)) || 0;
+    const currentCryptoPairBalance = parseFloat(balance.find(b => b.coin === cryptoTicker)) || 0;
     const currentFreeCryptoAmount = parseFloat(currentUSDTBalance.free);
 
     const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
