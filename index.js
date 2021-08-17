@@ -234,15 +234,21 @@ async function orderingLogic(
     }
 
 
-    // STEP IX. Create a stoploss and a sell order    
+    // STEP IX. Create OCO order (
+    // TODO: RONALD, FYI: OCO = stoploss and sell order in een)
     if (orderFilled === true) {
         const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
         const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
-        const sellOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITSELL, tradingPair, orderAmount, orderPrice);
-        const stopLossLimitOrder = await binanceOrder.createOrder(binanceRest, OrderType.STOPLOSSLIMIT, tradingPair, orderAmount, orderPrice);
+        const ocoOrder = await binanceOrder.createOcoOrder(binanceRest, tradingPair, orderAmount, profitPrice, stopLossPrice);
+        if (ocoOrder === undefined) {
+            txtLogger.writeToLogFile(`Program quit because there was an error creating the OCO order`);
+            return;
+        }
+        txtLogger.writeToLogFile(`Oco order Order was successfully created`);
+        textLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`)
 
 
-        // STEP X. Monitor the stoploss and sell order. Once one got filled, the other one should be canceled.
+        // STEP X. Perhaps doe something when the OCO order is filled? Waarschijnlijk niet nodig. 
         const iets = exchangeLogic.monitorSellAndStopLossOrder();
         //   
 

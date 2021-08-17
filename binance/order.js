@@ -3,8 +3,6 @@ const dateHelper = require('../helpers/date');
 const txtLogger = require('../helpers/txt-logger');
 const LogLevel = require('../helpers/txt-logger').LogLevel;
 
-
-
 const createOrder = async (
     binanceRest,
     orderType,
@@ -17,11 +15,11 @@ const createOrder = async (
     let options;
 
     switch (orderType) {
-        case OrderType.LIMITSELL:
-            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
-            break;
         case OrderType.LIMITBUY:
             options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITSELL:
+            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
             break;
         case OrderType.STOPLOSSLIMIT:
             options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
@@ -40,8 +38,7 @@ const createOrder = async (
             return;
     }
 
-    const customOrderId = binanceRest.generateNewOrderId();
-    options['newClientOrderId'] = customOrderId;
+    options['newClientOrderId'] = binanceRest.generateNewOrderId();;
 
     txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
 
@@ -75,6 +72,36 @@ const createOrder = async (
     */
 }
 
+const createOcoOrder = async (
+    binanceRest,
+    symbol,
+    quantity,
+    orderPrice,
+    stopPrice
+) => {
+    const options = {
+        type: 'OCO',
+        symbol: symbol,
+        side: 'SELL',
+        quantity: quantity,
+        price: orderPrice,
+        stopClientOrderId: stopClientOrderId,
+        stopPrice: stopPrice,
+        stopLimitTimeInForce: 'GTC',
+        newOrderRespType: 'RESULT',
+        listClientOrderId: binanceRest.generateNewOrderId(),
+        limitClientOrderId: binanceRest.generateNewOrderId()
+    }
+
+    return binanceRest
+        .submitNewOCO(options)
+        .then(response => {
+            return response;
+        }).catch(err => {
+            txtLogger.writeToLogFile(`createOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+        });
+}
+
 const generateTestOrder = async (
     binanceRest,
     orderType,
@@ -87,11 +114,11 @@ const generateTestOrder = async (
     let options;
 
     switch (orderType) {
-        case OrderType.LIMITSELL:
-            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
-            break;
         case OrderType.LIMITBUY:
             options = generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
+            break;
+        case OrderType.LIMITSELL:
+            options = generateLimitSellOrderOptions(symbol, quantity, orderPrice);
             break;
         case OrderType.STOPLOSSLIMIT:
             options = generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
@@ -110,11 +137,10 @@ const generateTestOrder = async (
             return;
     }
 
-    const customOrderId = binanceRest.generateNewOrderId();
-    options['newClientOrderId'] = customOrderId;
+    options['newClientOrderId'] = binanceRest.generateNewOrderId();
 
     return binanceRest
-        .testOrder(options)
+        .testNewOrder(options)
         .then(response => {
             orderResult = {
                 message: 'Order created successfully',
@@ -123,7 +149,7 @@ const generateTestOrder = async (
                 orderPrice: orderPrice,
                 quantity: quantity,
                 orderType: orderType,
-                newClientOrderId: customOrderId,
+                newClientOrderId: options['newClientOrderId'],
                 stopPrice: stopPrice ? stopPrice : 'N/A',
                 response: JSON.stringify(response)
             }
@@ -137,7 +163,7 @@ const generateTestOrder = async (
                 orderPrice: orderPrice,
                 quantity: quantity,
                 orderType: orderType,
-                newClientOrderId: customOrderId,
+                newClientOrderId: options['newClientOrderId'],
                 stopPrice: stopPrice ? stopPrice : 'N/A',
                 response: JSON.stringify(err)
             }
@@ -230,7 +256,8 @@ const OrderType = {
     STOPLOSSLIMIT: 'Stoploss limit',
     MARKETBUY: 'Market buy',
     MARKETSELL: 'Market sell',
-    STOPLOSS: 'Stop loss'
+    STOPLOSS: 'Stop loss',
+    OCO: 'OCO'
 }
 
 const OrderStatus = {
@@ -249,6 +276,7 @@ module.exports = {
     generateLimitBuyOrderOptions,
     generateLimitSellOrderOptions,
     generateStopLossOrderOptions,
+    createOcoOrder,
     OrderType,
     OrderStatus
 };
