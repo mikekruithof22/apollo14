@@ -77,7 +77,10 @@ const createOcoOrder = async (
     symbol,
     quantity,
     orderPrice,
-    stopPrice
+    stopPrice,
+    listClientOrderId,
+    limitClientOrderId,
+    stopClientOrderId
 ) => {
     const options = {
         type: 'OCO',
@@ -89,8 +92,8 @@ const createOcoOrder = async (
         stopPrice: stopPrice,
         stopLimitTimeInForce: 'GTC',
         newOrderRespType: 'RESULT',
-        listClientOrderId: binanceRest.generateNewOrderId(),
-        limitClientOrderId: binanceRest.generateNewOrderId()
+        listClientOrderId: listClientOrderId,
+        limitClientOrderId: limitClientOrderId
     }
 
     return binanceRest

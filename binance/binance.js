@@ -67,7 +67,7 @@ const getOrderBook = async (binanceRest, symbol) => {
         symbol: symbol
     }
     return binanceRest
-        .depth(options)
+        .getOrderBook(options)
         .then(response => {
             return response;
         }).catch(err => {
