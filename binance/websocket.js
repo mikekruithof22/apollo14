@@ -20,20 +20,17 @@ const listenToAccountOderChanges = (wsClient, listenKey) => {
     return wsClient.subscribeSpotUserDataStream(listenKey);
 }
 
-const closeAccountOderChangesStream = (wsClient, listenKey) => {
-
+const closeStreamForKey = (wsClient, wsKey, willReconnect = false) => {
+    return wsClient.close(wsKey, willReconnect);
 }
 
-// wsClient.subscribeSpotUserDataStream();
-// wsClient.subscribeMarginUserDataStream();
-// wsClient.subscribeIsolatedMarginUserDataStream('BTCUSDT');
-// wsClient.subscribeUsdFuturesUserDataStream();
-
-
-
-
+const closeWebSocket = (wsClient) => {
+    return wsClient.closeWs(wsClient);
+}
 
 module.exports = {
     generateWebsocketClient,
-    listenToAccountOderChanges
+    listenToAccountOderChanges,
+    closeStreamForKey,
+    closeWebSocket
 }
