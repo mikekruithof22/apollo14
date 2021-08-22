@@ -14,20 +14,20 @@ const generateWebsocketClient = () => {
     // notification when a connection is opened
     wsClient.on('open', (data) => {
         websocketKey = data.wsKey;
-        txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.target.url}`);
+        txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
     });
 
     wsClient.on('close', (data) => {
-        txtLogger.writeToLogFile(`Websocket event - connection closed', ${data.wsKey}, ${data.ws.target.url}`);
+        txtLogger.writeToLogFile(`Websocket event - connection closed', ${data.wsKey}, ${data.ws.url}`);
     });
 
     wsClient.on('reconnecting', (data) => {
-        txtLogger.writeToLogFile(`Websocket event - trying to reconnected...', ${data.wsKey}, ${data.ws.target.url}`);
+        txtLogger.writeToLogFile(`Websocket event - trying to reconnected...', ${data.wsKey}, ${data.ws.url}`);
     });
 
 
     wsClient.on('reconnected', (data) => {
-        txtLogger.writeToLogFile(`Websocket event - reconnected', ${data.wsKey}, ${data.ws.target.url}`);
+        txtLogger.writeToLogFile(`Websocket event - reconnected', ${data.wsKey}, ${data.ws.url}`);
     });
 
     return wsClient;

@@ -38,12 +38,10 @@ const createOrder = async (
             return;
     }
 
-    options['newClientOrderId'] = binanceRest.generateNewOrderId();;
-
     txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
 
     return binanceRest
-        .newOrder(options)
+        .submitNewOrder(options)
         .then(response => {
             return response;
         }).catch(err => {
@@ -83,7 +81,6 @@ const createOcoOrder = async (
     stopClientOrderId = undefined
 ) => {
     const options = {
-        type: 'OCO',
         symbol: symbol,
         side: 'SELL',
         quantity: quantity,
@@ -198,8 +195,6 @@ const generateTestOrder = async (
             txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
             return;
     }
-
-    options['newClientOrderId'] = binanceRest.generateNewOrderId();
 
     return binanceRest
         .testNewOrder(options)

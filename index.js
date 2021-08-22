@@ -245,19 +245,12 @@ async function listenToAccountOrderChanges(websocketClient, binanceRest) {
 
                     txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${order.symbol} orderAmount: ${orderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice}`);
 
-                    const listClientOrderId = binanceRest.generateNewOrderId();
-                    const limitClientOrderId = binanceRest.generateNewOrderId();
-                    const stopClientOrderId = binanceRest.generateNewOrderId();
-
                     const ocoOrder = await binanceOrder.createOcoOrder(
                         binanceRest,
                         order.symbol,
                         orderAmount,
                         profitPrice,
-                        stopLossPrice,
-                        listClientOrderId,
-                        limitClientOrderId,
-                        stopClientOrderId
+                        stopLossPrice
                     );
                     if (ocoOrder === undefined) {
                         txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
