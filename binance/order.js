@@ -78,9 +78,9 @@ const createOcoOrder = async (
     quantity,
     orderPrice,
     stopPrice,
-    listClientOrderId,
-    limitClientOrderId,
-    stopClientOrderId
+    listClientOrderId = undefined,
+    limitClientOrderId = undefined,
+    stopClientOrderId = undefined
 ) => {
     const options = {
         type: 'OCO',

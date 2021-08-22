@@ -13,22 +13,14 @@ const LogLevel = require('./helpers/txt-logger').LogLevel;
 const OrderType = require('./binance/order').OrderType;
 const OrderStatus = require('./binance/order').OrderStatus;
 
-let orderDetails = [
-    {
-        symbol,
-        clientOrderId,
-        buyOrderStatus,
-        ocoOrderStatus
-    }
-];
-
-let binanceRest;
+let activeBuyOrders = [];
+let activeOcoOrders = [];
 
 async function runProgram() {
     let foundAtLeastOneBullishDivergence = false;
 
-    // STEP 1 - Sanity check the config.json
-    txtLogger.writeToLogFile(`--------------- Program started---------------`);
+    // STEP 1 - Sanity check the config.json.
+    txtLogger.writeToLogFile(`---------- Program started ---------- `);
 
     const configCheck = configChecker.checkConfigData(config, true);
     if (configCheck.closeProgram === true) {
@@ -37,30 +29,45 @@ async function runProgram() {
         return;
     }
 
-    // STEP 2 - Prepare configuration data
+    // STEP 2 - Prepare configuration data.
     const brokerApiUrl = config.brokerApiUrl;
-    const numberOfCandlesToRetrieve = config.production.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+    const numberOfCandlesToRetrieve = config.production.numberOfCandlesToRetrieve + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
     const orderConditions = config.orderConditions;
     const minimumUSDTorderAmount = config.production.minimumUSDTorderAmount;
-    const cancelOrderWhenUSDTValueIsBelow = config.production.cancelOrderWhenUSDTValueIsBelow;
-    const triggerOrderingLogic = config.production.devTest.triggerOrderingLogic;
+    const triggerBuyOrderLogic = config.production.devTest.triggerBuyOrderLogic;
 
-    // STEP 3 - Start Stream and start listening to Account Order Changes
-    listenToAccountOrderChanges();
+    // STEP 3 - Start Stream and start listening to Account Order Changes.
+    txtLogger.writeToLogFile(`Generating Websocket`);
+    const websocketClient = websocket.generateWebsocketClient();
+    if (websocketClient === undefined) {
+        txtLogger.writeToLogFile(`Program quit because:`);
+        txtLogger.writeToLogFile(`Generating WebsocketClient failed.`, LogLevel.ERROR);
+        return;
+    }
 
-    // STEP 4 - Retrieve RSI & calculate bullish divergence foreach order condition
+    const binanceRest = binance.generateBinanceRest();
+    txtLogger.writeToLogFile(`Generating Binance rest client`);
+    if (binanceRest === undefined) {
+        txtLogger.writeToLogFile(`Program quit because:`);
+        txtLogger.writeToLogFile(`Generating binanceRest failed.`, LogLevel.ERROR);
+        return;
+    }
+    txtLogger.writeToLogFile(`Starting to listen to account order changes`);
+    listenToAccountOrderChanges(websocketClient, binanceRest);
+
+    // STEP 4 - Retrieve RSI & calculate bullish divergence foreach order condition.
     txtLogger.writeToLogFile(`Checking bullish divergence foreach order condition`);
     for await (let order of orderConditions) {
         const orderConditionName = order.name;
         const tradingPair = order.tradingPair;
         const candleInterval = order.interval;
 
-        if (triggerOrderingLogic === true) { // ONLY use for testing!
+        if (triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
             txtLogger.writeToLogFile(`Skiping the retrieve candle from server part. Test instead immediately`);
-            orderingLogic(
+            buyOrderingLogic(
                 order,
                 minimumUSDTorderAmount,
-                cancelOrderWhenUSDTValueIsBelow
+                binanceRest
             );
             return;
         }
@@ -98,12 +105,14 @@ async function runProgram() {
         if (bullishDivergenceCandle !== undefined) {
             foundAtLeastOneBullishDivergence = true;
 
-            txtLogger.writeToLogFile(`Bullish divergence detected ${orderConditionName}.`);
+            txtLogger.writeToLogFile(`Bullish divergence detected ${orderConditionName}. Therefore, continue to the buyOrderingLogic() method`);
             txtLogger.writeToLogFile(`${JSON.stringify(bullishDivergenceCandle)}`);
-            orderingLogic(
+            // STEP 5. 
+            //      OPTIE I - A bullish divergence was found, continue to the ordering logic method.
+            buyOrderingLogic(
                 order,
                 minimumUSDTorderAmount,
-                cancelOrderWhenUSDTValueIsBelow
+                binanceRest
             );
         } else {
             txtLogger.writeToLogFile(`No bullish divergence detected for ${orderConditionName}.`);
@@ -111,18 +120,20 @@ async function runProgram() {
     };
 
     if (foundAtLeastOneBullishDivergence === false) {
+        // STEP 5. 
+        //      OPTIE II  - Close the program & websocket because no bullish divergence(s) where found this time.
         txtLogger.writeToLogFile(`Program quit because:`);
         txtLogger.writeToLogFile(`No bullish divergence(s) where found this time`);
-
-        closeWebSocketAndExit();
+        websocket.closeWebSocket(websocketClient);
+        txtLogger.writeToLogFile(`Closing WebSocket and exiting program`);
         return;
     }
 }
 
-async function orderingLogic(
+async function buyOrderingLogic(
     order,
     minimumUSDTorderAmount,
-    cancelOrderWhenUSDTValueIsBelow
+    binanceRest
 ) {
     txtLogger.writeToLogFile(`Starting ordering logic method`);
 
@@ -132,185 +143,205 @@ async function orderingLogic(
     const takeLossPercentage = order.order.takeLossPercentage;
     const maxUsdtBuyAmount = order.order.maxUsdtBuyAmount;
     const maxPercentageOffBalance = order.order.maxPercentageOffBalance;
-    const checkOrderStatusMaxRetryCount = order.order.checkOrderStatusMaxRetryCount;
-    const checkOrderStatusRetryTime = order.order.checkOrderStatusRetryTime;
 
-    // STEP II. Check open orders & cancel or close orders if necessary
-    binanceRest = binance.generateBinanceRest();
-
+    // STEP II. Cancel all open buy orders.
     const currentOpenOrders = await binance.retrieveAllOpenOrders(binanceRest, tradingPair);
     txtLogger.writeToLogFile(`Current open orders lengt is equal to: ${currentOpenOrders.length}`);
     txtLogger.writeToLogFile(`Current open order details: ${JSON.stringify(currentOpenOrders)}`);
-    if (currentOpenOrders.length >= 1) { // TODO: ronald, deze if nog nooit werkend gezien. Mogelijk handelt de stream dit al af? 
+    if (currentOpenOrders.length >= 1) {
         for await (let order of currentOpenOrders) {
-            if (order.side === 'BUY') { // TODO: testmike, wil je ook niet stopLoss en verkoop orders cancelen?
+            if (order.side === 'BUY') {
                 const timestamp = new Date().getTime();
-                const oldOrderDetails = await binance.cancelOrder(binanceRest, tradingPair, order.orderId, timestamp);
-                txtLogger.writeToLogFile(`Canceled open BUY order for: ${oldOrderDetails.origClientOrderId}`);
+                const openBuyOrder = await binance.cancelOrder(binanceRest, tradingPair, order.orderId, timestamp);
+                txtLogger.writeToLogFile(`Canceled open BUY - clientOrderId: ${clientOrderId} - with the following details:`);
+                txtLogger.writeToLogFile(`${JSON.stringify(openBuyOrder)}`);
             }
         }
     }
 
-    // STEP III. Check current free USDT trade balance
+    // STEP III. Check current amount off free USDT on the balance.
     const balance = await binance.getAccountBalances(binanceRest);
     const currentUSDTBalance = balance.find(b => b.coin === 'USDT');
     currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free);
     txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
 
     if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
-        txtLogger.writeToLogFile(`Program quit the orderingLogic() method because:`);
+        txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
         txtLogger.writeToLogFile(`Current free USDT trade amount is: ${currentFreeUSDTAmount}. Configured amount: ${minimumUSDTorderAmount}.`);
         return;
     }
 
-    // STEP IV. Check free amount off current crypto TODO: testmike, hoelang wil je oude orders laten staan? 
-    const cryptoTicker = tradingPair.replace('USDT', '');
-    const currentCryptoPairBalance = parseFloat(balance.find(b => b.coin === cryptoTicker)) || 0;
-    const currentFreeCryptoAmount = parseFloat(currentUSDTBalance.free);
-
-    const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
-    txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
-    txtLogger.writeToLogFile(`The amount of crypto ${cryptoTicker} already at the balance is equal to: ${currentFreeCryptoAmount.free}`);
-
-    // STEP V. Retrieve bid prices
+    // STEP IV. Retrieve bid prices.
     const currentOrderBook = await binance.getOrderBook(binanceRest, tradingPair);
     const currentOrderBookBids = exchangeLogic.bidsToObject(currentOrderBook.bids);
 
-    // STEP VI. Determine how much you can spend at which price based on the order book
+    // STEP V. Determine how much you can spend at the next buy order based on the order book.
+    const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
+    txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
+
     const orderPriceAndAmount = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend);
     const orderPrice = orderPriceAndAmount.price;
     let orderAmount = orderPriceAndAmount.amount;
-    // TODO: tmp testmike code, naar beneden afronden. OP TERMIJN ERUIT GOOIEN DIT
-    orderAmount = Math.floor(orderAmount);
+
     txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
     txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
 
-    // STEP VII. Create the order 
+    // STEP VI. Create the buy order and add it to the activeBuyOrders array.
     const buyOrder = await binanceOrder.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice);
     if (buyOrder === undefined) {
-        txtLogger.writeToLogFile(`Program quit because there was an error creating the buy order`);
+        txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
+        txtLogger.writeToLogFile(`There was an error creating the buy order`, LogLevel.ERROR);
         return;
     }
+    txtLogger.writeToLogFile(`Buy order created. Details:`);
+    txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}, 
+                            price: ${buyOrder.price}, takeProfitPercentage: ${takeProfitPercentage}, takeLossPercentage: ${takeLossPercentage}`);
 
-    // add OrderDetail to OrderDetails
-    var orderDetail = {
-        symbol: buyOrder.symbol,
-        clientOrderId: buyOrder.clientOrderId,
-        buyOrderStatus: buyOrder.status,
-        ocoOrderStatus: undefines
+    if (
+        buyOrder.status !== OrderStatus.REJECTED ||
+        buyOrder.status !== OrderStatus.EXPIRED ||
+        buyOrder.status !== OrderStatus.CANCELED
+    ) {
+        const buyOrder = {
+            // symbol: buyOrder.symbol,
+            clientOrderId: buyOrder.clientOrderId,
+            // buyOrderStatus: buyOrder.status,
+            // buyPrice: buyOrder.price,
+            takeProfitPercentage: takeProfitPercentage,
+            takeLossPercentage: takeLossPercentage,
+            // tradingPair: tradingPair
+        }
+        activeBuyOrders.push(buyOrder);
     }
-    orderDetails.push(orderDetail);
-
-    /*
-        TODO: RONALD: waarschijnlijk kun je onderstaande logica/gedachte veel makelijker afvangen. 
-        in de websocket.js file. 
-
-        a. Leg VeThor orders vanwege het lage order bedrag: 
-            b. zorg dat je een automatisch VeThor object heb als parameter voor: 
-
-            c. leg heel kleine orders in minimaal 10 usdt omdat binance niet kleiner accepteert, 
-            zodat je lekker makkelijk en goedkoop kunt testen 
-            (desnoods een stuk per keer, hooguit een paar cent per oder)
-
-
-             MAKE SURE THAT:
-                A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
-                b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
-                ================
-                TODO: hoe monitor ik dat dit gebeurt? 
-                    Peramanent een while loop laten draaien, het met gevaar dat deze methode 
-                    uren/dagen doorgaat.
-
-                    Een stream opzetten of iets dergelijks?
-                        - Per order krijg je dan een stream. Zie 'stream.js'
-
-                        ==> waarschijnlijk wil je die stream returnen!, mogelijk met een optie om over te gaan
-                        om alles te verkopen. Bijvoorbeeld nadat je te lang heb gewacht. Candles configuren in de config.json?
-
-                ===================    
-            // TODO: wat is ie maar half gevuld is... Of op 95% na... 
-            // Ter info: de methode() determineOrderFilled heeft maar een x aantal rondes..
-            // na die rondes is nog niet per definitie alles gevuld. 
-    */
-
-    // STEP VIII. MAKE SURE THE BUY ORDER IS FILLED OF IETS DERGELIJKS!
-    txtLogger.writeToLogFile(`Buy order created. Details: `);
-    txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}`);
-    const orderStatusAfterCreation = buyOrder.status;
-    txtLogger.writeToLogFile(`The newly created buy order status is equal to: ${orderStatusAfterCreation}`);
-    if (orderStatusAfterCreation === OrderStatus.REJECTED || orderStatusAfterCreation === OrderStatus.EXPIRED) {
-        txtLogger.writeToLogFile(`Program quit the orderingLogic() method because:`);
-        return;
-    }
-
-    let orderFilled = buyOrder.status === OrderStatus.FILLED;
-    if (orderFilled === false) {
-        txtLogger.writeToLogFile(`Order was not immediately filled after the creation`);
-
-        // orderFilled = await exchangeLogic.determineOrderFilled(
-        //     binanceRest,
-        //     tradingPair,
-        //     buyOrder.clientOrderId,
-        //     checkOrderStatusMaxRetryCount,
-        //     checkOrderStatusRetryTime,
-        //     orderStatusAfterCreation
-        // );
-    }
-
-    // STEP IX. Create OCO order (
-    // TODO: RONALD, FYI: OCO = stoploss and sell order in een)
-    // if (orderFilled === true) {
-    //     const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
-    //     const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
-    //     const ocoOrder = await binanceOrder.createOcoOrder(binanceRest, tradingPair, orderAmount, profitPrice, stopLossPrice);
-    //     if (ocoOrder === undefined) {
-    //         txtLogger.writeToLogFile(`Program quit because there was an error creating the OCO order`);
-    //         return;
-    //     }
-    //     txtLogger.writeToLogFile(`Oco order Order was successfully created`);
-    //     textLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`)
-
-    //     // STEP X. Perhaps doe something when the OCO order is filled? Waarschijnlijk niet nodig. 
-    //     // const iets = exchangeLogic.monitorSellAndStopLossOrder(); 
-    // }
 }
 
-async function listenToAccountOrderChanges() {
-    txtLogger.writeToLogFile(`generating WebsocketClient`);
-    const websocketClient = websocket.generateWebsocketClient();
+async function listenToAccountOrderChanges(websocketClient, binanceRest) {
     // const listenKey = await binanceRestTest.getSpotUserDataListenKey();
-    const orderChanges = websocket.listenToAccountOderChanges(websocketClient);
-    txtLogger.writeToLogFile(`listening to Account Order Changes`);
-    console.log(orderChanges);
+    websocket.listenToAccountOderChanges(websocketClient);
+    txtLogger.writeToLogFile(`Listening to Account Order Changes`);
 
-    websocketClient.on('formattedUserDataMessage', (data) => {
-        txtLogger.writeToLogFile('formattedUserDataMessage eventreceived:', JSON.stringify(data));
-        console.log('formattedUserDataMessage eventreceived:', JSON.stringify(data));
+    websocketClient.on('formattedUserDataMessage', async (order) => {
+        txtLogger.writeToLogFile('formattedUserDataMessage eventreceived:', JSON.stringify(order));
 
-        if (data.eventType === 'executionReport') {
-            newClientOrderId = data.newClientOrderId;
+        if (order.eventType === 'executionReport') {
+            clientOrderId = order.newClientOrderId;
 
             if (data.orderStatus === OrderStatus.FILLED) {
-                txtLogger.writeToLogFile(`order with newClientOrderId=${newClientOrderId} OrderType=${data.orderType} side=${data.side} is filled`);
-                console.log(`order with newClientOrderId=${newClientOrderId} OrderType=${data.orderType} side=${data.side} is filled`);
+                // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
+                if (order.orderType === 'LIMIT' && order.side === 'BUY') {
+                    txtLogger.writeToLogFile(`Buy order with clientOrderId: ${newClientOrderId} is filled`);
 
-                // Buy order filled
-                if (data.orderType === OrderType.LIMIT && data.side === 'BUY') {
-                    updateOrderDetails(newClientOrderId, data.orderType, data.orderStatus)
+                    const buyOrder = activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
+                    const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(order.price), buyOrder.takeProfitPercentage,);
+                    const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(order.price), buyOrder.takeLossPercentage);
 
-                    // Create OCO order
-                    createOcoOrder(data.symbol, data.quantity, newClientOrderId)
+                    const balance = await binance.getAccountBalances(binanceRest);
+                    const currentCryptoHoldingsOnBalance = balance.find(b => b.coin === order.symbol);
+
+                    const currentFreeCryptoAmount = parseFloat(currentCryptoHoldingsOnBalance.free);
+                    txtLogger.writeToLogFile(`The amount of free  crypto ${cryptoTicker} already at the balance is equal to: ${currentFreeCryptoAmount}`);
+
+                    const orderAmount = order.quantity + currentFreeCryptoAmount;
+
+                    txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${order.symbol} orderAmount: ${orderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice}`);
+
+                    const listClientOrderId = binanceRest.generateNewOrderId();
+                    const limitClientOrderId = binanceRest.generateNewOrderId();
+                    const stopClientOrderId = binanceRest.generateNewOrderId();
+
+                    const ocoOrder = await binanceOrder.createOcoOrder(
+                        binanceRest,
+                        order.symbol,
+                        orderAmount,
+                        profitPrice,
+                        stopLossPrice,
+                        listClientOrderId,
+                        limitClientOrderId,
+                        stopClientOrderId
+                    );
+                    if (ocoOrder === undefined) {
+                        txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
+                    } else {
+                        activeBuyOrders = activeBuyOrders.filter(order => order.clientOrderId != clientOrderId);
+                        activeOcoOrders.push(ocoOrder.listClientOrderId);
+                    }
+                    txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
+                    textLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
                 }
 
-                // Oco order filled
-                if (data.orderType === OrderType.OCO) {
-                    // TODO: Check if clientOrderId is correct
-                    updateOrderDetails(newClientOrderId, data.orderType, data.orderStatus)
+                if (data.orderType === 'OCO') {
+                    const listClientOrderId = order.listClientOrderId;
+                    activeOcoOrders = activeOcoOrders.filter(id => id !== listClientOrderId);
+                    if (activeBuyOrders === [] && activeOcoOrders === []) {
+                        // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
+                        txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy or oco orders.`);
+                        websocket.closeWebSocket(websocketClient);
+                    }
 
-                    // TODO: Check If closing stream for key is correct here
-                    txtLogger.writeToLogFile(`closing Stream For Key wsKey=${data.wsKey}`);
-                    console.log(`closing Stream For Key wsKey=${data.wsKey}`);
-                    websocket.closeStreamForKey(wsClient, data.wsKey, false);
+                }
+
+                if (order.orderStatus === OrderStatus.PARTIALLY_FILLED) {
+                    // wat gaan we doen bij PARTIALLY_FILLED?
+                    // mogelijk willen we opnieuw kijken of het zin heeft om een order in te leggen... 
+                }
+            }
+
+            // POSSIBILITY III - OCO order is finished - ALL_DONE
+            if (order.eventType === 'listStatus') {
+                listClientOrderId = order.listClientOrderId;
+                if (order.listOrderStatus === 'ALL_DONE') {
+                    txtLogger.writeToLogFile(`Oco order with clientOrderId=${newClientOrderId} is filled. Details:`);
+                    textLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
+
+
+                    if (activeBuyOrders === [] && activeOcoOrders === []) {
+                        // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
+                        txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
+                        websocket.closeWebSocket(websocketClient);
+                    }
+                }
+            }
+        }
+    });
+}
+
+/*
+    TODO: RONALD: waarschijnlijk kun je onderstaande logica/gedachte veel makelijker afvangen. 
+    in de websocket.js file. 
+
+    a. Leg VeThor orders vanwege het lage order bedrag: 
+        b. zorg dat je een automatisch VeThor object heb als parameter voor: 
+
+        c. leg heel kleine orders in minimaal 10 usdt omdat binance niet kleiner accepteert, 
+        zodat je lekker makkelijk en goedkoop kunt testen 
+        (desnoods een stuk per keer, hooguit een paar cent per oder)
+
+
+         MAKE SURE THAT:
+            A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
+            b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
+            ================
+            TODO: hoe monitor ik dat dit gebeurt? 
+                Peramanent een while loop laten draaien, het met gevaar dat deze methode 
+                uren/dagen doorgaat.
+
+                Een stream opzetten of iets dergelijks?
+                    - Per order krijg je dan een stream. Zie 'stream.js'
+
+                    ==> waarschijnlijk wil je die stream returnen!, mogelijk met een optie om over te gaan
+                    om alles te verkopen. Bijvoorbeeld nadat je te lang heb gewacht. Candles configuren in de config.json?
+
+            ===================    
+        // TODO: wat is ie maar half gevuld is... Of op 95% na... 
+        // Ter info: de methode() determineOrderFilled heeft maar een x aantal rondes..
+        // na die rondes is nog niet per definitie alles gevuld. 
+*/
+
+/* 
+     // TODO: Check If closing stream for key is correct here
+                    txtLogger.writeToLogFile(`closing Stream For Key wsKey=${order.wsKey}`);
+                    console.log(`closing Stream For Key wsKey=${order.wsKey}`);
+                    websocket.closeStreamForKey(wsClient, order.wsKey, false);
 
                     // If al orders are filled, stop the bot
                     // TODO: Check if this every() function works correct
@@ -319,66 +350,10 @@ async function listenToAccountOrderChanges() {
                         console.log(`All orders are filled. Kill Stream and EXIT`);
 
                         // TODO: correct exiting of bot if all streams with keys are already killed, still use closeWebSocket?
-                        closeWebSocketAndExit();
+                        exchangeLogic.closeWebSocketAndExit(websocketClient);
+                        txtLogger.writeToLogFile(`Closing WebSocket and exiting program`);
                     }
-                }
-            }
-        }
 
-        // Only for OCO
-        // TODO: What to do here?
-        if (data.eventType === 'listStatus') {
-            listClientOrderId = data.listClientOrderId;
-            if (data.listOrderStatus === 'ALL_DONE') {
-                txtLogger.writeToLogFile(`order with newClientOrderId=${newClientOrderId} is ${data.listOrderStatus}`);
-                console.log(`order with listClientOrderId=${listClientOrderId} is ${data.listOrderStatus}`);
-
-                // TODO: update OrderDetails here?
-            }
-        }
-    });
-}
-
-async function createOcoOrder(tradingPair, orderAmount, newClientOrderId) {
-    const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeProfitPercentage);
-    const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(buyOrder.price), takeLossPercentage);
-    txtLogger.writeToLogFile(`Creating OCO order. tradingPair=${tradingPair} orderAmount=${orderAmount} profitPrice=${profitPrice} stopLossPrice=${stopLossPrice}`);
-    // TODO: These ClientOrderId's for the OCO order are all based on the newClientOrderId from the BUY order, check if this is correct
-    // listClientOrderId,
-    // limitClientOrderId,
-    // stopClientOrderId
-
-    const ocoOrder = await binanceOrder.createOcoOrder(binanceRest, tradingPair, orderAmount, profitPrice, stopLossPrice, newClientOrderId, newClientOrderId, newClientOrderId);
-    if (ocoOrder === undefined) {
-        txtLogger.writeToLogFile(`Program quit because there was an error creating the OCO order`);
-        return;
-    }
-    txtLogger.writeToLogFile(`Oco Order was successfully created`);
-    textLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`)
-}
-
-async function updateOrderDetails(newClientOrderId, orderType, orderStatus) {
-    txtLogger.writeToLogFile(`Updating OrderDetails newClientOrderId=${newClientOrderId} orderType=${orderType} orderStatus=${orderStatus}`);
-    console.log(`Updating OrderDetails newClientOrderId=${newClientOrderId} orderType=${orderType} orderStatus=${orderStatus}`);
-
-    // TODO: Getting index and updating this way is correct? 
-    var index = orderDetails.findIndex(o => o.clientOrderId == newClientOrderId);
-
-    if (orderType === OrderType.LIMIT) {
-        orderDetails[index].buyOrderStatus = orderStatus;
-    } else if (orderType === OrderType.OCO) {
-        orderDetails[index].ocoOrderStatus = orderStatus;
-    }
-    txtLogger.writeToLogFile(`OrderDetails=${JSON.stringify(orderDetails)}`);
-    console.log(`OrderDetails=${JSON.stringify(orderDetails)}`);
-}
-
-async function closeWebSocketAndExit() {
-    txtLogger.writeToLogFile(`Closing WebSocket and exiting program`);
-    console.log(`Closing WebSocket and exiting program`);
-    // TODO: This is correct?
-    websocket.closeWebSocket(websocketClient);
-    process.exit();
-}
+*/
 
 runProgram();
