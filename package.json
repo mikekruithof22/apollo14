@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "to the moon",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "test": "node test.js"
+    "start": "ts-node ./src/index.ts",
+    "test": "node --loader ts-node/esm ./src/test.ts"
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +15,8 @@
     "dotenv": "^10.0.0",
     "node-fetch": "^2.6.1",
     "technicalindicators": "^3.1.0",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.3.5",
     "xlsx": "^0.17.0"
   }
 }
