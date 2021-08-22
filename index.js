@@ -203,13 +203,9 @@ async function buyOrderingLogic(
         buyOrder.status !== OrderStatus.CANCELED
     ) {
         const buyOrder = {
-            // symbol: buyOrder.symbol,
             clientOrderId: buyOrder.clientOrderId,
-            // buyOrderStatus: buyOrder.status,
-            // buyPrice: buyOrder.price,
             takeProfitPercentage: takeProfitPercentage,
             takeLossPercentage: takeLossPercentage,
-            // tradingPair: tradingPair
         }
         activeBuyOrders.push(buyOrder);
     }

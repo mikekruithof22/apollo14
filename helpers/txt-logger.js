@@ -13,6 +13,8 @@ const writeToLogFile = (message, logLevel = LogLevel.INFO) => {
         message = `\n ${message} \n`;
     }
 
+    console.log(message);
+
     return fs.appendFileSync(`${fileLocation}`, `${message}`)
 }
 
