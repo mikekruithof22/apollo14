@@ -27,14 +27,9 @@ const generateBinanceRest = () => {
 }
 
 const getAccountBalances = async (binanceRest) => {
-    const options = {
-        timestamp: new Date().getTime()
-    }
     return binanceRest
-        .getBalances(options)
+        .getBalances()
         .then(response => {
-            // console.log('----- response ----------');
-            // console.log(response)
             return response;
         }).catch(err => {
             txtLogger.writeToLogFile(`getAccountBalances() ${JSON.stringify(err)}`, LogLevel.ERROR);

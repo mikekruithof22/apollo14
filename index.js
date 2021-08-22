@@ -279,11 +279,6 @@ async function listenToAccountOrderChanges(websocketClient, binanceRest) {
                     }
 
                 }
-
-                if (order.orderStatus === OrderStatus.PARTIALLY_FILLED) {
-                    // wat gaan we doen bij PARTIALLY_FILLED?
-                    // mogelijk willen we opnieuw kijken of het zin heeft om een order in te leggen... 
-                }
             }
 
             // POSSIBILITY III - OCO order is finished - ALL_DONE
