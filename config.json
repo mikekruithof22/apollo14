@@ -4,9 +4,8 @@
         "numberOfCandlesToRetrieve": 50, 
         "active": false,
         "minimumUSDTorderAmount": 10,
-        "cancelOrderWhenUSDTValueIsBelow": 10,
         "devTest": {
-            "triggerOrderingLogic": true,
+            "triggerBuyOrderLogic": false,
             "sellCurrentBalance": false
         }
     },

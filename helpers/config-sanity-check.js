@@ -9,6 +9,13 @@ const checkConfigData = (config, isTest = false) => {
                     are not allowed to be both true. `;
     }
 
+    if (config.production.active === true && config.production.devTest.triggerBuyOrderLogic === true) {
+        message += `
+                    ERROR: The config values 
+                    "production.active" and "triggerBuyOrderLogic" 
+                    are not allowed to be both true. `;
+    }
+
     if (isTest && config.test.testWithHistoricalData === false) {
         message += `
             ERROR: The config value
@@ -31,13 +38,6 @@ const checkConfigData = (config, isTest = false) => {
     };
 }
 
-const calcTotalPercentageAmountOffOrders = (orderConditions) => {
-    let count = 0;
-    for (let order of orderConditions) {
-        count = count + order.order.maxPercentageOffBalance;
-    }
-    return count;
-}
 
 module.exports = {
     checkConfigData

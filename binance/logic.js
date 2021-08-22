@@ -1,4 +1,3 @@
-
 const calcCurrentOpenOrderAmount = (currentOpenOrders) => {
     let openAmount = 0;
     let totalOpenAmountValue = 0;
@@ -82,67 +81,11 @@ const bidsToObject = (bids) => {
     return result;
 }
 
-const determineOrderFilled = async (
-    binanceRest,
-    tradingPair,
-    clientOrderId,
-    checkOrderStatusMaxRetryCount,
-    checkOrderStatusRetryTime,
-    orderStatusAfterCreation
-) => {
-
-    let orderFilled = orderStatusAfterCreation;
-    let retryCount = 0;
-    while (orderFilled === false && retryCount < checkOrderStatusMaxRetryCount) {
-        // params
-        const timestamp = new Date().getTime();;
-        // request
-        const orderStatus = await binance.checkOrderStatus(binanceRest, tradingPair, clientOrderId, timestamp);
-        switch (orderStatus.status) {
-            case OrderStatus.PARTIALLY_FILLED:
-                // do something?
-                orderFilled = OrderStatus.PARTIALLY_FILLED;
-                break;
-            case OrderStatus.FILLED:
-                orderFilled = OrderStatus.FILLED;
-                break;
-            case OrderStatus.NEW:
-            case OrderStatus.CANCELED:
-            case OrderStatus.PENDING_CANCEL:
-            case OrderStatus.REJECTED:
-            case OrderStatus.EXPIRED:
-                // do nothing
-                break;
-            default:
-                break;
-        }
-        retryCount++;
-        sleep(checkOrderStatusRetryTime)
-    }
-    return orderFilled;
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const monitorSellAndStopLossOrder = () => {
-    /*  
-        MAKE SURE THAT:
-            A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
-            b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
-
-            TODO: een stream of iets dergelijks opzetten? 
-    */
-}
-
 module.exports = {
     calcCurrentOpenOrderAmount,
     calcAmountToSpend,
     calcOrderAmountAndPrice,
     calcProfitPrice,
     calcStopLossPrice,
-    bidsToObject,
-    determineOrderFilled,
-    monitorSellAndStopLossOrder
+    bidsToObject
 };
