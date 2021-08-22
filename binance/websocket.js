@@ -1,6 +1,8 @@
 const { WebsocketClient } = require('binance');
 require('dotenv').config();
+const txtLogger = require('../helpers/txt-logger');
 
+let websocketKey;
 
 const generateWebsocketClient = () => {
     const wsClient = new WebsocketClient({
@@ -11,9 +13,32 @@ const generateWebsocketClient = () => {
 
     // notification when a connection is opened
     wsClient.on('open', (data) => {
-        console.log('connection opened open:', data.wsKey, data.ws.target.url);
+        websocketKey = data.wsKey;
+        txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.target.url}`);
     });
+
+    wsClient.on('close', (data) => {
+        txtLogger.writeToLogFile(`Websocket event - connection closed', ${data.wsKey}, ${data.ws.target.url}`);
+    });
+
+    wsClient.on('reconnecting', (data) => {
+        txtLogger.writeToLogFile(`Websocket event - trying to reconnected...', ${data.wsKey}, ${data.ws.target.url}`);
+    });
+
+
+    wsClient.on('reconnected', (data) => {
+        txtLogger.writeToLogFile(`Websocket event - reconnected', ${data.wsKey}, ${data.ws.target.url}`);
+    });
+
     return wsClient;
+}
+
+const closeStreamForKey = (wsClient, wsKey, willReconnect = false) => {
+    return wsClient.close(wsKey, willReconnect);
+}
+
+const closeWebSocket = (wsClient) => {
+    return wsClient.closeWs(wsClient);
 }
 
 const listenToAccountOderChanges = (wsClient) => {
@@ -72,17 +97,10 @@ const listenToAccountOderChanges = (wsClient) => {
     // wsKey: WsKey;
 }
 
-const closeStreamForKey = (wsClient, wsKey, willReconnect = false) => {
-    return wsClient.close(wsKey, willReconnect);
-}
-
-const closeWebSocket = (wsClient) => {
-    return wsClient.closeWs(wsClient);
-}
-
 module.exports = {
     generateWebsocketClient,
     listenToAccountOderChanges,
     closeStreamForKey,
-    closeWebSocket
+    closeWebSocket,
+    websocketKey
 }

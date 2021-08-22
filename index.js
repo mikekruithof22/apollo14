@@ -124,7 +124,11 @@ async function runProgram() {
         //      OPTIE II  - Close the program & websocket because no bullish divergence(s) where found this time.
         txtLogger.writeToLogFile(`Program quit because:`);
         txtLogger.writeToLogFile(`No bullish divergence(s) where found this time`);
-        websocket.closeWebSocket(websocketClient);
+
+        setTimeout(() => {
+            websocket.closeStreamForKey(websocketClient, websocket.websocketKey);            
+        }, 5000);
+
         txtLogger.writeToLogFile(`Closing WebSocket and exiting program`);
         return;
     }
@@ -271,7 +275,7 @@ async function listenToAccountOrderChanges(websocketClient, binanceRest) {
                     if (activeBuyOrders === [] && activeOcoOrders === []) {
                         // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
                         txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy or oco orders.`);
-                        websocket.closeWebSocket(websocketClient);
+                        websocket.closeStreamForKey(websocketClient, websocket.websocketKey);  
                     }
 
                 }
@@ -293,7 +297,7 @@ async function listenToAccountOrderChanges(websocketClient, binanceRest) {
                     if (activeBuyOrders === [] && activeOcoOrders === []) {
                         // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
                         txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
-                        websocket.closeWebSocket(websocketClient);
+                        websocket.closeStreamForKey(websocketClient, websocket.websocketKey);  
                     }
                 }
             }
