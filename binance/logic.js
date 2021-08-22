@@ -52,17 +52,12 @@ const calcOrderAmountAndPrice = (bids, amountToSpend, currentFreeCryptoBalanceAm
 }
 
 const calcProfitPrice = (buyOrderPrice, takeProfitPercentage) => {
-    // const percentage = (takeProfitPercentage / 100) + 1;
-    // let limitOrderPrice = buyOrderPrice * percentage;
     const takeProfitPercentageInPercentage = takeProfitPercentage / 100;
     const takeProfitPrice = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
     return takeProfitPrice.toFixed(5);
 }
 
-const calcStopLossPrice = (sellOrderPrice, takeProfitPercentage) => {
-    // const percentage = 1 - (takeProfitPercentage / 100);
-    // let limitOrderPrice = sellOrderPrice * percentage;
-
+const calcStopLossPrice = (sellOrderPrice, takeLossPercentage) => {
     const takeLossPercentageInPercentage = takeLossPercentage / 100;
     const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
     return takeLossPrice.toFixed(5);
@@ -76,7 +71,7 @@ const bidsToObject = (bids) => {
             amount: parseFloat(element[1]),
         }
         result.push(obj);
-        obj = {};
+        obj = undefined;
     });
     return result;
 }

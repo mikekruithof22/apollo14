@@ -35,7 +35,7 @@ const generateObjectsFromData = (data) => {
             ignore: element[11]
         }
         result.push(obj);
-        obj = {};
+        obj = undefined;
     });
     return result;
 }
@@ -52,8 +52,7 @@ const generateSmallObjectsFromData = (data) => {
             closeTime: dateHelper.formatLongDate(new Date(element[6])),
         }
         result.push(obj);
-        obj = {};
-
+        obj = undefined;
     });
     return result;
 }

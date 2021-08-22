@@ -9,7 +9,7 @@ const stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentag
 
     const takeProfitPercentageInPercentage = takeProfitPercentage / 100;
     let takeProfitPrice = (1 + takeProfitPercentageInPercentage) * startCandle.close;
-    takeProfitPrice = takeProfitPrice.toFixed(5)
+    takeProfitPrice = Number(takeProfitPrice.toFixed(5));
 
     for (var i = 0; i < nextCandlesAfterHit.length; i++) {
         let comparisonCandle = Object.assign({}, nextCandlesAfterHit[i]);

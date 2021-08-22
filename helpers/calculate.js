@@ -40,7 +40,7 @@ const calculateBullishDivergence = (
                 closePriceChange <= candleMinimumDeclingPercentage &&
                 candleList !== undefined
             ) {
-                return obj = {
+                return {
                     startWithCandle: candleList[compareWithCandleIndex],
                     startRsiValue: compareWithRsiValue,
                     endingCandle: candleList[mostRecenCandleIndex],
@@ -96,7 +96,7 @@ const calculateBullishHistoricalDivergences = (
                 // STEP 2 - calculate priceListDelta
                 const closePriceChange = calculatePercentageChange(compareWithCandle, currentCandle);
                 if (consoleLogSteps === true) {
-                    showCalculationLoging(compareWithRsiValue, currentRsiValue, compareWithCandle, currentCandle, i + j);
+                    showCalculationLoging(compareWithRsiValue, currentRsiValue, compareWithCandle, currentCandle, i + j, rsiChange, closePriceChange);
                 }
 
                 // STEP 3 - determine if there is a bullish divergence
@@ -124,7 +124,7 @@ const calculateBullishHistoricalDivergences = (
                     }
 
                     bullishDivergenceCandles.push(obj);
-                    obj = {};
+                    obj = undefined;
                     break;
 
                 }
@@ -166,7 +166,7 @@ const addBalanceCalcProperties = (candleInfo, takeLossPercentage, takeProfitPerc
         }
 
         bullishDivergenceCandles.push(obj);
-        obj = {};
+        obj = undefined;
     }
     return bullishDivergenceCandles;
 }

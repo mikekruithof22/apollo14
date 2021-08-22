@@ -157,7 +157,7 @@ async function buyOrderingLogic(
             if (order.side === 'BUY') {
                 const timestamp = new Date().getTime();
                 const openBuyOrder = await binance.cancelOrder(binanceRest, tradingPair, order.orderId, timestamp);
-                txtLogger.writeToLogFile(`Canceled open BUY - clientOrderId: ${clientOrderId} - with the following details:`);
+                txtLogger.writeToLogFile(`Canceled open BUY - clientOrderId: ${order.clientOrderId} - with the following details:`);
                 txtLogger.writeToLogFile(`${JSON.stringify(openBuyOrder)}`);
             }
         }
@@ -166,7 +166,7 @@ async function buyOrderingLogic(
     // STEP III. Check current amount off free USDT on the balance.
     const balance = await binance.getAccountBalances(binanceRest);
     const currentUSDTBalance = balance.find(b => b.coin === 'USDT');
-    currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free);
+    const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free);
     txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
 
     if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
@@ -206,12 +206,12 @@ async function buyOrderingLogic(
         buyOrder.status !== OrderStatus.EXPIRED ||
         buyOrder.status !== OrderStatus.CANCELED
     ) {
-        const buyOrder = {
+        const currentBuyOrder = {
             clientOrderId: buyOrder.clientOrderId,
             takeProfitPercentage: takeProfitPercentage,
             takeLossPercentage: takeLossPercentage,
         }
-        activeBuyOrders.push(buyOrder);
+        activeBuyOrders.push(currentBuyOrder);
     }
 }
 
@@ -224,22 +224,22 @@ async function listenToAccountOrderChanges(websocketClient, binanceRest) {
         txtLogger.writeToLogFile('formattedUserDataMessage eventreceived:', JSON.stringify(order));
 
         if (order.eventType === 'executionReport') {
-            clientOrderId = order.newClientOrderId;
+            const clientOrderId = order.newClientOrderId;
 
-            if (data.orderStatus === OrderStatus.FILLED) {
+            if (order.orderStatus === OrderStatus.FILLED) {
                 // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
                 if (order.orderType === 'LIMIT' && order.side === 'BUY') {
-                    txtLogger.writeToLogFile(`Buy order with clientOrderId: ${newClientOrderId} is filled`);
+                    txtLogger.writeToLogFile(`Buy order with clientOrderId: ${clientOrderId} is filled`);
 
                     const buyOrder = activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
                     const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(order.price), buyOrder.takeProfitPercentage,);
-                    const stopLossPrice = exchangeLogic.calcProfitPrice(parseFloat(order.price), buyOrder.takeLossPercentage);
+                    const stopLossPrice = exchangeLogic.calcStopLossPrice(parseFloat(order.price), buyOrder.takeLossPercentage);
 
                     const balance = await binance.getAccountBalances(binanceRest);
                     const currentCryptoHoldingsOnBalance = balance.find(b => b.coin === order.symbol);
 
                     const currentFreeCryptoAmount = parseFloat(currentCryptoHoldingsOnBalance.free);
-                    txtLogger.writeToLogFile(`The amount of free  crypto ${cryptoTicker} already at the balance is equal to: ${currentFreeCryptoAmount}`);
+                    txtLogger.writeToLogFile(`The amount off free to spend crypto is equal to: ${currentFreeCryptoAmount}`);
 
                     const orderAmount = order.quantity + currentFreeCryptoAmount;
 
@@ -266,10 +266,10 @@ async function listenToAccountOrderChanges(websocketClient, binanceRest) {
                         activeOcoOrders.push(ocoOrder.listClientOrderId);
                     }
                     txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
-                    textLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
+                    txtLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
                 }
 
-                if (data.orderType === 'OCO') {
+                if (order.orderType === 'OCO') {
                     const listClientOrderId = order.listClientOrderId;
                     activeOcoOrders = activeOcoOrders.filter(id => id !== listClientOrderId);
                     if (activeBuyOrders === [] && activeOcoOrders === []) {
@@ -288,10 +288,10 @@ async function listenToAccountOrderChanges(websocketClient, binanceRest) {
 
             // POSSIBILITY III - OCO order is finished - ALL_DONE
             if (order.eventType === 'listStatus') {
-                listClientOrderId = order.listClientOrderId;
+                const listClientOrderId = order.listClientOrderId;
                 if (order.listOrderStatus === 'ALL_DONE') {
-                    txtLogger.writeToLogFile(`Oco order with clientOrderId=${newClientOrderId} is filled. Details:`);
-                    textLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
+                    txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
+                    txtLogger.writeToLogFile(`${JSON.stringify(order)}`);
 
 
                     if (activeBuyOrders === [] && activeOcoOrders === []) {
