@@ -1,4 +1,4 @@
-export const config = {
+export default {
     "brokerApiUrl": "https://api.binance.com/",
     "production": {
         "numberOfCandlesToRetrieve": 50, 

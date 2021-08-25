@@ -1,4 +1,4 @@
-import { config } from '../config';
+import config from '../config';
 import rsiHelper from './helpers/rsi';
 import CandleHelper from './helpers/candle';
 import calculate from './helpers/calculate';
@@ -69,7 +69,7 @@ export default class Test {
                 candleAmountToLookIntoTheFuture,
                 takeLossPercentage,
                 takeProfitPercentage,
-                orderConditionName                
+                orderConditionName
             );
             historicalBullishDivergenceCandles.forEach(hit => {
                 if (hit !== []) {

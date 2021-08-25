@@ -1,4 +1,4 @@
-import config from '../../config.json';
+import config from '../../config';
 import stopLoss from './stop-loss';
 
 export default class CalculateHelper {

@@ -1,5 +1,3 @@
-const config = require('../config.json');
-
 export default class RsiCalculator {
     public static stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage) => {
         let message;
