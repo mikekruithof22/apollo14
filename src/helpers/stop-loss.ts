@@ -1,13 +1,13 @@
 export default class RsiCalculator {
     public static stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage) => {
-        let message;
-        let sellResult = 0;
+        let message: string;
+        let sellResult: number = 0;
 
-        const takeLossPercentageInPercentage = takeLossPercentage / 100;
-        const takeLossPrice = (1 - takeLossPercentageInPercentage) * startCandle.close;
+        const takeLossPercentageInPercentage: number = takeLossPercentage / 100;
+        const takeLossPrice: number = (1 - takeLossPercentageInPercentage) * startCandle.close;
 
-        const takeProfitPercentageInPercentage = takeProfitPercentage / 100;
-        let takeProfitPrice = (1 + takeProfitPercentageInPercentage) * startCandle.close;
+        const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
+        let takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * startCandle.close;
         takeProfitPrice = Number(takeProfitPrice.toFixed(5));
 
         for (var i = 0; i < nextCandlesAfterHit.length; i++) {
@@ -33,8 +33,8 @@ export default class RsiCalculator {
         };
     }
 
-    public static findHighestCandle = (nextCandlesAfterHit) => {
-        let message;
+    public static findHighestCandle = (nextCandlesAfterHit): string => {
+        let message: string;
         if (nextCandlesAfterHit.length === 0) {
             message = `No candle after hit found. Something might be wrong.`;
         } else {
@@ -47,8 +47,8 @@ export default class RsiCalculator {
         return message;
     }
 
-    public static findLowestCandle = (nextCandlesAfterHit) => {
-        let message;
+    public static findLowestCandle = (nextCandlesAfterHit): string => {
+        let message: string;
         if (nextCandlesAfterHit.length === 0) {
             message = `No candle after hit found. Something might be wrong.`;
         } else {
@@ -62,8 +62,3 @@ export default class RsiCalculator {
         return message;
     }
 }
-// module.exports = {
-//     stopLossCalculation,
-//     findHighestCandle,
-//     findLowestCandle
-// };

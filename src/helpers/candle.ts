@@ -1,5 +1,7 @@
-import fetch from '../../node_modules/node-fetch/lib/index.js';
+import { Candle, ClosePrice, LightWeightCandle } from '../models/candle';
+
 import dateHelper from './date';
+import fetch from '../../node_modules/node-fetch/lib/index.js';
 
 export default class CandleHelper {
     public retrieveCandles = (url) => {
@@ -10,7 +12,7 @@ export default class CandleHelper {
             }).catch(error => console.log(error));
     }
 
-    public generateClosePricesList = (data) => {
+    public generateClosePricesList = (data): ClosePrice[] => {
         let result = [];
         data.forEach(element => {
             result.push(parseFloat(element[4]));
@@ -18,10 +20,10 @@ export default class CandleHelper {
         return result;
     }
 
-    public generateObjectsFromData = (data) => {
-        let result = [];
+    public generateObjectsFromData = (data): Candle[] => {
+        let result: Candle[] = [];
         data.forEach(element => {
-            let obj = {
+            let obj: Candle = {
                 openTime: dateHelper.formatLongDate(new Date(element[0])),
                 open: element[1],
                 high: element[2],
@@ -41,10 +43,10 @@ export default class CandleHelper {
         return result;
     }
 
-    public generateSmallObjectsFromData = (data) => {
-        let result = [];
+    public generateSmallObjectsFromData = (data): LightWeightCandle[] => {
+        let result: LightWeightCandle[] = [];
         data.forEach(element => {
-            let obj = {
+            let obj: LightWeightCandle = {
                 openTime: dateHelper.formatLongDate(new Date(element[0])),
                 open: element[1],
                 high: element[2],
@@ -58,9 +60,4 @@ export default class CandleHelper {
         return result;
     }
 }
-// module.exports = {
-//     retrieveCandles,
-//     generateObjectsFromData,
-//     generateClosePricesList,
-//     generateSmallObjectsFromData
-// };
+

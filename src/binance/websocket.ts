@@ -1,12 +1,14 @@
 require('dotenv').config();
+
 import { WebsocketClient, WsKey } from '../../node_modules/binance/lib/websocket-client';
-import txtLogger from '../helpers/txt-logger';
+
 import WebSocket from 'isomorphic-ws';
+import txtLogger from '../helpers/txt-logger';
 
 export default class WebSocketService {
     public websocketKey: WsKey;
 
-    public generateWebsocketClient = () => {
+    public generateWebsocketClient = (): WebsocketClient => {
         const wsClient = new WebsocketClient({
             api_key: process.env.API_KEY,
             api_secret: process.env.API_SECRET,
@@ -59,7 +61,7 @@ export default class WebSocketService {
         return wsClient.closeWs(wsClient);
     }
 
-    public listenToAccountOderChanges = (wsClient: WebsocketClient) => {
+    public listenToAccountOderChanges = (wsClient: WebsocketClient): Promise<any> => {
         return wsClient.subscribeSpotUserDataStream();
 
         // eventType: 'executionReport';
@@ -115,11 +117,3 @@ export default class WebSocketService {
         // wsKey: WsKey;
     }
 }
-
-// module.exports = {
-//     generateWebsocketClient,
-//     listenToAccountOderChanges,
-//     closeStreamForKey,
-//     closeWebSocket,
-//     websocketKey
-// }
