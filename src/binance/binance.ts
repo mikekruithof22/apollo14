@@ -1,12 +1,10 @@
-// import { BasicSymbolParam, CancelOrderParams, OrderBookParams } from 'binance';
+require('dotenv').config();
 
 import { BasicSymbolParam, CancelOrderParams, OrderBookParams } from '../../node_modules/binance/lib/index';
 
 import { LogLevel } from '../models/log-level';
 import { MainClient } from '../../node_modules/binance/lib/main-client';
 import txtLogger from '../helpers/txt-logger';
-
-require('dotenv').config();
 
 /*
     Documentation urls

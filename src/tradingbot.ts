@@ -1,3 +1,4 @@
+import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
 import { AllCoinsInformationResponse, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, WebsocketClient } from 'binance';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
@@ -16,7 +17,7 @@ import rsiHelper from './helpers/rsi';
 import txtLogger from './helpers/txt-logger';
 
 export default class Tradingbot {
-    private activeBuyOrders = [];
+    private activeBuyOrders: ActiveBuyOrder[] = [];
     private activeOcoOrders = [];
     private wsService: WebSocketService;
     private binanceService: BinanceService;
@@ -151,18 +152,18 @@ export default class Tradingbot {
     }
 
     public async buyOrderingLogic(
-        order,
-        minimumUSDTorderAmount,
-        binanceRest
+        order: OrderConfigObject,
+        minimumUSDTorderAmount: number,
+        binanceRest: MainClient
     ) {
         txtLogger.writeToLogFile(`Starting ordering logic method`);
 
         // STEP I. Prepare config.json order data 
-        const tradingPair = order.tradingPair;
-        const takeProfitPercentage = order.order.takeProfitPercentage;
-        const takeLossPercentage = order.order.takeLossPercentage;
-        const maxUsdtBuyAmount = order.order.maxUsdtBuyAmount;
-        const maxPercentageOffBalance = order.order.maxPercentageOffBalance;
+        const tradingPair: string = order.tradingPair;
+        const takeProfitPercentage: number = order.order.takeProfitPercentage;
+        const takeLossPercentage: number = order.order.takeLossPercentage;
+        const maxUsdtBuyAmount: number = order.order.maxUsdtBuyAmount;
+        const maxPercentageOffBalance: number = order.order.maxPercentageOffBalance;
 
         // STEP II. Cancel all open buy orders.
         const currentOpenOrders = await this.binanceService.retrieveAllOpenOrders(binanceRest, tradingPair);
@@ -171,7 +172,6 @@ export default class Tradingbot {
         if ((currentOpenOrders as SpotOrder[]).length >= 1) {
             for await (let order of (currentOpenOrders as SpotOrder[])) {
                 if (order.side === 'BUY') {
-                    const timestamp = new Date().getTime();
                     const openBuyOrder = await this.binanceService.cancelOrder(binanceRest, tradingPair, order.orderId);
                     txtLogger.writeToLogFile(`Canceled open BUY - clientOrderId: ${order.clientOrderId} - with the following details:`);
                     txtLogger.writeToLogFile(`${JSON.stringify(openBuyOrder)}`);
@@ -220,7 +220,7 @@ export default class Tradingbot {
         if (buyOrder.status === OrderStatusEnum.PARTIALLY_FILLED ||
             buyOrder.status === OrderStatusEnum.NEW
         ) {
-            const currentBuyOrder = {
+            const currentBuyOrder: ActiveBuyOrder = {
                 clientOrderId: buyOrder.clientOrderId,
                 takeProfitPercentage: takeProfitPercentage,
                 takeLossPercentage: takeLossPercentage,
@@ -229,7 +229,7 @@ export default class Tradingbot {
         }
     }
 
-    public async listenToAccountOrderChanges(websocketClient, binanceRest) {
+    public async listenToAccountOrderChanges(websocketClient: WebsocketClient, binanceRest: MainClient) {
         // const listenKey = await binanceRestTest.getSpotUserDataListenKey();
         this.wsService.listenToAccountOderChanges(websocketClient);
         txtLogger.writeToLogFile(`Listening to Account Order Changes`);
@@ -238,16 +238,16 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(order)}`);
 
             if (order.eventType === 'executionReport') {
-                const clientOrderId = order.newClientOrderId;
+                const clientOrderId: string = order.newClientOrderId;
 
                 if (order.orderStatus === OrderStatusEnum.FILLED) {
                     // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
                     if (order.orderType === 'LIMIT' && order.side === 'BUY') {
                         txtLogger.writeToLogFile(`Buy order with clientOrderId: ${clientOrderId} is filled`);
 
-                        const buyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
-                        const profitPrice = exchangeLogic.calcProfitPrice(parseFloat(order.price), buyOrder.takeProfitPercentage,);
-                        const stopLossPrice = exchangeLogic.calcStopLossPrice(parseFloat(order.price), buyOrder.takeLossPercentage);
+                        const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
+                        const profitPrice: number = exchangeLogic.calcProfitPrice(Number(order.price), buyOrder.takeProfitPercentage);
+                        const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(order.price), buyOrder.takeLossPercentage);
 
                         const balance = await this.binanceService.getAccountBalances(binanceRest);
                         const currentCryptoHoldingsOnBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === order.symbol);
@@ -272,36 +272,34 @@ export default class Tradingbot {
                         } else {
                             this.activeBuyOrders = this.activeBuyOrders.filter(order => order.clientOrderId != clientOrderId);
                             this.activeOcoOrders.push(ocoOrder.listClientOrderId);
+
+                            const listClientOrderId = ocoOrder.listClientOrderId;
+                            this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
+                            if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
+                                // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
+                                txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy or oco orders.`);
+                                this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
+                            }
                         }
                         txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
                         txtLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
                     }
 
-                    if (order.orderType === 'OCO') {
-                        const listClientOrderId = order.listClientOrderId;
-                        this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
-                        if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
-                            // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
-                            txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy or oco orders.`);
-                            this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
-                        }
-
-                    }
                 }
+            }
 
-                // POSSIBILITY III - OCO order is finished - ALL_DONE
-                if (order.eventType === 'listStatus') {
-                    const listClientOrderId = order.listClientOrderId;
-                    if (order.listOrderStatus === 'ALL_DONE') {
-                        txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
-                        txtLogger.writeToLogFile(`${JSON.stringify(order)}`);
+            // POSSIBILITY III - OCO order is finished - ALL_DONE
+            if (order.eventType === 'listStatus') {
+                const listClientOrderId = order.listClientOrderId;
+                if (order.listOrderStatus === 'ALL_DONE') {
+                    txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
+                    txtLogger.writeToLogFile(`${JSON.stringify(order)}`);
 
 
-                        if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
-                            // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
-                            txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
-                            this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
-                        }
+                    if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
+                        // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
+                        txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
+                        this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
                     }
                 }
             }
