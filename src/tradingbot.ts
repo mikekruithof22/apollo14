@@ -1,33 +1,19 @@
-import { AllCoinsInformationResponse, MainClient, OrderBookResponse, OrderResponseFull, OrderResponseResult, SpotOrder, WebsocketClient } from 'binance';
+import { AllCoinsInformationResponse, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, WebsocketClient } from 'binance';
 import { ClosePrice, LightWeightCandle } from './models/candle';
+import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
 import BinanceService from './binance/binance';
 import { BullishDivergenceResult } from './models/calculate';
 import CandleHelper from './helpers/candle';
+import { LogLevel } from './models/log-level';
 import Order from './binance/order';
 import WebSocketService from './binance/websocket';
-import binance from './binance/binance';
 import calculate from './helpers/calculate';
 import config from '../config';
 import configChecker from './helpers/config-sanity-check';
 import exchangeLogic from './binance/logic';
 import rsiHelper from './helpers/rsi';
 import txtLogger from './helpers/txt-logger';
-import websocket from './binance/websocket';
-
-// import { binanceOrder } from './binance/order';
-
-
-
-
-
-
-
-
-
-const LogLevel = require('./helpers/txt-logger').LogLevel;
-const OrderType = require('./binance/order').OrderType;
-const OrderStatus = require('./binance/order').OrderStatus;
 
 export default class Tradingbot {
     private activeBuyOrders = [];
@@ -221,7 +207,7 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
 
         // STEP VI. Create the buy order and add it to the activeBuyOrders array.
-        const buyOrder = await this.order.createOrder(binanceRest, OrderType.LIMITBUY, tradingPair, orderAmount, orderPrice) as OrderResponseFull;
+        const buyOrder = await this.order.createOrder(binanceRest, OrderTypeEnum.LIMITBUY, tradingPair, orderAmount, orderPrice) as OrderResponseFull;
         if (buyOrder === undefined) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
             txtLogger.writeToLogFile(`There was an error creating the buy order`, LogLevel.ERROR);
@@ -231,10 +217,8 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}, 
                             price: ${buyOrder.price}, takeProfitPercentage: ${takeProfitPercentage}, takeLossPercentage: ${takeLossPercentage}`);
 
-        if (
-            buyOrder.status !== OrderStatus.REJECTED ||
-            buyOrder.status !== OrderStatus.EXPIRED ||
-            buyOrder.status !== OrderStatus.CANCELED
+        if (buyOrder.status === OrderStatusEnum.PARTIALLY_FILLED ||
+            buyOrder.status === OrderStatusEnum.NEW
         ) {
             const currentBuyOrder = {
                 clientOrderId: buyOrder.clientOrderId,
@@ -256,7 +240,7 @@ export default class Tradingbot {
             if (order.eventType === 'executionReport') {
                 const clientOrderId = order.newClientOrderId;
 
-                if (order.orderStatus === OrderStatus.FILLED) {
+                if (order.orderStatus === OrderStatusEnum.FILLED) {
                     // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
                     if (order.orderType === 'LIMIT' && order.side === 'BUY') {
                         txtLogger.writeToLogFile(`Buy order with clientOrderId: ${clientOrderId} is filled`);
@@ -365,7 +349,7 @@ export default class Tradingbot {
 
                     // If al orders are filled, stop the bot
                     // TODO: Check if this every() function works correct
-                    if (orderDetails.every(o => o.buyOrderStatus === OrderStatus.FILLED && o.ocoOrderStatus === OrderStatus.FILLED)) {
+                    if (orderDetails.every(o => o.buyOrderStatus === OrderStatusEnum.FILLED && o.ocoOrderStatus === OrderStatusEnum.FILLED)) {
                         txtLogger.writeToLogFile(`All orders are filled. Kill Stream and EXIT`);
                         console.log(`All orders are filled. Kill Stream and EXIT`);
 

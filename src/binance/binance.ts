@@ -2,10 +2,9 @@
 
 import { BasicSymbolParam, CancelOrderParams, OrderBookParams } from '../../node_modules/binance/lib/index';
 
+import { LogLevel } from '../models/log-level';
 import { MainClient } from '../../node_modules/binance/lib/main-client';
 import txtLogger from '../helpers/txt-logger';
-
-const LogLevel = require('../helpers/txt-logger').LogLevel;
 
 require('dotenv').config();
 

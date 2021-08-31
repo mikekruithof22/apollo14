@@ -1,35 +1,16 @@
+import { NewOCOParams, NewSpotOrderParams } from '../../node_modules/binance/lib/index';
 
-// import { MainClient, NewOCOParams, NewSpotOrderParams, OrderType } from 'binance';
-import { NewOCOParams, NewSpotOrderParams, OrderType } from '../../node_modules/binance/lib/index';
+import { LogLevel } from '../models/log-level';
 import { MainClient } from '../../node_modules/binance/lib/main-client';
+import { OrderTypeEnum } from '../models/order';
 import dateHelper from '../helpers/date';
 import txtLogger from '../helpers/txt-logger';
-const LogLevel = require('../helpers/txt-logger').LogLevel;
 
 export default class Order {
-    private OrderType = {
-        LIMITSELL: 'Limit sell',
-        LIMITBUY: 'Limit buy',
-        STOPLOSSLIMIT: 'Stoploss limit',
-        MARKETBUY: 'Market buy',
-        MARKETSELL: 'Market sell',
-        STOPLOSS: 'Stop loss',
-        OCO: 'OCO'
-    }
-
-    private OrderStatus = {
-        CANCELED: 'CANCELED',
-        EXPIRED: 'EXPIRED',
-        FILLED: 'FILLED',
-        NEW: 'NEW',
-        PENDING_CANCEL: 'PENDING_CANCEL',
-        PARTIALLY_FILLED: 'PARTIALLY_FILLED',
-        REJECTED: 'REJECTED'
-    }
 
     public createOrder = async (
         binanceRest: MainClient,
-        orderType: OrderType,
+        orderType: OrderTypeEnum,
         symbol: string,
         quantity: number,
         orderPrice: number,
@@ -39,22 +20,22 @@ export default class Order {
         let options: NewSpotOrderParams;
 
         switch (orderType) {
-            case this.OrderType.LIMITBUY:
+            case OrderTypeEnum.LIMITBUY:
                 options = this.generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
                 break;
-            case this.OrderType.LIMITSELL:
+            case OrderTypeEnum.LIMITSELL:
                 options = this.generateLimitSellOrderOptions(symbol, quantity, orderPrice);
                 break;
-            case this.OrderType.STOPLOSSLIMIT:
+            case OrderTypeEnum.STOPLOSSLIMIT:
                 options = this.generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
                 break;
-            case this.OrderType.MARKETBUY:
+            case OrderTypeEnum.MARKETBUY:
                 options = this.generateMarketBuyOrderOptions(symbol, quantity);
                 break;
-            case this.OrderType.MARKETSELL:
+            case OrderTypeEnum.MARKETSELL:
                 options = this.generateMarketSellOrderOptions(symbol, quantity);
                 break;
-            case this.OrderType.STOPLOSS:
+            case OrderTypeEnum.STOPLOSS:
                 options = this.generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
                 break;
             default:
@@ -189,7 +170,7 @@ export default class Order {
 
     public generateTestOrder = async (
         binanceRest: MainClient,
-        orderType: OrderType,
+        orderType: OrderTypeEnum,
         symbol: string,
         quantity: number,
         orderPrice: number,
@@ -199,22 +180,22 @@ export default class Order {
         let options: NewSpotOrderParams;
 
         switch (orderType) {
-            case this.OrderType.LIMITBUY:
+            case OrderTypeEnum.LIMITBUY:
                 options = this.generateLimitBuyOrderOptions(symbol, quantity, orderPrice);
                 break;
-            case this.OrderType.LIMITSELL:
+            case OrderTypeEnum.LIMITSELL:
                 options = this.generateLimitSellOrderOptions(symbol, quantity, orderPrice);
                 break;
-            case this.OrderType.STOPLOSSLIMIT:
+            case OrderTypeEnum.STOPLOSSLIMIT:
                 options = this.generateStopLossOrderOptions(symbol, quantity, orderPrice, stopPrice);
                 break;
-            case this.OrderType.MARKETBUY:
+            case OrderTypeEnum.MARKETBUY:
                 options = this.generateMarketBuyOrderOptions(symbol, quantity);
                 break;
-            case this.OrderType.MARKETSELL:
+            case OrderTypeEnum.MARKETSELL:
                 options = this.generateMarketSellOrderOptions(symbol, quantity);
                 break;
-            case this.OrderType.STOPLOSS:
+            case OrderTypeEnum.STOPLOSS:
                 options = this.generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
                 break;
             default:
@@ -256,7 +237,7 @@ export default class Order {
             });
     }
 
-    public generateLimitBuyOrderOptions = (symbol: string, quantity: number, maxPrice: number) => {
+    public generateLimitBuyOrderOptions = (symbol: string, quantity: number, maxPrice: number): NewSpotOrderParams => {
         const options: NewSpotOrderParams = {
             symbol: symbol,
             side: 'BUY',
@@ -269,7 +250,7 @@ export default class Order {
         return options;
     }
 
-    public generateLimitSellOrderOptions = (symbol: string, quantity: number, orderPrice: number) => {
+    public generateLimitSellOrderOptions = (symbol: string, quantity: number, orderPrice: number): NewSpotOrderParams => {
         const options: NewSpotOrderParams = {
             symbol: symbol,
             side: 'SELL',
@@ -278,12 +259,11 @@ export default class Order {
             quantity: quantity,
             price: orderPrice,
             newOrderRespType: 'RESULT'
-
         }
         return options;
     }
 
-    public generateStopLossOrderOptions = (symbol, quantity, orderPrice, stopPrice) => {
+    public generateStopLossOrderOptions = (symbol: string, quantity: number, orderPrice: number, stopPrice: number): NewSpotOrderParams => {
         const options: NewSpotOrderParams = {
             symbol: symbol,
             side: 'SELL',
@@ -297,7 +277,7 @@ export default class Order {
         return options;
     }
 
-    public generateMarketBuyOrderOptions = (symbol, quantity) => {
+    public generateMarketBuyOrderOptions = (symbol: string, quantity: number): NewSpotOrderParams => {
         const options: NewSpotOrderParams = {
             symbol: symbol,
             side: 'BUY',
@@ -309,7 +289,7 @@ export default class Order {
         return options;
     }
 
-    public generateMarketSellOrderOptions = (symbol, quantity) => {
+    public generateMarketSellOrderOptions = (symbol: string, quantity: number): NewSpotOrderParams => {
         const options: NewSpotOrderParams = {
             symbol: symbol,
             side: 'SELL',
@@ -320,7 +300,7 @@ export default class Order {
         return options;
     }
 
-    public generateStopLossSellOrderOptions = (symbol, quantity, stopPrice) => {
+    public generateStopLossSellOrderOptions = (symbol: string, quantity: number, stopPrice: number): NewSpotOrderParams => {
         const options: NewSpotOrderParams = {
             symbol: symbol,
             side: 'SELL',
@@ -334,17 +314,5 @@ export default class Order {
     // ERROR:   response: '{"code":-1013,"msg":"Stop loss orders are not supported for this symbol."}'
     // TODO: dit werkend krijgen of is dit een package bug?
 
-
-    
 }
 
-// module.exports = {
-//     generateTestOrder,
-//     createOrder,
-//     generateLimitBuyOrderOptions,
-//     generateLimitSellOrderOptions,
-//     generateStopLossOrderOptions,
-//     createOcoOrder,
-//     OrderType,
-//     OrderStatus
-// };
