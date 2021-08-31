@@ -120,7 +120,3 @@ export default class ExportService {
         return filePath;
     }
 }
-// module.exports = {
-//     exportHistoricalTest,
-
-// };

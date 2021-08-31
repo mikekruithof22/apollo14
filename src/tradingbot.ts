@@ -1,17 +1,29 @@
-import config from '../config';
-import rsiHelper from './helpers/rsi';
-import CandleHelper from './helpers/candle';
-import calculate from './helpers/calculate';
-import configChecker from './helpers/config-sanity-check';
-import txtLogger from './helpers/txt-logger';
-import binance from './binance/binance';
-// import { binanceOrder } from './binance/order';
-import websocket from './binance/websocket';
-import exchangeLogic from './binance/logic';
-import WebSocketService from './binance/websocket';
+import { AllCoinsInformationResponse, MainClient, OrderBookResponse, OrderResponseFull, OrderResponseResult, SpotOrder, WebsocketClient } from 'binance';
+import { ClosePrice, LightWeightCandle } from './models/candle';
+
 import BinanceService from './binance/binance';
-import { AllCoinsInformationResponse, OrderBookResponse, OrderResponseFull, OrderResponseResult, SpotOrder } from 'binance';
+import { BullishDivergenceResult } from './models/calculate';
+import CandleHelper from './helpers/candle';
 import Order from './binance/order';
+import WebSocketService from './binance/websocket';
+import binance from './binance/binance';
+import calculate from './helpers/calculate';
+import config from '../config';
+import configChecker from './helpers/config-sanity-check';
+import exchangeLogic from './binance/logic';
+import rsiHelper from './helpers/rsi';
+import txtLogger from './helpers/txt-logger';
+import websocket from './binance/websocket';
+
+// import { binanceOrder } from './binance/order';
+
+
+
+
+
+
+
+
 
 const LogLevel = require('./helpers/txt-logger').LogLevel;
 const OrderType = require('./binance/order').OrderType;
@@ -34,7 +46,7 @@ export default class Tradingbot {
     }
 
     public async runProgram() {
-        let foundAtLeastOneBullishDivergence = false;
+        let foundAtLeastOneBullishDivergence: boolean = false;
 
         // STEP 1 - Sanity check the config.json.
         txtLogger.writeToLogFile(`---------- Program started ---------- `);
@@ -47,24 +59,23 @@ export default class Tradingbot {
         }
 
         // STEP 2 - Prepare configuration data.
-        const brokerApiUrl = config.brokerApiUrl;
-        const numberOfCandlesToRetrieve = config.production.numberOfCandlesToRetrieve + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+        const brokerApiUrl: string = config.brokerApiUrl;
+        const numberOfCandlesToRetrieve: number = config.production.numberOfCandlesToRetrieve + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
         const orderConditions = config.orderConditions;
-        const minimumUSDTorderAmount = config.production.minimumUSDTorderAmount;
-        const triggerBuyOrderLogic = config.production.devTest.triggerBuyOrderLogic;
+        const minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
+        const triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
 
         // STEP 3 - Start Stream and start listening to Account Order Changes.
         txtLogger.writeToLogFile(`Generating Websocket`);
 
-
-        const websocketClient = this.wsService.generateWebsocketClient();
+        const websocketClient: WebsocketClient = this.wsService.generateWebsocketClient();
         if (websocketClient === undefined) {
             txtLogger.writeToLogFile(`Program quit because:`);
             txtLogger.writeToLogFile(`Generating WebsocketClient failed.`, LogLevel.ERROR);
             return;
         }
 
-        const binanceRest = this.binanceService.generateBinanceRest();
+        const binanceRest: MainClient = this.binanceService.generateBinanceRest();
         txtLogger.writeToLogFile(`Generating Binance rest client`);
         if (binanceRest === undefined) {
             txtLogger.writeToLogFile(`Program quit because:`);
@@ -77,9 +88,9 @@ export default class Tradingbot {
         // STEP 4 - Retrieve RSI & calculate bullish divergence foreach order condition.
         txtLogger.writeToLogFile(`Checking bullish divergence foreach order condition`);
         for await (let order of orderConditions) {
-            const orderConditionName = order.name;
-            const tradingPair = order.tradingPair;
-            const candleInterval = order.interval;
+            const orderConditionName: string  = order.name;
+            const tradingPair: string  = order.tradingPair;
+            const candleInterval: string  = order.interval;
 
             if (triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
                 txtLogger.writeToLogFile(`Skiping the retrieve candle from server part. Test instead immediately`);
@@ -91,26 +102,26 @@ export default class Tradingbot {
                 return;
             }
 
-            const rsiMinimumRisingPercentage = order.rsi.minimumRisingPercentage;
-            const rsiCalculationLength = order.rsi.calculationLength;
+            const rsiMinimumRisingPercentage: number = order.rsi.minimumRisingPercentage;
+            const rsiCalculationLength: number = order.rsi.calculationLength;
 
-            const candleMinimumDeclingPercentage = order.candle.minimumDeclingPercentage;
-            const startCount = order.calcBullishDivergence.numberOfMinimumIntervals;
-            const stopCount = order.calcBullishDivergence.numberOfMaximumIntervals;
+            const candleMinimumDeclingPercentage: number = order.candle.minimumDeclingPercentage;
+            const startCount: number = order.calcBullishDivergence.numberOfMinimumIntervals;
+            const stopCount: number = order.calcBullishDivergence.numberOfMaximumIntervals;
 
-            const url = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
+            const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
 
             txtLogger.writeToLogFile(`Checking the following order ${orderConditionName}`);
             txtLogger.writeToLogFile(`Retrieve candles from Binance url`);
             txtLogger.writeToLogFile(url);
 
             const candleList = await this.candleHelper.retrieveCandles(url);
-            const candleObjectList = this.candleHelper.generateSmallObjectsFromData(candleList);
-            const closePriceList = this.candleHelper.generateClosePricesList(candleList);
+            const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
+            const closePriceList: ClosePrice[] = this.candleHelper.generateClosePricesList(candleList);
 
             const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
 
-            const bullishDivergenceCandle = calculate.calculateBullishDivergence(
+            const bullishDivergenceCandle: BullishDivergenceResult = calculate.calculateBullishDivergence(
                 closePriceList,
                 candleObjectList,
                 rsiCollection,

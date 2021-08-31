@@ -12,6 +12,15 @@ export class HistoricalBullishDivergenceResult {
     startCandle: LightWeightCandle;
 }
 
+export class BullishDivergenceResult {
+    startWithCandle: any;
+    startRsiValue: any;
+    endingCandle: any;
+    endiRsiValue: any;
+    orderConditionName: any;
+    totalCandles: any;
+}
+
 export class BalanceObject {
     id: number;
     startWithCandle: string;
