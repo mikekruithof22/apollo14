@@ -39,7 +39,3 @@ export default class ConfigSanityCheck {
         };
     }
 }
-
-// module.exports = {
-//     checkConfigData
-// };

@@ -3,9 +3,9 @@ import { LogLevel } from "../models/log-level";
 const fs = require('fs');
 
 export default class RsiCalculator {
-    public static writeToLogFile = (message, logLevel = LogLevel.INFO) => {
-        const fileLocation = RsiCalculator.generateFilePath();
-        const date = new Date();
+    public static writeToLogFile = (message: string, logLevel = LogLevel.INFO): string => {
+        const fileLocation: string = RsiCalculator.generateFilePath();
+        const date: Date = new Date();
         message = `\n ${logLevel} - ${date.toUTCString()} - ${message}`;
 
         if (message.includes('Program started')) {
@@ -21,7 +21,7 @@ export default class RsiCalculator {
         return fs.appendFileSync(`${fileLocation}`, `${message}`)
     }
 
-    public static generateFilePath = () => {
+    public static generateFilePath = (): string => {
         const directoryName = 'production-logs';
         if (!fs.existsSync(`./${directoryName}`)) {
             fs.mkdir(`./${directoryName}`, (err) => {
@@ -29,24 +29,9 @@ export default class RsiCalculator {
             });
         }
 
-        const date = new Date();
-        const fileName = `log - ${date.toLocaleDateString()}`;
-        const filePath = `./${directoryName}/${fileName}.txt`;
+        const date: Date = new Date();
+        const fileName: string = `log - ${date.toLocaleDateString()}`;
+        const filePath: string = `./${directoryName}/${fileName}.txt`;
         return filePath;
     }
-
-    // const LogLevel = {
-    //     INFO: 'INFO',
-    //     DEBUG: 'DEBUG',
-    //     TRACE: 'TRACE',
-    //     NOTICE: 'NOTICE',
-    //     WARN: 'WARN',
-    //     ERROR: 'ERROR',
-    //     FATAL: 'FATAL'
-    // }
 }
-// module.exports = {
-//     generateFilePath,
-//     writeToLogFile,
-//     LogLevel
-// }

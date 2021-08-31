@@ -1,7 +1,10 @@
 // import { BasicSymbolParam, CancelOrderParams, OrderBookParams } from 'binance';
+
 import { BasicSymbolParam, CancelOrderParams, OrderBookParams } from '../../node_modules/binance/lib/index';
+
 import { MainClient } from '../../node_modules/binance/lib/main-client';
 import txtLogger from '../helpers/txt-logger';
+
 const LogLevel = require('../helpers/txt-logger').LogLevel;
 
 require('dotenv').config();
@@ -20,7 +23,7 @@ require('dotenv').config();
 
 export default class BinanceService {
 
-    public generateBinanceRest = () => {
+    public generateBinanceRest = (): MainClient => {
         const binanceRest = new MainClient({
             api_key: process.env.API_KEY,
             api_secret: process.env.API_SECRET,
@@ -28,7 +31,7 @@ export default class BinanceService {
         return binanceRest;
     }
 
-    public getAccountBalances = async (binanceRest: MainClient) => {
+    public getAccountBalances = async (binanceRest: MainClient): Promise<any> => {
         const options = {
             timestamp: new Date().getTime()
         }
@@ -64,7 +67,7 @@ export default class BinanceService {
         */
     }
 
-    public getOrderBook = async (binanceRest: MainClient, symbol: string) => {
+    public getOrderBook = async (binanceRest: MainClient, symbol: string): Promise<any> => {
         const options: OrderBookParams = {
             symbol: symbol
         }
@@ -94,7 +97,7 @@ export default class BinanceService {
         */
     }
 
-    public retrieveAllOpenOrders = async (binanceRest: MainClient, symbol: string) => {
+    public retrieveAllOpenOrders = async (binanceRest: MainClient, symbol: string): Promise<any> => {
         const options: Partial<BasicSymbolParam> = {
             symbol: symbol
         }
@@ -171,7 +174,7 @@ export default class BinanceService {
     //     */
     // }
 
-    public cancelOrder = async (binanceRest: MainClient, symbol: string, orderId: number) => {
+    public cancelOrder = async (binanceRest: MainClient, symbol: string, orderId: number): Promise<any> => {
         const options: CancelOrderParams = {
             symbol: symbol,
             orderId: orderId
@@ -204,7 +207,7 @@ export default class BinanceService {
         */
     }
 
-    public getSpotUserDataListenKey = async (binanceRest: MainClient) => {
+    public getSpotUserDataListenKey = async (binanceRest: MainClient): Promise<any> => {
         return binanceRest
             .getSpotUserDataListenKey()
             .then(response => {
@@ -214,14 +217,3 @@ export default class BinanceService {
             });
     }
 }
-
-// module.exports = {
-//     generateBinanceRest,
-//     getAccountBalances,
-//     getOrderBook,
-//     retrieveAllOpenOrders,
-//     checkOrderStatus,
-//     cancelOrder,
-//     getSpotUserDataListenKey
-// };
-
