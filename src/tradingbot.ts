@@ -24,7 +24,6 @@ export default class Tradingbot {
     private candleHelper: CandleHelper;
     private order: Order;
 
-
     constructor() {
         this.wsService = new WebSocketService();
         this.binanceService = new BinanceService();
@@ -74,10 +73,11 @@ export default class Tradingbot {
 
         // STEP 4 - Retrieve RSI & calculate bullish divergence foreach order condition.
         txtLogger.writeToLogFile(`Checking bullish divergence foreach order condition`);
+
         for await (let order of orderConditions) {
-            const orderConditionName: string  = order.name;
-            const tradingPair: string  = order.tradingPair;
-            const candleInterval: string  = order.interval;
+            const orderConditionName: string = order.name;
+            const tradingPair: string = order.tradingPair;
+            const candleInterval: string = order.interval;
 
             if (triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
                 txtLogger.writeToLogFile(`Skiping the retrieve candle from server part. Test instead immediately`);
@@ -218,7 +218,8 @@ export default class Tradingbot {
                             price: ${buyOrder.price}, takeProfitPercentage: ${takeProfitPercentage}, takeLossPercentage: ${takeLossPercentage}`);
 
         if (buyOrder.status === OrderStatusEnum.PARTIALLY_FILLED ||
-            buyOrder.status === OrderStatusEnum.NEW
+            buyOrder.status === OrderStatusEnum.NEW ||
+            buyOrder.status === OrderStatusEnum.FILLED
         ) {
             const currentBuyOrder: ActiveBuyOrder = {
                 clientOrderId: buyOrder.clientOrderId,
@@ -234,70 +235,65 @@ export default class Tradingbot {
         this.wsService.listenToAccountOderChanges(websocketClient);
         txtLogger.writeToLogFile(`Listening to Account Order Changes`);
 
-        websocketClient.on('formattedUserDataMessage', async (order) => {
-            txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(order)}`);
+        websocketClient.on('formattedUserDataMessage', async (data) => {
+            txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
 
-            if (order.eventType === 'executionReport') {
-                const clientOrderId: string = order.newClientOrderId;
+            if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
+                const clientOrderId: string = data.newClientOrderId;
 
-                if (order.orderStatus === OrderStatusEnum.FILLED) {
-                    // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
-                    if (order.orderType === 'LIMIT' && order.side === 'BUY') {
-                        txtLogger.writeToLogFile(`Buy order with clientOrderId: ${clientOrderId} is filled`);
+                // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
+                if (data.orderType === 'LIMIT' && data.side === 'BUY') {
+                    txtLogger.writeToLogFile(`Buy order with clientOrderId: ${clientOrderId} is filled`);
 
-                        const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
-                        const profitPrice: number = exchangeLogic.calcProfitPrice(Number(order.price), buyOrder.takeProfitPercentage);
-                        const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(order.price), buyOrder.takeLossPercentage);
+                    const balance = await this.binanceService.getAccountBalances(binanceRest);
 
-                        const balance = await this.binanceService.getAccountBalances(binanceRest);
-                        const currentCryptoHoldingsOnBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === order.symbol);
+                    const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
+            console.log('------------------------------');
+            console.log('activeBuyOrders');
+            console.log(this.activeBuyOrders);
+            console.log('buyOrder');
+            console.log(buyOrder);
+                    const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage);
+                    const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage);
+                    const currentCryptoHoldingsOnBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === data.symbol.replace('USDT', ''));
+                    const orderAmount = currentCryptoHoldingsOnBalance.free;
 
-                        const freeBalance = currentCryptoHoldingsOnBalance.free.toString();
-                        const currentFreeCryptoAmount = parseFloat(freeBalance);
-                        txtLogger.writeToLogFile(`The amount off free to spend crypto is equal to: ${currentFreeCryptoAmount}`);
+                    txtLogger.writeToLogFile(`The amount off free to sell crypto is equal to: ${orderAmount}`);
+                    txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${orderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice}`);
 
-                        const orderAmount = order.quantity + currentFreeCryptoAmount;
+                    const ocoOrder = await this.order.createOcoOrder(
+                        binanceRest,
+                        data.symbol,
+                        orderAmount as number,
+                        profitPrice,
+                        stopLossPrice
+                    );
 
-                        txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${order.symbol} orderAmount: ${orderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice}`);
+                    if (ocoOrder === undefined) {
+                        txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
+                        txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
+                        return;
+                    } else {
+                        this.activeBuyOrders = this.activeBuyOrders.filter(order => order.clientOrderId != clientOrderId);
+                        this.activeOcoOrders.push(ocoOrder.listClientOrderId);
 
-                        const ocoOrder = await this.order.createOcoOrder(
-                            binanceRest,
-                            order.symbol,
-                            orderAmount,
-                            profitPrice,
-                            stopLossPrice
-                        );
-                        if (ocoOrder === undefined) {
-                            txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
-                        } else {
-                            this.activeBuyOrders = this.activeBuyOrders.filter(order => order.clientOrderId != clientOrderId);
-                            this.activeOcoOrders.push(ocoOrder.listClientOrderId);
-
-                            const listClientOrderId = ocoOrder.listClientOrderId;
-                            this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
-                            if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
-                                // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
-                                txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy or oco orders.`);
-                                this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
-                            }
-                        }
                         txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
                         txtLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
                     }
-
                 }
             }
 
-            // POSSIBILITY III - OCO order is finished - ALL_DONE
-            if (order.eventType === 'listStatus') {
-                const listClientOrderId = order.listClientOrderId;
-                if (order.listOrderStatus === 'ALL_DONE') {
+            // POSSIBILITY II - OCO order is finished - ALL_DONE
+            if (data.eventType === 'listStatus') {
+                const listClientOrderId = data.listClientOrderId;
+                if (data.listOrderStatus === 'ALL_DONE') {
                     txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
-                    txtLogger.writeToLogFile(`${JSON.stringify(order)}`);
+                    txtLogger.writeToLogFile(`${JSON.stringify(data)}`);
 
+                    this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
 
+                    // POSSIBILITY III - CLOSE WEBSOCKET when only there are NO longer active buy and oco orders.
                     if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
-                        // CLOSE WEBSOCKET when only there are no longer active buy and oco orders.
                         txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
                         this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
                     }
@@ -306,56 +302,3 @@ export default class Tradingbot {
         });
     }
 }
-
-/*
-    TODO: RONALD: waarschijnlijk kun je onderstaande logica/gedachte veel makelijker afvangen. 
-    in de websocket.js file. 
-
-    a. Leg VeThor orders vanwege het lage order bedrag: 
-        b. zorg dat je een automatisch VeThor object heb als parameter voor: 
-
-        c. leg heel kleine orders in minimaal 10 usdt omdat binance niet kleiner accepteert, 
-        zodat je lekker makkelijk en goedkoop kunt testen 
-        (desnoods een stuk per keer, hooguit een paar cent per oder)
-
-
-         MAKE SURE THAT:
-            A.) In case sellOrder triggers ===> the stopLossLimitOrder is canceled
-            b.) In case stopLossLimitOrder triggers ===> the sellOrder is canceled
-            ================
-            TODO: hoe monitor ik dat dit gebeurt? 
-                Peramanent een while loop laten draaien, het met gevaar dat deze methode 
-                uren/dagen doorgaat.
-
-                Een stream opzetten of iets dergelijks?
-                    - Per order krijg je dan een stream. Zie 'stream.js'
-
-                    ==> waarschijnlijk wil je die stream returnen!, mogelijk met een optie om over te gaan
-                    om alles te verkopen. Bijvoorbeeld nadat je te lang heb gewacht. Candles configuren in de config.json?
-
-            ===================    
-        // TODO: wat is ie maar half gevuld is... Of op 95% na... 
-        // Ter info: de methode() determineOrderFilled heeft maar een x aantal rondes..
-        // na die rondes is nog niet per definitie alles gevuld. 
-*/
-
-/* 
-     // TODO: Check If closing stream for key is correct here
-                    txtLogger.writeToLogFile(`closing Stream For Key wsKey=${order.wsKey}`);
-                    console.log(`closing Stream For Key wsKey=${order.wsKey}`);
-                    websocket.closeStreamForKey(wsClient, order.wsKey, false);
-
-                    // If al orders are filled, stop the bot
-                    // TODO: Check if this every() function works correct
-                    if (orderDetails.every(o => o.buyOrderStatus === OrderStatusEnum.FILLED && o.ocoOrderStatus === OrderStatusEnum.FILLED)) {
-                        txtLogger.writeToLogFile(`All orders are filled. Kill Stream and EXIT`);
-                        console.log(`All orders are filled. Kill Stream and EXIT`);
-
-                        // TODO: correct exiting of bot if all streams with keys are already killed, still use closeWebSocket?
-                        exchangeLogic.closeWebSocketAndExit(websocketClient);
-                        txtLogger.writeToLogFile(`Closing WebSocket and exiting program`);
-                    }
-
-*/
-const bot = new Tradingbot();
-bot.runProgram();
