@@ -284,19 +284,17 @@ export default class Tradingbot {
             }
 
             // POSSIBILITY II - OCO order is finished - ALL_DONE
-            if (data.eventType === 'listStatus') {
+            if (data.eventType === 'listStatus' && data.listOrderStatus === 'ALL_DONE') {
                 const listClientOrderId = data.listClientOrderId;
-                if (data.listOrderStatus === 'ALL_DONE') {
-                    txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
-                    txtLogger.writeToLogFile(`${JSON.stringify(data)}`);
+                txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
+                txtLogger.writeToLogFile(`${JSON.stringify(data)}`);
 
-                    this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
+                this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
 
-                    // POSSIBILITY III - CLOSE WEBSOCKET when only there are NO longer active buy and oco orders.
-                    if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
-                        txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
-                        this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
-                    }
+                // POSSIBILITY III - CLOSE WEBSOCKET when only there are NO longer active buy and oco orders.
+                if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
+                    txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
+                    this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
                 }
             }
         });
