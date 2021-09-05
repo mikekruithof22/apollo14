@@ -1,5 +1,5 @@
 import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
-import { AllCoinsInformationResponse, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, WebsocketClient } from 'binance';
+import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, WebsocketClient } from 'binance';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
@@ -248,13 +248,18 @@ export default class Tradingbot {
                     const balance = await this.binanceService.getAccountBalances(binanceRest);
 
                     const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
-            console.log('------------------------------');
-            console.log('activeBuyOrders');
-            console.log(this.activeBuyOrders);
-            console.log('buyOrder');
-            console.log(buyOrder);
-                    const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage);
-                    const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage);
+                    console.log('------------------------------');
+                    console.log('activeBuyOrders');
+                    console.log(this.activeBuyOrders);
+                    console.log('buyOrder');
+                    console.log(buyOrder);
+
+                    const symbol = `symbol=${data.symbol}`; // workaround, npm package sucks
+                    const exchangeInfo = await this.binanceService.getExchangeInfo(binanceRest, symbol) as ExchangeInfo;
+                    const precision = exchangeInfo.symbols[0].baseAssetPrecision; // this is the correct one?
+
+                    const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, precision);
+                    const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, precision);
                     const currentCryptoHoldingsOnBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === data.symbol.replace('USDT', ''));
                     const orderAmount = currentCryptoHoldingsOnBalance.free;
 

@@ -65,16 +65,16 @@ export default class Logic {
         }
     }
 
-    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number): number => {
+    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, precision:number): number => {
         const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
         const takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
-        return Number(takeProfitPrice.toFixed(5));
+        return Number(takeProfitPrice.toFixed(precision));
     }
 
-    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number): number => {
+    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, precision:number): number => {
         const takeLossPercentageInPercentage = takeLossPercentage / 100;
         const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
-        return Number(takeLossPrice.toFixed(5));
+        return Number(takeLossPrice.toFixed(precision));
     }
 
     public static bidsToObject = (bids: OrderBookRow[]): BidObject[] => {

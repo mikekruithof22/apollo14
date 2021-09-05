@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-import { BasicSymbolParam, CancelOrderParams, OrderBookParams } from '../../node_modules/binance/lib/index';
+import { BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams } from '../../node_modules/binance/lib/index';
 
 import { LogLevel } from '../models/log-level';
 import { MainClient } from '../../node_modules/binance/lib/main-client';
@@ -201,6 +201,28 @@ export default class BinanceService {
                 "type": "LIMIT",
                 "side": "BUY"
             }
+        */
+    }
+
+    public getExchangeInfo = async (binanceRest: MainClient, symbol: string): Promise<ExchangeInfo | void> => {
+        const options: ExchangeInfoParams = {
+            symbol: symbol        
+        }
+        return binanceRest
+            .getExchangeInfo(options)
+            .then(response => {
+                return response as ExchangeInfo;
+            }).catch(err => {
+                txtLogger.writeToLogFile(`getExchangeInfo() ${JSON.stringify(err)}`, LogLevel.ERROR);
+            });
+
+        /*
+        Example response:
+             timezone: string;
+    serverTime: number;
+    rateLimits: RateLimiter[];
+    exchangeFilters: ExchangeFilter[];
+    symbols: SymbolExchangeInfo[];
         */
     }
 
