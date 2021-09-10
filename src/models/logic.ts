@@ -6,4 +6,5 @@ export class BidObject{
 export class AmountAndPrice {
     price: number;
     amount: number;
+    totalUsdtAmount: number;
 }

@@ -1,9 +1,6 @@
 import * as schedule from "node-schedule";
 
 import Tradingbot from './tradingbot';
-import express from "express";
-
-export const app = express();
 
 // app.listen(app.get("port"), () => {
 //     console.log(("App is running"), app.get("env"));

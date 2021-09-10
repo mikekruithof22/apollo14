@@ -1,3 +1,4 @@
+import { BullishDivergenceResult } from '../models/calculate';
 import config from '../../config';
 import stopLoss from './stop-loss';
 
@@ -12,7 +13,7 @@ export default class CalculateHelper {
         rsiMinimumRisingPercentage,
         candleMinimumDeclingPercentage,
         orderConditionName
-    ) => {
+    ): BullishDivergenceResult => {
         for (var i = startCount; i < closePriceList.length; i++) {
             const mostRecentCandle = closePriceList[closePriceList.length - 1];
             const mostRecenCandleIndex = closePriceList.length - 1;
