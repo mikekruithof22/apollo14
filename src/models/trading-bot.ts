@@ -2,9 +2,8 @@ export class ActiveBuyOrder {
     clientOrderId: string;
     takeProfitPercentage: number;
     takeLossPercentage: number;
-    precision: number; 
+    stepSize: number;
 }
-
 export class ActiveOcoOrder {
     listClientOrderId: string;
 }

@@ -218,11 +218,11 @@ export default class BinanceService {
 
         /*
         Example response:
-             timezone: string;
-    serverTime: number;
-    rateLimits: RateLimiter[];
-    exchangeFilters: ExchangeFilter[];
-    symbols: SymbolExchangeInfo[];
+            timezone: string;
+            serverTime: number;
+            rateLimits: RateLimiter[];
+            exchangeFilters: ExchangeFilter[];
+            symbols: SymbolExchangeInfo[];
         */
     }
 

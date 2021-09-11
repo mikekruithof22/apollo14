@@ -77,27 +77,25 @@ export default class Order {
         */
     }
 
-    public createOcoOrder = async (
+    public createOcoSellOrder = async (
         binanceRest: MainClient,
         symbol: string,
         quantity: number,
         orderPrice: number,
         stopPrice: number,
-        listClientOrderId: string = undefined,
-        limitClientOrderId: string = undefined,
-        stopClientOrderId: string = undefined
+        stopLimitPrice: number
     ) => {
+        // SELL: Limit Price > Last Price > Stop Price
+        // BUY: Limit Price < Last Price < Stop Price
         const options: NewOCOParams = {
             symbol: symbol,
             side: 'SELL',
             quantity: quantity,
             price: orderPrice,
-            stopClientOrderId: stopClientOrderId,
             stopPrice: stopPrice,
+            stopLimitPrice: stopLimitPrice,
             stopLimitTimeInForce: 'GTC',
             newOrderRespType: 'RESULT',
-            listClientOrderId: listClientOrderId,
-            limitClientOrderId: limitClientOrderId
         }
 
         return binanceRest

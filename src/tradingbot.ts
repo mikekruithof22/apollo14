@@ -1,8 +1,9 @@
 import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
-import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, WebsocketClient } from 'binance';
+import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, WebsocketClient, WsUserDataEvents } from 'binance';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
+import { AmountAndPrice } from './models/logic';
 import BinanceService from './binance/binance';
 import { BullishDivergenceResult } from './models/calculate';
 import CandleHelper from './helpers/candle';
@@ -31,6 +32,15 @@ export default class Tradingbot {
         this.order = new Order();
     }
 
+    /*
+        TODO: hier nog over nadenken!
+            1. Bijvoorbeeld 5 order condities, bij 5 ingelegde oco orders de stream sluiten? 
+            2. Wat te doen als de bij order niet in een keer afgaat? 
+                a. cancelen na x aantal seconden & opnieuw? 
+                    i. daarna cancellen? 
+            3. Kritisch nalopen wanneer de stream moet sluiten.  
+
+    */
     public async runProgram() {
         let foundAtLeastOneBullishDivergence: boolean = false;
 
@@ -199,12 +209,38 @@ export default class Tradingbot {
         const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
         txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
 
-        const orderPriceAndAmount = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend);
-        const orderPrice = orderPriceAndAmount.price;
-        let orderAmount = orderPriceAndAmount.amount;
+        const symbol: string = `symbol=${tradingPair}`; // workaround, npm package sucks
+        const exchangeInfo = await this.binanceService.getExchangeInfo(binanceRest, symbol) as ExchangeInfo;
+
+        if (exchangeInfo === undefined) {
+            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
+            txtLogger.writeToLogFile(`getExchangeInfo() method failed.`, LogLevel.ERROR);
+            return;
+        }
+
+        const symbolResult: SymbolExchangeInfo = exchangeInfo.symbols.find(r => r.symbol === tradingPair);
+
+        if (symbolResult === undefined) {
+            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
+            txtLogger.writeToLogFile(`symbolResult was undefined .`, LogLevel.ERROR);
+            return;
+        }
+
+        const precision: number = symbolResult.baseAssetPrecision;
+        const lotSize: SymbolFilter = symbolResult.filters.find(f => f.filterType === 'LOT_SIZE') as SymbolLotSizeFilter;
+        const stepSize: number = exchangeLogic.determineStepSize(lotSize);
+
+        txtLogger.writeToLogFile(`The decimal stepSize for the current buy order is: ${precision}.`);
+        txtLogger.writeToLogFile(`The decimal stepSize for the oco order later on will be: ${stepSize}.`);
+
+        const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend, stepSize);
+        const orderPrice: number = orderPriceAndAmount.price;
+        let orderAmount: number = orderPriceAndAmount.amount;
+        const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
 
         txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
         txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
+        txtLogger.writeToLogFile(`Total USDT value of the order is equal to: ${totalUsdtAmount}`);
 
         // STEP VI. Create the buy order and add it to the activeBuyOrders array.
         const buyOrder = await this.order.createOrder(binanceRest, OrderTypeEnum.LIMITBUY, tradingPair, orderAmount, orderPrice) as OrderResponseFull;
@@ -225,53 +261,45 @@ export default class Tradingbot {
                 clientOrderId: buyOrder.clientOrderId,
                 takeProfitPercentage: takeProfitPercentage,
                 takeLossPercentage: takeLossPercentage,
+                stepSize: stepSize
             }
             this.activeBuyOrders.push(currentBuyOrder);
         }
     }
 
     public async listenToAccountOrderChanges(websocketClient: WebsocketClient, binanceRest: MainClient) {
-        // const listenKey = await binanceRestTest.getSpotUserDataListenKey();
         this.wsService.listenToAccountOderChanges(websocketClient);
         txtLogger.writeToLogFile(`Listening to Account Order Changes`);
 
-        websocketClient.on('formattedUserDataMessage', async (data) => {
+        websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
             txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
 
             if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
                 const clientOrderId: string = data.newClientOrderId;
 
                 // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
-                if (data.orderType === 'LIMIT' && data.side === 'BUY') {
+                if (data.orderType === 'LIMIT' && data.side === 'BUY' && data.orderStatus === OrderStatusEnum.FILLED) {
                     txtLogger.writeToLogFile(`Buy order with clientOrderId: ${clientOrderId} is filled`);
 
-                    const balance = await this.binanceService.getAccountBalances(binanceRest);
-
                     const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
-                    console.log('------------------------------');
-                    console.log('activeBuyOrders');
-                    console.log(this.activeBuyOrders);
-                    console.log('buyOrder');
-                    console.log(buyOrder);
+                    const stepSize: number = buyOrder.stepSize;
 
-                    const symbol = `symbol=${data.symbol}`; // workaround, npm package sucks
-                    const exchangeInfo = await this.binanceService.getExchangeInfo(binanceRest, symbol) as ExchangeInfo;
-                    const precision = exchangeInfo.symbols[0].baseAssetPrecision; // this is the correct one?
+                    const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, stepSize);
+                    const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, stepSize);
+                    const stopLimitPrice: number = Number((stopLossPrice * 0.97).toFixed(stepSize));
+                    const ocoOrderAmount: number = parseFloat(data.quantity.toFixed(stepSize));
 
-                    const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, precision);
-                    const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, precision);
-                    const currentCryptoHoldingsOnBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === data.symbol.replace('USDT', ''));
-                    const orderAmount = currentCryptoHoldingsOnBalance.free;
+                    txtLogger.writeToLogFile(`The amount off free to sell crypto is equal to: ${ocoOrderAmount}`);
+                    txtLogger.writeToLogFile(`The stepsize will be: ${stepSize}`);
+                    txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${ocoOrderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice} stopLimitPrice: ${stopLimitPrice}`);
 
-                    txtLogger.writeToLogFile(`The amount off free to sell crypto is equal to: ${orderAmount}`);
-                    txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${orderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice}`);
-
-                    const ocoOrder = await this.order.createOcoOrder(
+                    const ocoOrder = await this.order.createOcoSellOrder(
                         binanceRest,
                         data.symbol,
-                        orderAmount as number,
+                        ocoOrderAmount,
                         profitPrice,
-                        stopLossPrice
+                        stopLossPrice,
+                        stopLimitPrice
                     );
 
                     if (ocoOrder === undefined) {

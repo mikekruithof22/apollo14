@@ -1,24 +1,7 @@
 import { AmountAndPrice, BidObject } from "../models/logic";
-
-import { OrderBookRow } from "../../node_modules/binance/lib/index";
+import { OrderBookRow, SymbolLotSizeFilter } from "../../node_modules/binance/lib/index";
 
 export default class Logic {
-
-    // public static calcCurrentOpenOrderAmount = (currentOpenOrders): number => {
-    //     let openAmount: number = 0;
-    //     let totalOpenAmountValue: number = 0;
-
-    //     if (currentOpenOrders.length >= 1) {
-    //         let usdtValue = 0;
-    //         currentOpenOrders.forEach(order => {
-    //             openAmount = openAmount + (order.origQty - order.executedQty);
-    //             usdtValue = usdtValue + order.price; // TODO: is dit juist...
-    //         });
-    //         totalOpenAmountValue = totalOpenAmountValue * usdtValue;
-    //     }
-
-    //     return totalOpenAmountValue;
-    // }
 
     public static calcAmountToSpend = (
         currentFreeUSDTAmount: number,
@@ -35,9 +18,9 @@ export default class Logic {
     public static calcOrderAmountAndPrice = (
         bids: BidObject[],
         amountToSpend: number,
-        currentFreeCryptoBalanceAmount: number = 0
+        stepSize: number
     ): AmountAndPrice => {
-        let amount: number = 0 + currentFreeCryptoBalanceAmount;
+        let amount: number = 0;
         let price: number = 0;
         let tmpAmount: number = 0;
 
@@ -57,24 +40,31 @@ export default class Logic {
             }
         }
         // subtract 0.5% for fees
-        const finalAmount: number = Number(((amountToSpend / price) * 0.995).toFixed(5));
+        const finalAmount: number = Number(((amountToSpend / price) * 0.995).toFixed(stepSize));
 
         return {
             price: price,
-            amount: finalAmount
+            amount: finalAmount,
+            totalUsdtAmount: price * finalAmount
         }
     }
 
-    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, precision:number): number => {
-        const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
-        const takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
-        return Number(takeProfitPrice.toFixed(precision));
+    public static determineStepSize = (lotSize: SymbolLotSizeFilter) => {
+        // Lotsize.stepSize: '0.01000000' ==> means two behind the comma. Therefore: 2.
+        let stepSize: number = parseFloat(lotSize.stepSize as string);
+        return stepSize = stepSize.toString().split(".")[1].length || 2;
     }
 
-    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, precision:number): number => {
+    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, stepSize: number): number => {
+        const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
+        const takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
+        return Number(takeProfitPrice.toFixed(stepSize));
+    }
+
+    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, stepSize: number): number => {
         const takeLossPercentageInPercentage = takeLossPercentage / 100;
         const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
-        return Number(takeLossPrice.toFixed(precision));
+        return Number(takeLossPrice.toFixed(stepSize));
     }
 
     public static bidsToObject = (bids: OrderBookRow[]): BidObject[] => {
