@@ -42,9 +42,6 @@ export default class Order {
                 txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
                 return;
         }
-
-        // options.newClientOrderId = binanceRest.generateNewOrderId();
-
         txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
 
         return binanceRest
@@ -97,13 +94,14 @@ export default class Order {
             stopLimitTimeInForce: 'GTC',
             newOrderRespType: 'RESULT',
         }
+        txtLogger.writeToLogFile(`Try to create an OCO with the following options: ${JSON.stringify(options)}`, LogLevel.INFO);
 
         return binanceRest
             .submitNewOCO(options)
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`createOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`createOcoSellOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
     }
 

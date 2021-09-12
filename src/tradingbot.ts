@@ -1,5 +1,5 @@
 import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
-import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, WebsocketClient, WsUserDataEvents } from 'binance';
+import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WebsocketClient, WsUserDataEvents } from 'binance';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
@@ -39,7 +39,13 @@ export default class Tradingbot {
                 a. cancelen na x aantal seconden & opnieuw? 
                     i. daarna cancellen? 
             3. Kritisch nalopen wanneer de stream moet sluiten.  
+                    Variabelen:
+                        i. Aantal order condities 
+                        ii. Aantal ingelegde oco orders 
+            4. Wil je een check hebben of je reeds bestaande streams wilt afsluiten zodra je start? 
+            (geen idee of de boel automatisch stopt, zodra het programma afsluit)
 
+            5. TestMike todo dingen uit de code doorgaan. 
     */
     public async runProgram() {
         let foundAtLeastOneBullishDivergence: boolean = false;
@@ -82,7 +88,7 @@ export default class Tradingbot {
         this.listenToAccountOrderChanges(websocketClient, binanceRest);
 
         // STEP 4 - Retrieve RSI & calculate bullish divergence foreach order condition.
-        txtLogger.writeToLogFile(`Checking bullish divergence foreach order condition`);
+        txtLogger.writeToLogFile(`Checking bullish divergence for each of the ${orderConditions.length} order condition(s)`);
 
         for await (let order of orderConditions) {
             const orderConditionName: string = order.name;
@@ -108,8 +114,8 @@ export default class Tradingbot {
 
             const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
 
-            txtLogger.writeToLogFile(`Checking the following order ${orderConditionName}`);
-            txtLogger.writeToLogFile(`Retrieve candles from Binance url`);
+            txtLogger.writeToLogFile(`Eveluating order condition for: ${orderConditionName}`);
+            txtLogger.writeToLogFile(`Retrieving candles from Binance url`);
             txtLogger.writeToLogFile(url);
 
             const candleList = await this.candleHelper.retrieveCandles(url);
@@ -132,7 +138,7 @@ export default class Tradingbot {
             if (bullishDivergenceCandle !== undefined) {
                 foundAtLeastOneBullishDivergence = true;
 
-                txtLogger.writeToLogFile(`Bullish divergence detected ${orderConditionName}. Therefore, continue to the buyOrderingLogic() method`);
+                txtLogger.writeToLogFile(`Bullish divergence detected for: ${orderConditionName}. Next step will be the buyOrderingLogic() method`);
                 txtLogger.writeToLogFile(`${JSON.stringify(bullishDivergenceCandle)}`);
                 // STEP 5. 
                 //      OPTIE I - A bullish divergence was found, continue to the ordering logic method.
@@ -142,7 +148,7 @@ export default class Tradingbot {
                     binanceRest
                 );
             } else {
-                txtLogger.writeToLogFile(`No bullish divergence detected for ${orderConditionName}.`);
+                txtLogger.writeToLogFile(`No bullish divergence detected for: ${orderConditionName}.`);
             }
         };
 
@@ -150,7 +156,7 @@ export default class Tradingbot {
             // STEP 5. 
             //      OPTIE II  - Close the program & websocket because no bullish divergence(s) where found this time.
             txtLogger.writeToLogFile(`Program quit because:`);
-            txtLogger.writeToLogFile(`No bullish divergence(s) where found this time`);
+            txtLogger.writeToLogFile(`No bullish divergence(s) where found during this run.`);
 
             setTimeout(() => {
                 this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
@@ -170,6 +176,7 @@ export default class Tradingbot {
 
         // STEP I. Prepare config.json order data 
         const tradingPair: string = order.tradingPair;
+        const orderName: string = order.name;
         const takeProfitPercentage: number = order.order.takeProfitPercentage;
         const takeLossPercentage: number = order.order.takeLossPercentage;
         const maxUsdtBuyAmount: number = order.order.maxUsdtBuyAmount;
@@ -193,11 +200,11 @@ export default class Tradingbot {
         const balance = await this.binanceService.getAccountBalances(binanceRest);
         const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
         const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
-        txtLogger.writeToLogFile(`Current free USDT trade amount is equal to: ${currentFreeUSDTAmount}`);
+        txtLogger.writeToLogFile(`Current free USDT amount on the balance is equal to: ${currentFreeUSDTAmount}`);
 
         if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
-            txtLogger.writeToLogFile(`Current free USDT trade amount is: ${currentFreeUSDTAmount}. Configured amount: ${minimumUSDTorderAmount}.`);
+            txtLogger.writeToLogFile(`Current free USDT trade amount is: ${currentFreeUSDTAmount}. That is lower than the configured amount: ${minimumUSDTorderAmount}.`);
             return;
         }
 
@@ -226,17 +233,27 @@ export default class Tradingbot {
             return;
         }
 
-        const precision: number = symbolResult.baseAssetPrecision;
         const lotSize: SymbolFilter = symbolResult.filters.find(f => f.filterType === 'LOT_SIZE') as SymbolLotSizeFilter;
-        const stepSize: number = exchangeLogic.determineStepSize(lotSize);
+        const priceFilter: SymbolFilter = symbolResult.filters.find(f => f.filterType === 'PRICE_FILTER') as SymbolPriceFilter;
 
-        txtLogger.writeToLogFile(`The decimal stepSize for the current buy order is: ${precision}.`);
-        txtLogger.writeToLogFile(`The decimal stepSize for the oco order later on will be: ${stepSize}.`);
+        const stepSize: number = exchangeLogic.determineStepSize(lotSize);
+        const minimumOrderQuantity: number = exchangeLogic.determineMinQty(lotSize);
+        const tickSize: number = exchangeLogic.determineTickSize(priceFilter);
+
+        txtLogger.writeToLogFile(`Trying to create a limit buy order`);
+        txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
+        txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
 
         const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend, stepSize);
         const orderPrice: number = orderPriceAndAmount.price;
-        let orderAmount: number = orderPriceAndAmount.amount;
+        const orderAmount: number = orderPriceAndAmount.amount;
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
+
+        if (orderAmount < minimumOrderQuantity) {
+            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
+            txtLogger.writeToLogFile(`Order quantity is lower than - ${orderAmount} - the minimum order quanity: ${minimumOrderQuantity}`);
+            return;
+        }
 
         txtLogger.writeToLogFile(`Based on the order book the following order will be (very likely) filled immediately:`);
         txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
@@ -259,9 +276,12 @@ export default class Tradingbot {
         ) {
             const currentBuyOrder: ActiveBuyOrder = {
                 clientOrderId: buyOrder.clientOrderId,
+                orderName: orderName,
                 takeProfitPercentage: takeProfitPercentage,
                 takeLossPercentage: takeLossPercentage,
-                stepSize: stepSize
+                minimumOrderQuantity: minimumOrderQuantity,
+                stepSize: stepSize,
+                tickSize: tickSize
             }
             this.activeBuyOrders.push(currentBuyOrder);
         }
@@ -279,18 +299,28 @@ export default class Tradingbot {
 
                 // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
                 if (data.orderType === 'LIMIT' && data.side === 'BUY' && data.orderStatus === OrderStatusEnum.FILLED) {
-                    txtLogger.writeToLogFile(`Buy order with clientOrderId: ${clientOrderId} is filled`);
-
                     const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
+                    txtLogger.writeToLogFile(`Limit by order with clientOrderId: ${clientOrderId} and order name: ${buyOrder.orderName} is filled`);
+
                     const stepSize: number = buyOrder.stepSize;
+                    const tickSize: number = buyOrder.tickSize;
 
-                    const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, stepSize);
-                    const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, stepSize);
-                    const stopLimitPrice: number = Number((stopLossPrice * 0.97).toFixed(stepSize));
-                    const ocoOrderAmount: number = parseFloat(data.quantity.toFixed(stepSize));
+                    const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, tickSize);
+                    const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, tickSize);
+                    const stopLimitPrice: number = Number((stopLossPrice * 0.97).toFixed(tickSize)); // TODO: testmike, naar aparte methode?
+                    const ocoOrderAmount: number = parseFloat(data.quantity.toFixed(stepSize)); // TODO: testmike, naar aparte methode?
+                    const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
 
-                    txtLogger.writeToLogFile(`The amount off free to sell crypto is equal to: ${ocoOrderAmount}`);
-                    txtLogger.writeToLogFile(`The stepsize will be: ${stepSize}`);
+                    if (ocoOrderAmount < minimumOcoOrderQuantity) {
+                        txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
+                        txtLogger.writeToLogFile(`Oco order quantity is lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);
+                        return;
+                    }
+                    txtLogger.writeToLogFile(`Trying to create an OCO order`);
+                    txtLogger.writeToLogFile(`The oco order amount is equal to: ${ocoOrderAmount}`);
+                    txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
+                    txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
+
                     txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${ocoOrderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice} stopLimitPrice: ${stopLimitPrice}`);
 
                     const ocoOrder = await this.order.createOcoSellOrder(

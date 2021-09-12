@@ -1,5 +1,5 @@
 import { AmountAndPrice, BidObject } from "../models/logic";
-import { OrderBookRow, SymbolLotSizeFilter } from "../../node_modules/binance/lib/index";
+import { OrderBookRow, SymbolLotSizeFilter, SymbolPriceFilter } from "../../node_modules/binance/lib/index";
 
 export default class Logic {
 
@@ -39,8 +39,14 @@ export default class Logic {
                 break;
             }
         }
-        // subtract 0.5% for fees
-        const finalAmount: number = Number(((amountToSpend / price) * 0.995).toFixed(stepSize));
+        let finalAmount: number = 0;
+        if (stepSize === 1) {
+            finalAmount = Math.floor(Number(((amountToSpend / price) * 0.99)));
+        } else {
+            // TODO: testMike, nagaan of dit echt nodig is. Want je hebt toch altijd 10 dollar resever?
+            // subtract 0.5% for fees
+            finalAmount = Number(((amountToSpend / price) * 0.995).toFixed(stepSize));
+        }
 
         return {
             price: price,
@@ -49,22 +55,46 @@ export default class Logic {
         }
     }
 
-    public static determineStepSize = (lotSize: SymbolLotSizeFilter) => {
-        // Lotsize.stepSize: '0.01000000' ==> means two behind the comma. Therefore: 2.
-        let stepSize: number = parseFloat(lotSize.stepSize as string);
-        return stepSize = stepSize.toString().split(".")[1].length || 2;
+    public static determineStepSize = (lotSize: SymbolLotSizeFilter): number => {
+        // Lotsize.stepSize: '0.01000000' ==> means two behind the comma. Therefore stepSize will be: 2.
+        let stepSize: string = lotSize.stepSize as string;
+        const stepSizeNumber: number = parseFloat(stepSize);
+        stepSize = stepSizeNumber.toString(); // removes the extra zero's behind the first number
+        if (stepSize.startsWith('0.')) {
+            return stepSize.split(".")[1].length || 2;
+        } else {
+            // Which means, it start with something like: '1.0'.
+            return parseFloat(stepSize);
+        }
     }
 
-    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, stepSize: number): number => {
+    public static determineMinQty = (lotSize: SymbolLotSizeFilter): number => {
+        const minQty: string = lotSize.minQty as string;
+        return parseFloat(minQty);
+    }
+
+    public static determineTickSize = (priceFilter: SymbolPriceFilter): number => {
+        let tickSize: string = priceFilter.tickSize as string;
+        const tickSizeNumber: number = parseFloat(tickSize);
+        tickSize = tickSizeNumber.toString(); // removes the extra zero's behind the first number
+        if (tickSize.startsWith('0.')) {
+            return tickSize.split(".")[1].length || 2;
+        } else {
+            // Which means, it start with something like: '1.0'.
+            return parseFloat(tickSize);
+        }
+    }
+
+    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, tickSize: number): number => {
         const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
-        const takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
-        return Number(takeProfitPrice.toFixed(stepSize));
+        let takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
+        return Number(takeProfitPrice.toFixed(tickSize));
     }
 
-    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, stepSize: number): number => {
+    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, tickSize: number): number => {
         const takeLossPercentageInPercentage = takeLossPercentage / 100;
         const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
-        return Number(takeLossPrice.toFixed(stepSize));
+        return Number(takeLossPrice.toFixed(tickSize));
     }
 
     public static bidsToObject = (bids: OrderBookRow[]): BidObject[] => {
