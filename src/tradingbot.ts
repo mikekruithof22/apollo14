@@ -359,12 +359,6 @@ export default class Tradingbot {
                 txtLogger.writeToLogFile(`${JSON.stringify(data)}`);
 
                 this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
-
-                // POSSIBILITY III - CLOSE WEBSOCKET when only there are NO longer active buy and oco orders.
-                if (this.activeBuyOrders === []) {
-                    txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy orders.`);
-                    this.websocketClient.close(this.wsService.websocketKey, false);
-                }
             }
         });
     }
