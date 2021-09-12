@@ -1,4 +1,4 @@
-export default class RsiCalculator {
+export default class Stoploss {
     public static stopLossCalculation = (startCandle, nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage) => {
         let message: string;
         let sellResult: number = 0;

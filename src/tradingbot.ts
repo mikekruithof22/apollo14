@@ -46,6 +46,10 @@ export default class Tradingbot {
             (geen idee of de boel automatisch stopt, zodra het programma afsluit)
 
             5. TestMike todo dingen uit de code doorgaan. 
+
+            6. Bij opstarten en/of orderlogic kijken of er: 
+                a.  reeds een oco open staat voor je oderConditie
+                b. Limit orders die open staan, maar die worden weer gecandeld (reeds bestaand in de code)
     */
     public async runProgram() {
         let foundAtLeastOneBullishDivergence: boolean = false;
@@ -208,11 +212,7 @@ export default class Tradingbot {
             return;
         }
 
-        // STEP IV. Retrieve bid prices.
-        const currentOrderBook = await this.binanceService.getOrderBook(binanceRest, tradingPair);
-        const currentOrderBookBids = exchangeLogic.bidsToObject((currentOrderBook as OrderBookResponse).bids);
-
-        // STEP V. Determine how much you can spend at the next buy order based on the order book.
+        // STEP IV. Determine how much you can spend at the next buy order based on the order book.
         const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
         txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
 
@@ -244,6 +244,9 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
         txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
 
+        // STEP V. Retrieve bid prices.
+        const currentOrderBook = await this.binanceService.getOrderBook(binanceRest, tradingPair);
+        const currentOrderBookBids = exchangeLogic.bidsToObject((currentOrderBook as OrderBookResponse).bids);
         const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend, stepSize);
         const orderPrice: number = orderPriceAndAmount.price;
         const orderAmount: number = orderPriceAndAmount.amount;
@@ -267,8 +270,7 @@ export default class Tradingbot {
             return;
         }
         txtLogger.writeToLogFile(`Buy order created. Details:`);
-        txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}, 
-                            price: ${buyOrder.price}, takeProfitPercentage: ${takeProfitPercentage}, takeLossPercentage: ${takeLossPercentage}`);
+        txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}, price: ${buyOrder.price}`);
 
         if (buyOrder.status === OrderStatusEnum.PARTIALLY_FILLED ||
             buyOrder.status === OrderStatusEnum.NEW ||
@@ -335,6 +337,11 @@ export default class Tradingbot {
                     if (ocoOrder === undefined) {
                         txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
                         txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
+
+                        // TODO: Ronald, Aram en Mike zijn dat eens 
+                        // place limit order    
+                        // If limit sell order fails, then send email as ultimate fallback 
+
                         return;
                     } else {
                         this.activeBuyOrders = this.activeBuyOrders.filter(order => order.clientOrderId != clientOrderId);
@@ -355,8 +362,8 @@ export default class Tradingbot {
                 this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
 
                 // POSSIBILITY III - CLOSE WEBSOCKET when only there are NO longer active buy and oco orders.
-                if (this.activeBuyOrders === [] && this.activeOcoOrders === []) {
-                    txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy and or orders.`);
+                if (this.activeBuyOrders === []) {
+                    txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy orders.`);
                     this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
                 }
             }

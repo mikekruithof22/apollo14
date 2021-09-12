@@ -2,9 +2,9 @@ import { LogLevel } from "../models/log-level";
 
 const fs = require('fs');
 
-export default class RsiCalculator {
+export default class TextLogger {
     public static writeToLogFile = (message: string, logLevel = LogLevel.INFO): string => {
-        const fileLocation: string = RsiCalculator.generateFilePath();
+        const fileLocation: string = TextLogger.generateFilePath();
         const date: Date = new Date();
         message = `\n ${logLevel} - ${date.toUTCString()} - ${message}`;
 
