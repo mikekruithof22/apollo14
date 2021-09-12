@@ -307,7 +307,7 @@ export default class Tradingbot {
 
                     const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, tickSize);
                     const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, tickSize);
-                    const stopLimitPrice: number = Number((stopLossPrice * 0.97).toFixed(tickSize)); // TODO: testmike, naar aparte methode?
+                    const stopLimitPrice: number = Number((stopLossPrice * 0.97).toFixed(tickSize)); // TODO: testmike, naar aparte methode? + configurabel maken?
                     const ocoOrderAmount: number = parseFloat(data.quantity.toFixed(stepSize)); // TODO: testmike, naar aparte methode?
                     const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
 

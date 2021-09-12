@@ -3,8 +3,8 @@ export class ActiveBuyOrder {
     orderName: string;
     takeProfitPercentage: number;
     takeLossPercentage: number;
-    stepSize: number;
     minimumOrderQuantity: number;
+    stepSize: number;
     tickSize: number;
 }
 export class ActiveOcoOrder {
