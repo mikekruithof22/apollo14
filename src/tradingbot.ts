@@ -338,10 +338,21 @@ export default class Tradingbot {
                         txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
                         txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
 
-                        // TODO: Ronald, Aram en Mike zijn dat eens 
-                        // place limit order    
-                        // If limit sell order fails, then send email as ultimate fallback 
+                        const limitSellOrderAmount: number = ocoOrderAmount;
+                        const limitSellOrderPrice: number = data.price * 0.95;
 
+                        const limiSellOrder = await this.order.createOrder(binanceRest, OrderTypeEnum.LIMITSELL, data.symbol, limitSellOrderAmount, limitSellOrderPrice) as OrderResponseFull;
+                        if (limiSellOrder === undefined) {
+                            txtLogger.writeToLogFile(`There was an error creating the limit sell order`, LogLevel.ERROR);
+                        } else {
+                            txtLogger.writeToLogFile(`Limit sell order created. Details:`);
+                            txtLogger.writeToLogFile(`Status: ${limiSellOrder.status}, orderId: ${limiSellOrder.orderId}, clientOrderId: ${limiSellOrder.clientOrderId}, price: ${limiSellOrder.price}`);
+                        }
+                        txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
+                        txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
+                        
+                        process.exit();
+                        
                         return;
                     } else {
                         this.activeBuyOrders = this.activeBuyOrders.filter(order => order.clientOrderId != clientOrderId);
