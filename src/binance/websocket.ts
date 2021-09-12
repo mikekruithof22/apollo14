@@ -16,14 +16,14 @@ export default class WebSocketService {
         });
 
         // notification when a connection is opened
-        wsClient.on('open', (data: {
-            wsKey: WsKey;
-            ws: WebSocket;
-            event?: any;
-        }) => {
-            this.websocketKey = data.wsKey;
-            txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
-        });
+        // wsClient.on('open', (data: {
+        //     wsKey: WsKey;
+        //     ws: WebSocket;
+        //     event?: any;
+        // }) => {
+        //     this.websocketKey = data.wsKey;
+        //     txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
+        // });
 
         wsClient.on('close', (data: {
             wsKey: WsKey;
