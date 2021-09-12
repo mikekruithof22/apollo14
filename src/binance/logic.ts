@@ -43,7 +43,7 @@ export default class Logic {
         if (stepSize === 1) {
             finalAmount = Math.floor(Number(((amountToSpend / price) * 0.99)));
         } else {
-            // TODO: testMike, nagaan of dit echt nodig is. Want je hebt toch altijd 10 dollar resever?
+            // TODO: testMike, nagaan of dit echt nodig is. Want je hebt toch altijd 10 dollar als reserve?
             // subtract 0.5% for fees
             finalAmount = Number(((amountToSpend / price) * 0.995).toFixed(stepSize));
         }
@@ -95,6 +95,10 @@ export default class Logic {
         const takeLossPercentageInPercentage = takeLossPercentage / 100;
         const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
         return Number(takeLossPrice.toFixed(tickSize));
+    }
+
+    public static callStopLimitPrice = (stopLossPrice: number, tickSize: number): number => {
+       return Number((stopLossPrice * 0.99).toFixed(tickSize));
     }
 
     public static bidsToObject = (bids: OrderBookRow[]): BidObject[] => {
