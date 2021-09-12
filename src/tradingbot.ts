@@ -2,7 +2,6 @@ import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
 import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WebsocketClient, WsUserDataEvents } from 'binance';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
-
 import { AmountAndPrice } from './models/logic';
 import BinanceService from './binance/binance';
 import { BullishDivergenceResult } from './models/calculate';
@@ -21,12 +20,14 @@ export default class Tradingbot {
     private activeBuyOrders: ActiveBuyOrder[] = [];
     private activeOcoOrders = [];
     private wsService: WebSocketService;
+    private websocketClient: WebsocketClient;
     private binanceService: BinanceService;
     private candleHelper: CandleHelper;
     private order: Order;
 
-    constructor() {
-        this.wsService = new WebSocketService();
+    constructor(_wsService: WebSocketService, _wsClient: WebsocketClient) {
+        this.wsService = _wsService;
+        this.websocketClient = _wsClient;
         this.binanceService = new BinanceService();
         this.candleHelper = new CandleHelper();
         this.order = new Order();
@@ -74,13 +75,6 @@ export default class Tradingbot {
         // STEP 3 - Start Stream and start listening to Account Order Changes.
         txtLogger.writeToLogFile(`Generating Websocket`);
 
-        const websocketClient: WebsocketClient = this.wsService.generateWebsocketClient();
-        if (websocketClient === undefined) {
-            txtLogger.writeToLogFile(`Program quit because:`);
-            txtLogger.writeToLogFile(`Generating WebsocketClient failed.`, LogLevel.ERROR);
-            return;
-        }
-
         const binanceRest: MainClient = this.binanceService.generateBinanceRest();
         txtLogger.writeToLogFile(`Generating Binance rest client`);
         if (binanceRest === undefined) {
@@ -89,7 +83,7 @@ export default class Tradingbot {
             return;
         }
         txtLogger.writeToLogFile(`Starting to listen to account order changes`);
-        this.listenToAccountOrderChanges(websocketClient, binanceRest);
+        this.listenToAccountOrderChanges(binanceRest);
 
         // STEP 4 - Retrieve RSI & calculate bullish divergence foreach order condition.
         txtLogger.writeToLogFile(`Checking bullish divergence for each of the ${orderConditions.length} order condition(s)`);
@@ -162,11 +156,6 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`Program quit because:`);
             txtLogger.writeToLogFile(`No bullish divergence(s) where found during this run.`);
 
-            setTimeout(() => {
-                this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
-            }, 5000);
-
-            txtLogger.writeToLogFile(`Closing WebSocket and exiting program`);
             return;
         }
     }
@@ -289,11 +278,10 @@ export default class Tradingbot {
         }
     }
 
-    public async listenToAccountOrderChanges(websocketClient: WebsocketClient, binanceRest: MainClient) {
-        this.wsService.listenToAccountOderChanges(websocketClient);
+    public async listenToAccountOrderChanges(binanceRest: MainClient) {
         txtLogger.writeToLogFile(`Listening to Account Order Changes`);
 
-        websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
+        this.websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
             txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
 
             if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
@@ -375,7 +363,7 @@ export default class Tradingbot {
                 // POSSIBILITY III - CLOSE WEBSOCKET when only there are NO longer active buy and oco orders.
                 if (this.activeBuyOrders === []) {
                     txtLogger.writeToLogFile(`Closing the WebSocket because there are no longer active buy orders.`);
-                    this.wsService.closeStreamForKey(websocketClient, this.wsService.websocketKey);
+                    this.websocketClient.close(this.wsService.websocketKey, false);
                 }
             }
         });
