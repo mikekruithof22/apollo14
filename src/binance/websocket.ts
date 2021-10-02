@@ -38,7 +38,7 @@ export default class WebSocketService {
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.writeToLogFile(`Websocket event - trying to reconnected...', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.writeToLogFile(`Websocket event - trying to reconnect...', ${data.wsKey}, ${data.ws.url}`);
         });
 
 
@@ -59,6 +59,9 @@ export default class WebSocketService {
 
     public closeWebSocket = (wsClient: WebsocketClient) => {
         return wsClient.closeWs(wsClient);
+    }
+    public requestListSubscriptions(wsClient: WebsocketClient, wsKey: WsKey, requestId: number) {
+        return wsClient.requestListSubscriptions(wsKey, requestId);
     }
 
     public listenToAccountOderChanges = (wsClient: WebsocketClient): Promise<any> => {
