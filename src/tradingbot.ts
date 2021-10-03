@@ -33,15 +33,10 @@ export default class Tradingbot {
 
     /*
     TODO: hier nog over nadenken!
-        1. Bijvoorbeeld 5 order condities, bij 5 ingelegde oco orders de stream sluiten? 
-        2. Wat te doen als de buy order niet in een keer afgaat? 
-        a. cancelen na x aantal seconden & opnieuw? 
-        i. daarna cancellen? 
-        3. TestMike todo dingen uit de code doorgaan. 
-
-        4. Bij opstarten en/of orderlogic kijken of er: 
-        a.  reeds een oco open staat voor je oderConditie
-        b. Limit orders die open staan, maar die worden weer gecandeld (reeds bestaand in de code)
+        1. Wat te doen als de buy order niet in een keer afgaat? 
+            a. cancelen na x aantal seconden & opnieuw? 
+                i. daarna cancellen? 
+        2. TestMike todo dingen uit de code doorgaan. 
     */
     public async runProgram() {
         let foundAtLeastOneBullishDivergence: boolean = false;
@@ -120,6 +115,9 @@ export default class Tradingbot {
                 foundAtLeastOneBullishDivergence = true;
 
                 txtLogger.writeToLogFile(`Bullish divergence detected for: ${orderConditionName}. Next step will be the buyOrderingLogic() method`);
+                txtLogger.writeToLogFile(`Candle one: ${bullishDivergenceCandle.startWithCandle}, RSI one:${bullishDivergenceCandle.endiRsiValue}`);
+                txtLogger.writeToLogFile(`Candle two: ${bullishDivergenceCandle.endingCandle}, RSI two:${bullishDivergenceCandle.endiRsiValue}`);
+                txtLogger.writeToLogFile(`More detailed information can be found below:`);
                 txtLogger.writeToLogFile(`${JSON.stringify(bullishDivergenceCandle)}`);
                 // STEP 4. 
                 //      OPTIE I - A bullish divergence was found, continue to the ordering logic method.
@@ -146,7 +144,7 @@ export default class Tradingbot {
         order: OrderConfigObject,
         minimumUSDTorderAmount: number
     ) {
-        txtLogger.writeToLogFile(`Starting ordering logic method`);
+        txtLogger.writeToLogFile(`Starting ordering logic method()`);
 
         // STEP I. Prepare config.json order data 
         const tradingPair: string = order.tradingPair;

@@ -19,9 +19,9 @@
     },
     "orderConditions": [
         {
-            "name": "1.) VTHOUSDT",
-            "tradingPair": "VTHOUSDT",
-            "interval": "30m",
+            "name": "1.) DOTUSDT",
+            "tradingPair": "DOTUSDT",
+            "interval": "15m",
             "rsi": {
                 "minimumRisingPercentage": 1.00,
                 "calculationLength": 14
@@ -35,7 +35,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 2,
+                "takeLossPercentage": 3.5,
                 "maxUsdtBuyAmount": 5000,
                 "maxPercentageOffBalance": 75,
                 "checkOrderStatusMaxRetryCount": 5,
