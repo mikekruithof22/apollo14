@@ -2,6 +2,7 @@ import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
 import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WsUserDataEvents } from 'binance';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
+
 import { AmountAndPrice } from './models/logic';
 import BinanceService from './binance/binance';
 import { BullishDivergenceResult } from './models/calculate';
@@ -14,13 +15,11 @@ import configChecker from './helpers/config-sanity-check';
 import exchangeLogic from './binance/logic';
 import rsiHelper from './helpers/rsi';
 import txtLogger from './helpers/txt-logger';
-import BuyOrders from './buy-orders';
 
 export default class Tradingbot {
     private activeBuyOrders: ActiveBuyOrder[] = [];
-    // private activeOcoOrders = [];
-    private buyOrders: BuyOrders
-    private binanceRest: MainClient
+    private activeOcoOrdersIds: string[] = [];
+    private binanceRest: MainClient;
     private binanceService: BinanceService;
     private candleHelper: CandleHelper;
     private order: Order;
@@ -33,23 +32,16 @@ export default class Tradingbot {
     }
 
     /*
-        TODO: hier nog over nadenken!
-            1. Bijvoorbeeld 5 order condities, bij 5 ingelegde oco orders de stream sluiten? 
-            2. Wat te doen als de bij order niet in een keer afgaat? 
-                a. cancelen na x aantal seconden & opnieuw? 
-                    i. daarna cancellen? 
-            3. Kritisch nalopen wanneer de stream moet sluiten.  
-                    Variabelen:
-                        i. Aantal order condities 
-                        ii. Aantal ingelegde oco orders 
-            4. Wil je een check hebben of je reeds bestaande streams wilt afsluiten zodra je start? 
-            (geen idee of de boel automatisch stopt, zodra het programma afsluit)
+    TODO: hier nog over nadenken!
+        1. Bijvoorbeeld 5 order condities, bij 5 ingelegde oco orders de stream sluiten? 
+        2. Wat te doen als de buy order niet in een keer afgaat? 
+        a. cancelen na x aantal seconden & opnieuw? 
+        i. daarna cancellen? 
+        3. TestMike todo dingen uit de code doorgaan. 
 
-            5. TestMike todo dingen uit de code doorgaan. 
-
-            6. Bij opstarten en/of orderlogic kijken of er: 
-                a.  reeds een oco open staat voor je oderConditie
-                b. Limit orders die open staan, maar die worden weer gecandeld (reeds bestaand in de code)
+        4. Bij opstarten en/of orderlogic kijken of er: 
+        a.  reeds een oco open staat voor je oderConditie
+        b. Limit orders die open staan, maar die worden weer gecandeld (reeds bestaand in de code)
     */
     public async runProgram() {
         let foundAtLeastOneBullishDivergence: boolean = false;
@@ -268,7 +260,6 @@ export default class Tradingbot {
                 stepSize: stepSize,
                 tickSize: tickSize
             }
-            this.buyOrders.addActiveBuyOrder(currentBuyOrder);
             this.activeBuyOrders.push(currentBuyOrder);
         }
     }
@@ -319,12 +310,12 @@ export default class Tradingbot {
                     const limitSellOrderAmount: number = ocoOrderAmount;
                     const limitSellOrderPrice: number = data.price * 0.95;
 
-                    const limiSellOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITSELL, data.symbol, limitSellOrderAmount, limitSellOrderPrice) as OrderResponseFull;
-                    if (limiSellOrder === undefined) {
+                    const limitSellOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITSELL, data.symbol, limitSellOrderAmount, limitSellOrderPrice) as OrderResponseFull;
+                    if (limitSellOrder === undefined) {
                         txtLogger.writeToLogFile(`There was an error creating the limit sell order`, LogLevel.ERROR);
                     } else {
                         txtLogger.writeToLogFile(`Limit sell order created. Details:`);
-                        txtLogger.writeToLogFile(`Status: ${limiSellOrder.status}, orderId: ${limiSellOrder.orderId}, clientOrderId: ${limiSellOrder.clientOrderId}, price: ${limiSellOrder.price}`);
+                        txtLogger.writeToLogFile(`Status: ${limitSellOrder.status}, orderId: ${limitSellOrder.orderId}, clientOrderId: ${limitSellOrder.clientOrderId}, price: ${limitSellOrder.price}`);
                     }
                     txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
                     txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
@@ -337,7 +328,7 @@ export default class Tradingbot {
                     if (index > -1) {
                         this.activeBuyOrders.splice(index, 1);
                     }
-                    // this.activeOcoOrders.push(ocoOrder.listClientOrderId);
+                    this.activeOcoOrdersIds.push(ocoOrder.listClientOrderId);
 
                     txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
                     txtLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
@@ -346,11 +337,11 @@ export default class Tradingbot {
         }
 
         // // POSSIBILITY II - OCO order is finished - ALL_DONE
-        // if (data.eventType === 'listStatus' && data.listOrderStatus === 'ALL_DONE') {
-        //     const listClientOrderId = data.listClientOrderId;
-        //     txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
-        //     txtLogger.writeToLogFile(`${JSON.stringify(data)}`);
-        //     // this.activeOcoOrders = this.activeOcoOrders.filter(id => id !== listClientOrderId);
-        // }
+        if (data.eventType === 'listStatus' && data.listOrderStatus === 'ALL_DONE') {
+            const listClientOrderId = data.listClientOrderId;
+            txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
+            txtLogger.writeToLogFile(`${JSON.stringify(data)}`);
+            this.activeOcoOrdersIds = this.activeOcoOrdersIds.filter(id => id !== listClientOrderId);
+        }
     }
 }
