@@ -8,7 +8,6 @@ export default {
     ],
     "production": {
         "numberOfCandlesToRetrieve": 50, 
-        "active": false,
         "minimumUSDTorderAmount": 10,
         "devTest": {
             "triggerBuyOrderLogic": false,

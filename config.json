@@ -8,10 +8,9 @@
     ],
     "production": {
         "numberOfCandlesToRetrieve": 50, 
-        "active": false,
         "minimumUSDTorderAmount": 10,
         "devTest": {
-            "triggerBuyOrderLogic": false,
+            "triggerBuyOrderLogic": true,
             "sellCurrentBalance": false
         }
     },
@@ -25,10 +24,52 @@
     },
     "orderConditions": [
         {
-            "name": "DOT - 15m",
+            "name": "DOT - 15m - 60",
             "interval": "15m",
             "rsi": {
                 "minimumRisingPercentage": 60.00,
+                "calculationLength": 14
+            },
+            "candle": {
+                "minimumDeclingPercentage": -1.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 25
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 3.5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 75
+            }
+        },
+        {
+            "name": "DOT - 15m - 40",
+            "interval": "15m",
+            "rsi": {
+                "minimumRisingPercentage": 40.00,
+                "calculationLength": 14
+            },
+            "candle": {
+                "minimumDeclingPercentage": -1.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 25
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 3.5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 75
+            }
+        },
+        {
+            "name": "DOT - 15m - 20",
+            "interval": "15m",
+            "rsi": {
+                "minimumRisingPercentage": 20.00,
                 "calculationLength": 14
             },
             "candle": {

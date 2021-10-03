@@ -1,7 +1,7 @@
 import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
 import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WsUserDataEvents } from 'binance';
-import { AmountAndPrice, ConfigOrderCondition, OrderCondition } from './models/logic';
-import { ClosePrice, LightWeightCandle } from './models/candle';
+import { AmountAndPrice, ConfigOrderCondition } from './models/logic';
+import { ClosePrice, ClosePriceCollection, LightWeightCandle, LightWeightCandleCollection, RsiCollection } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
 import BinanceService from './binance/binance';
@@ -72,7 +72,11 @@ export default class Tradingbot {
 
         const tradingPairs: string[] = config.tradingPairs;
         let orderConditionsIncludingTradingPairs = this.orderConditionsHelper.generateConditions(orderConditions, tradingPairs);
-   
+
+        let lightWeightCandleCollection: LightWeightCandleCollection[] = [];
+        let closePriceCollection: ClosePriceCollection[] = [];
+        let rsiCollection: RsiCollection[] = [];
+
         for await (let order of orderConditionsIncludingTradingPairs) {
             const orderConditionName: string = `${order.tradingPair} ${order.name}`;
             const tradingPair: string = order.tradingPair;
@@ -94,22 +98,55 @@ export default class Tradingbot {
             const startCount: number = order.calcBullishDivergence.numberOfMinimumIntervals;
             const stopCount: number = order.calcBullishDivergence.numberOfMaximumIntervals;
 
-            const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
+            let candleObjectList: LightWeightCandle[];
+            let closePriceList: ClosePrice[];
+            let rsiValues: any[];
 
             txtLogger.writeToLogFile(`Eveluating order condition for: ${orderConditionName}`);
-            txtLogger.writeToLogFile(`Retrieving candles from Binance url`);
-            txtLogger.writeToLogFile(url);
 
-            const candleList = await this.candleHelper.retrieveCandles(url);
-            const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
-            const closePriceList: ClosePrice[] = this.candleHelper.generateClosePricesList(candleList);
+            const candlesAlreadyInMemory: boolean =
+                lightWeightCandleCollection.find(c => c.tradingPair === tradingPair) !== undefined &&
+                closePriceCollection.find(c => c.tradingPair === tradingPair) !== undefined &&
+                rsiCollection.find(c => c.tradingPair === tradingPair) !== undefined &&
+                lightWeightCandleCollection.find(c => c.interval === candleInterval) !== undefined;
 
-            const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
+            if (candlesAlreadyInMemory === false) {
+                const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
+                txtLogger.writeToLogFile(`Retrieving candles from Binance url`);
+                txtLogger.writeToLogFile(url);
+                const candleList = await this.candleHelper.retrieveCandles(url);
+                candleObjectList = this.candleHelper.generateSmallObjectsFromData(candleList);
+                closePriceList = this.candleHelper.generateClosePricesList(candleList);
+                rsiValues = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
+
+                let objLightWeightCandleCollection: LightWeightCandleCollection = {
+                    tradingPair: tradingPair,
+                    interval: candleInterval,
+                    lightWeightCandles: candleObjectList
+                }
+                let objclosePriceCollection: ClosePriceCollection = {
+                    tradingPair: tradingPair,
+                    interval: candleInterval,
+                    closePrices: closePriceList
+                }
+                let objRsiCollection: RsiCollection = {
+                    tradingPair: tradingPair,
+                    interval: candleInterval,
+                    rsiCollection: rsiValues
+                }
+                lightWeightCandleCollection.push(objLightWeightCandleCollection);
+                closePriceCollection.push(objclosePriceCollection);
+                rsiCollection.push(objRsiCollection);
+            } else {
+                candleObjectList = lightWeightCandleCollection.find(b => b.tradingPair === tradingPair).lightWeightCandles;
+                closePriceList = closePriceCollection.find(b => b.tradingPair === tradingPair).closePrices;
+                rsiValues = rsiCollection.find(b => b.tradingPair === tradingPair).rsiCollection;
+            }
 
             const bullishDivergenceCandle: BullishDivergenceResult = calculate.calculateBullishDivergence(
                 closePriceList,
                 candleObjectList,
-                rsiCollection,
+                rsiValues,
                 startCount,
                 stopCount,
                 rsiMinimumRisingPercentage,
