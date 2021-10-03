@@ -31,7 +31,5 @@ export class OrderConfigObject {
             takeLossPercentage: number;
             maxUsdtBuyAmount: number;
             maxPercentageOffBalance: number;
-            checkOrderStatusMaxRetryCount: number;
-            checkOrderStatusRetryTime: number;
     }
 }

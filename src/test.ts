@@ -1,9 +1,11 @@
 import { BalanceObject, HistoricalBullishDivergenceResult } from './models/calculate';
 import { ClosePrice, LightWeightCandle } from './models/candle';
+import { ConfigOrderCondition, OrderCondition } from './models/logic';
 
 import CandleHelper from './helpers/candle';
 import ConfigSanityCheck from './helpers/config-sanity-check';
 import ExportService from './services/exportService';
+import OrderConditionsHelper from './helpers/order-condition-generator';
 import calculate from './helpers/calculate';
 import config from '../config';
 import rsiHelper from './helpers/rsi';
@@ -11,9 +13,11 @@ import rsiHelper from './helpers/rsi';
 export default class Test {
     private candleHelper: CandleHelper;
     private exportService: ExportService;
+    private orderConditionsHelper: OrderConditionsHelper;
     constructor() {
         this.candleHelper = new CandleHelper();
         this.exportService = new ExportService();
+        this.orderConditionsHelper = new OrderConditionsHelper();
     }
 
     public async runTestInTerminal() {
@@ -31,13 +35,16 @@ export default class Test {
         const numberOfCandlesToRetrieve: number  = config.test.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
         const candleAmountToLookIntoTheFuture: number = config.test.candleAmountToLookIntoTheFuture;
         const generateExcelFile: boolean = config.test.generateExcelFile;
-        const orderConditions: any = config.orderConditions;
+        const orderConditions: ConfigOrderCondition[] = config.orderConditions as ConfigOrderCondition[];
+
+        const tradingPairs: string[] = config.tradingPairs;
+        let orderConditionsIncludingTradingPairs = this.orderConditionsHelper.generateConditions(orderConditions, tradingPairs);
 
         // STEP 3 - Retrieve RSI & calculate bullish divergence foreach order condition
-        for await (let order of orderConditions) {
-            const orderConditionName: string  = order.name;
+        for await (let order of orderConditionsIncludingTradingPairs) {
+            const orderConditionName: string = `${order.tradingPair} ${order.name}`;
             const tradingPair: string  = order.tradingPair;
-            const candleInterval: number  = order.interval;
+            const candleInterval: string  = order.interval;
 
             const rsiMinimumRisingPercentage: number = order.rsi.minimumRisingPercentage;
             const rsiCalculationLength: number = order.rsi.calculationLength;

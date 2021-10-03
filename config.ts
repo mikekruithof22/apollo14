@@ -1,5 +1,11 @@
 export default {
     "brokerApiUrl": "https://api.binance.com/",
+    "tradingPairs": [
+        "DOTUSDT",
+        "BTCUSDT",
+        "ETHUSDT",
+        "LTCUSDT"
+    ],
     "production": {
         "numberOfCandlesToRetrieve": 50, 
         "active": false,
@@ -20,7 +26,6 @@ export default {
     "orderConditions": [
         {
             "name": "1.) VTHOUSDT",
-            "tradingPair": "VTHOUSDT",
             "interval": "30m",
             "rsi": {
                 "minimumRisingPercentage": 1.00,
@@ -38,8 +43,6 @@ export default {
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 5000,
                 "maxPercentageOffBalance": 75,
-                "checkOrderStatusMaxRetryCount": 5,
-                "checkOrderStatusRetryTime": 2500
             }
         }
     ]

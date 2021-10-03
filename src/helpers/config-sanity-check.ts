@@ -3,19 +3,6 @@ export default class ConfigSanityCheck {
         let message = `----- Roger Ver wants to say someting: -----`;
         let closeProgram = false;
 
-        if (config.production.active === true && config.production.devTest.usePredefinedFakeCandle === true) {
-            message += `
-                    ERROR: The config values 
-                    "production.active" and "usePredefinedFakeCandle" 
-                    are not allowed to be both true. `;
-        }
-
-        if (config.production.active === true && config.production.devTest.triggerBuyOrderLogic === true) {
-            message += `
-                    ERROR: The config values 
-                    "production.active" and "triggerBuyOrderLogic" 
-                    are not allowed to be both true. `;
-        }
 
         if (isTest && config.test.testWithHistoricalData === false) {
             message += `

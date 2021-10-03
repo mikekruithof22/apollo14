@@ -1,14 +1,15 @@
 import { ActiveBuyOrder, OrderConfigObject } from './models/trading-bot';
 import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WsUserDataEvents } from 'binance';
+import { AmountAndPrice, ConfigOrderCondition, OrderCondition } from './models/logic';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
-import { AmountAndPrice } from './models/logic';
 import BinanceService from './binance/binance';
 import { BullishDivergenceResult } from './models/calculate';
 import CandleHelper from './helpers/candle';
 import { LogLevel } from './models/log-level';
 import Order from './binance/order';
+import OrderConditionsHelper from './helpers/order-condition-generator';
 import calculate from './helpers/calculate';
 import config from '../config';
 import configChecker from './helpers/config-sanity-check';
@@ -23,11 +24,13 @@ export default class Tradingbot {
     private binanceService: BinanceService;
     private candleHelper: CandleHelper;
     private order: Order;
+    private orderConditionsHelper: OrderConditionsHelper;
 
     constructor() {
         this.binanceService = new BinanceService();
         this.candleHelper = new CandleHelper();
         this.order = new Order();
+        this.orderConditionsHelper = new OrderConditionsHelper();
         this.binanceRest = this.binanceService.generateBinanceRest();
     }
 
@@ -54,7 +57,7 @@ export default class Tradingbot {
         // STEP 2 - Prepare configuration data.
         const brokerApiUrl: string = config.brokerApiUrl;
         const numberOfCandlesToRetrieve: number = config.production.numberOfCandlesToRetrieve + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
-        const orderConditions = config.orderConditions;
+        const orderConditions: ConfigOrderCondition[] = config.orderConditions as ConfigOrderCondition[];
         const minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
         const triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
 
@@ -67,8 +70,11 @@ export default class Tradingbot {
         // STEP 3 - Retrieve RSI & calculate bullish divergence foreach order condition.
         txtLogger.writeToLogFile(`Checking bullish divergence for each of the ${orderConditions.length} order condition(s)`);
 
-        for await (let order of orderConditions) {
-            const orderConditionName: string = order.name;
+        const tradingPairs: string[] = config.tradingPairs;
+        let orderConditionsIncludingTradingPairs = this.orderConditionsHelper.generateConditions(orderConditions, tradingPairs);
+   
+        for await (let order of orderConditionsIncludingTradingPairs) {
+            const orderConditionName: string = `${order.tradingPair} ${order.name}`;
             const tradingPair: string = order.tradingPair;
             const candleInterval: string = order.interval;
 
