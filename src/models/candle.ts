@@ -26,20 +26,3 @@ export class LightWeightCandle {
 export class ClosePrice {
     price: number;
 }
-
-export class LightWeightCandleCollection {
-    tradingPair: string; 
-    interval: string;
-    lightWeightCandles: LightWeightCandle[] = [];
-}
-
-export class ClosePriceCollection {
-    tradingPair: string; 
-    interval: string;
-    closePrices: ClosePrice[] = [];
-}
-export class RsiCollection {
-    interval: string;
-    tradingPair: string; 
-    rsiCollection: any[] = [];
-}

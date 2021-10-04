@@ -12,8 +12,6 @@ export class AmountAndPrice {
 
 export class ConfigOrderCondition {
     name: string;
-    tradingPair: string;
-    interval: string;
     rsi: {
         minimumRisingPercentage: number;
         calculationLength: number;

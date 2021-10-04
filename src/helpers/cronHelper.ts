@@ -1,7 +1,7 @@
 import { StaticKeyword } from 'typescript';
 import config from '../../config';
 
-const configInterval: string = config.orderConditions[0].interval;
+const configInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
 const tradingBotInterval = configInterval.slice(0, -1);
 const cronExpression = '*/' + tradingBotInterval + ' * * * *';
 

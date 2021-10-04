@@ -6,6 +6,8 @@ export default {
         "ETHUSDT",
         "LTCUSDT"
     ],
+    "timeIntervals": ["15m"],
+    "rsiCalculationLength": 14,
     "production": {
         "numberOfCandlesToRetrieve": 50, 
         "minimumUSDTorderAmount": 10,
@@ -25,10 +27,8 @@ export default {
     "orderConditions": [
         {
             "name": "1.) VTHOUSDT",
-            "interval": "30m",
             "rsi": {
-                "minimumRisingPercentage": 1.00,
-                "calculationLength": 14
+                "minimumRisingPercentage": 1.00
             },
             "candle": {
                 "minimumDeclingPercentage": -1.00
@@ -41,7 +41,7 @@ export default {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 75,
+                "maxPercentageOffBalance": 75
             }
         }
     ]
