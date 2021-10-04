@@ -1,15 +1,23 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
     "tradingPairs": [
-        "DOTUSDT",
-        "BTCUSDT",
-        "ETHUSDT",
-        "LTCUSDT"
+        "ADAUSDT",
+        "BNBUSDT",
+        "LUNAUSDT",
+        "RUNEUSDT",
+        "LINKUSDT",
+        "UNIUSDT",
+        "SOLUSDT",
+        "XRPUSDT",
+        "LTCUSDT",
+        "VETUSDT"
     ],
-    "timeIntervals": ["15m"],
+    "timeIntervals": [
+        "15m"
+    ],
     "rsiCalculationLength": 14,
     "production": {
-        "numberOfCandlesToRetrieve": 50, 
+        "numberOfCandlesToRetrieve": 50,
         "minimumUSDTorderAmount": 10,
         "devTest": {
             "triggerBuyOrderLogic": false,
@@ -26,22 +34,174 @@
     },
     "orderConditions": [
         {
-            "name": "name iets - 15m - 60",
+            "name": "4-30-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 30.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -4.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "4-20-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 20.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -4.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "3.5-40-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 40.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -3.50
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "3.5-30-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 30.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -3.50
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "3-35-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 35.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -3.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "2.5-50-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 50.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.50
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "2.5-40-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 40.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.50
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "2-60-1#5",
             "rsi": {
                 "minimumRisingPercentage": 60.00
             },
             "candle": {
-                "minimumDeclingPercentage": -1.00
+                "minimumDeclingPercentage": -2.00
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 25
+                "numberOfMaximumIntervals": 40
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 3.5,
+                "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                "maxPercentageOffBalance": 75
+                "maxPercentageOffBalance": 25
+            }
+        },
+        {
+            "name": "2-50-1#5",
+            "rsi": {
+                "minimumRisingPercentage": 50.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 40
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 5,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOffBalance": 25
             }
         }
     ]
