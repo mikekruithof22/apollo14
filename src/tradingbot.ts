@@ -83,7 +83,7 @@ export default class Tradingbot {
             const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
 
             for await (let order of orderConditions) {
-                const orderConditionName: string = `${tradingPair} ${order.name}`;
+                const orderConditionName: string = `${tradingPair}-${order.name}`;
                 txtLogger.writeToLogFile(`Evaluating order condition for: ${orderConditionName}`);
 
                 if (triggerBuyOrderLogic === true) { // use ONLY for testing purposes!

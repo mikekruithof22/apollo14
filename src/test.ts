@@ -1,11 +1,9 @@
-import { ClosePrice, ClosePriceCollection, LightWeightCandle, LightWeightCandleCollection, RsiCollection } from './models/candle';
+import { ClosePrice, LightWeightCandle } from './models/candle';
 
 import { BalanceObject } from './models/calculate';
 import CandleHelper from './helpers/candle';
-import { ConfigOrderCondition } from './models/logic';
 import ConfigSanityCheck from './helpers/config-sanity-check';
 import ExportService from './services/exportService';
-import OrderConditionsHelper from './helpers/order-condition-generator';
 import calculate from './helpers/calculate';
 import config from '../config';
 import rsiHelper from './helpers/rsi';
@@ -13,11 +11,9 @@ import rsiHelper from './helpers/rsi';
 export default class Test {
     private candleHelper: CandleHelper;
     private exportService: ExportService;
-    private orderConditionsHelper: OrderConditionsHelper;
     constructor() {
         this.candleHelper = new CandleHelper();
         this.exportService = new ExportService();
-        this.orderConditionsHelper = new OrderConditionsHelper();
     }
 
     public async runTestInTerminal() {
@@ -35,94 +31,52 @@ export default class Test {
         const numberOfCandlesToRetrieve: number = config.test.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
         const candleAmountToLookIntoTheFuture: number = config.test.candleAmountToLookIntoTheFuture;
         const generateExcelFile: boolean = config.test.generateExcelFile;
-        const orderConditions: ConfigOrderCondition[] = config.orderConditions as ConfigOrderCondition[];
 
+        const orderConditions: any[] = config.orderConditions;
+        const candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
         const tradingPairs: string[] = config.tradingPairs;
-        let orderConditionsIncludingTradingPairs = this.orderConditionsHelper.generateConditions(orderConditions, tradingPairs);
+        const rsiCalculationLength: number = config.rsiCalculationLength;
 
-        let lightWeightCandleCollection: LightWeightCandleCollection[] = [];
-        let closePriceCollection: ClosePriceCollection[] = [];
-        let rsiCollection: RsiCollection[] = [];
 
-        // STEP 3 - Retrieve RSI & calculate bullish divergence foreach order condition
-        for await (let order of orderConditionsIncludingTradingPairs) {
-            const orderConditionName: string = `${order.tradingPair} ${order.name}`;
-            const tradingPair: string = order.tradingPair;
-            const candleInterval: string = order.interval;
+        // STEP 3 - Retrieve RSI & calculate bullish divergence foreach trading pair
+        for await (let tradingPair of tradingPairs) {
+            const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
+            const candleList = await this.candleHelper.retrieveCandles(url);
+            const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
+            const closePriceList: ClosePrice[] = this.candleHelper.generateClosePricesList(candleList);
+            const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
 
-            const rsiMinimumRisingPercentage: number = order.rsi.minimumRisingPercentage;
-            const rsiCalculationLength: number = order.rsi.calculationLength;
+            for await (let order of orderConditions) {
+                const orderConditionName: string = `${tradingPair}-${order.name}`;
+                const rsiMinimumRisingPercentage: number = order.rsi.minimumRisingPercentage;
+                const candleMinimumDeclingPercentage: number = order.candle.minimumDeclingPercentage;
+                const startCount: number = order.calcBullishDivergence.numberOfMinimumIntervals;
+                const stopCount: number = order.calcBullishDivergence.numberOfMaximumIntervals;
 
-            const candleMinimumDeclingPercentage: number = order.candle.minimumDeclingPercentage;
-            const startCount: number = order.calcBullishDivergence.numberOfMinimumIntervals;
-            const stopCount: number = order.calcBullishDivergence.numberOfMaximumIntervals;
+                const takeProfitPercentage: number = order.order.takeProfitPercentage;
+                const takeLossPercentage: number = order.order.takeLossPercentage;
 
-            let candleObjectList: LightWeightCandle[];
-            let closePriceList: ClosePrice[];
-            let rsiValues: any[];
+                const historicalBullishDivergenceCandles = calculate.calculateBullishHistoricalDivergences(
+                    closePriceList,
+                    candleObjectList,
+                    rsiCollection,
+                    startCount,
+                    stopCount,
+                    rsiMinimumRisingPercentage,
+                    candleMinimumDeclingPercentage,
+                    candleAmountToLookIntoTheFuture,
+                    takeLossPercentage,
+                    takeProfitPercentage,
+                    orderConditionName
+                );
+                historicalBullishDivergenceCandles.forEach(hit => {
+                    if (hit !== undefined) {
+                        excelFileContent.push(hit);
+                    }
+                });
+            };
 
-            const candlesAlreadyInMemory: boolean =
-                lightWeightCandleCollection.find(c => c.tradingPair === tradingPair) !== undefined &&
-                closePriceCollection.find(c => c.tradingPair === tradingPair) !== undefined &&
-                rsiCollection.find(c => c.tradingPair === tradingPair) !== undefined &&
-                lightWeightCandleCollection.find(c => c.interval === candleInterval) !== undefined;
-
-            if (candlesAlreadyInMemory === false) {
-                const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
-                numberOffApiCalls = numberOffApiCalls + 1;
-                console.log('---------- Retrieve Candles from Binance URL ----------');
-                console.log(url);
-                const candleList = await this.candleHelper.retrieveCandles(url);
-                candleObjectList = this.candleHelper.generateSmallObjectsFromData(candleList);
-                closePriceList = this.candleHelper.generateClosePricesList(candleList);
-                rsiValues = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
-
-                let objLightWeightCandleCollection: LightWeightCandleCollection = {
-                    tradingPair: tradingPair,
-                    interval: candleInterval,
-                    lightWeightCandles: candleObjectList
-                }
-                let objclosePriceCollection: ClosePriceCollection = {
-                    tradingPair: tradingPair,
-                    interval: candleInterval,
-                    closePrices: closePriceList
-                }
-                let objRsiCollection: RsiCollection = {
-                    tradingPair: tradingPair,
-                    interval: candleInterval,
-                    rsiCollection: rsiValues
-                }
-                lightWeightCandleCollection.push(objLightWeightCandleCollection);
-                closePriceCollection.push(objclosePriceCollection);
-                rsiCollection.push(objRsiCollection);
-            } else {
-                candleObjectList = lightWeightCandleCollection.find(b => b.tradingPair === tradingPair).lightWeightCandles;
-                closePriceList = closePriceCollection.find(b => b.tradingPair === tradingPair).closePrices;
-                rsiValues = rsiCollection.find(b => b.tradingPair === tradingPair).rsiCollection;
-            }
-
-            const takeProfitPercentage: number = order.order.takeProfitPercentage;
-            const takeLossPercentage: number = order.order.takeLossPercentage;
-
-            const historicalBullishDivergenceCandles = calculate.calculateBullishHistoricalDivergences(
-                closePriceList,
-                candleObjectList,
-                rsiValues,
-                startCount,
-                stopCount,
-                rsiMinimumRisingPercentage,
-                candleMinimumDeclingPercentage,
-                candleAmountToLookIntoTheFuture,
-                takeLossPercentage,
-                takeProfitPercentage,
-                orderConditionName
-            );
-            historicalBullishDivergenceCandles.forEach(hit => {
-                if (hit !== undefined) {
-                    excelFileContent.push(hit);
-                }
-            });
-        };
+        }
 
         // STEP 4 - Generate/update Excel file 
         if (generateExcelFile === true && excelFileContent.length >= 1) {
