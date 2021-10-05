@@ -21,7 +21,9 @@ const tradingBot = new Tradingbot();
 
 websocketClient.subscribeSpotUserDataStream();
 
+// Retreive some config values
 const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
+const reduceAmountToSpendWithPercentage: number = config.genericOrder.reduceAmountToSpendWithPercentage;
 
 websocketClient.on('open', async (data: {
     wsKey: WsKey;
@@ -49,5 +51,5 @@ websocketClient.on('reply', async (data: WsResponse) => {
 // Listen To Order Changes
 websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
     txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
-    await tradingBot.processFormattedUserDataMessage(data);
+    await tradingBot.processFormattedUserDataMessage(data, reduceAmountToSpendWithPercentage);
 });

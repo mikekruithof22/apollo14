@@ -18,7 +18,8 @@ export default class Logic {
     public static calcOrderAmountAndPrice = (
         bids: BidObject[],
         amountToSpend: number,
-        stepSize: number
+        stepSize: number,
+        reduceAmountToSpendWithPercentage: number
     ): AmountAndPrice => {
         let amount: number = 0;
         let price: number = 0;
@@ -39,14 +40,9 @@ export default class Logic {
                 break;
             }
         }
-        let finalAmount: number = 0;
-        if (stepSize === 1) {
-            finalAmount = Math.floor(Number(((amountToSpend / price) * 0.99)));
-        } else {
-            // TODO: testMike, nagaan of dit echt nodig is. Want je hebt toch altijd 10 dollar als reserve?
-            // subtract 0.5% for fees
-            finalAmount = Number(((amountToSpend / price) * 0.995).toFixed(stepSize));
-        }
+
+        const amountNotRounded: number = ((100 - reduceAmountToSpendWithPercentage)/ 100) * (amountToSpend / price) ;
+        const finalAmount: number = roundOrderAmountPrivate(amountNotRounded, stepSize); 
 
         return {
             price: price,
@@ -112,5 +108,19 @@ export default class Logic {
             obj = undefined;
         });
         return result;
+    }
+
+    public static roundOrderAmount(value: number, decimals: number): number {
+       return roundOrderAmountPrivate(value, decimals)
+    }
+}
+
+function roundOrderAmountPrivate(value: number, decimals: number): number {
+    const parts = value.toString().split('.')
+
+    if (parts.length === 2) {
+        return Number([parts[0], parts[1].slice(0, decimals)].join('.'))
+    } else {
+        return Number(parts[0]);
     }
 }

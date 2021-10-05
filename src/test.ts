@@ -35,7 +35,7 @@ export default class Test {
         const orderConditions: any[] = config.orderConditions;
         const candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
         const tradingPairs: string[] = config.tradingPairs;
-        const rsiCalculationLength: number = config.rsiCalculationLength;
+        const rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
 
 
         // STEP 3 - Retrieve RSI & calculate bullish divergence foreach trading pair

@@ -59,7 +59,8 @@ export default class Tradingbot {
         const triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
         const candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
         const tradingPairs: string[] = config.tradingPairs;
-        const rsiCalculationLength: number = config.rsiCalculationLength;
+        const rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
+        const reduceAmountToSpendWithPercentage: number = config.genericOrder.reduceAmountToSpendWithPercentage;
 
         if (this.binanceRest === undefined) {
             txtLogger.writeToLogFile(`Program quit because:`);
@@ -92,7 +93,8 @@ export default class Tradingbot {
                         order,
                         minimumUSDTorderAmount,
                         tradingPair,
-                        orderConditionName
+                        orderConditionName,
+                        reduceAmountToSpendWithPercentage
                     );
                     return;
                 }
@@ -127,7 +129,8 @@ export default class Tradingbot {
                         order,
                         minimumUSDTorderAmount,
                         tradingPair,
-                        orderConditionName
+                        orderConditionName,
+                        reduceAmountToSpendWithPercentage
                     );
                 } else {
                     txtLogger.writeToLogFile(`No bullish divergence detected for: ${orderConditionName}.`);
@@ -149,7 +152,8 @@ export default class Tradingbot {
         order: ConfigOrderCondition,
         minimumUSDTorderAmount: number,
         tradingPair: string,
-        orderName: string
+        orderName: string,
+        reduceAmountToSpendWithPercentage: number
     ) {
         txtLogger.writeToLogFile(`Starting ordering logic method()`);
 
@@ -225,7 +229,12 @@ export default class Tradingbot {
         // STEP V. Retrieve bid prices.
         const currentOrderBook = await this.binanceService.getOrderBook(this.binanceRest, tradingPair);
         const currentOrderBookBids = exchangeLogic.bidsToObject((currentOrderBook as OrderBookResponse).bids);
-        const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(currentOrderBookBids, amountOffUSDTToSpend, stepSize);
+        const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(
+            currentOrderBookBids, 
+            amountOffUSDTToSpend, 
+            stepSize, 
+            reduceAmountToSpendWithPercentage
+        );
         const orderPrice: number = orderPriceAndAmount.price;
         const orderAmount: number = orderPriceAndAmount.amount;
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
@@ -267,7 +276,7 @@ export default class Tradingbot {
         }
     }
 
-    public async processFormattedUserDataMessage(data: WsUserDataEvents) {
+    public async processFormattedUserDataMessage(data: WsUserDataEvents, reduceAmountToSpendWithPercentage: number) {
         if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
             const clientOrderId: string = data.newClientOrderId;
 
@@ -282,7 +291,9 @@ export default class Tradingbot {
                 const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, tickSize);
                 const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, tickSize);
                 const stopLimitPrice: number = exchangeLogic.callStopLimitPrice(stopLossPrice, tickSize);
-                const ocoOrderAmount: number = parseFloat(data.quantity.toFixed(stepSize));
+
+                const amountNotRoundedYet: number = ((100 - reduceAmountToSpendWithPercentage)/ 100) * data.quantity ;
+                const ocoOrderAmount: number = exchangeLogic.roundOrderAmount(amountNotRoundedYet, stepSize);
                 const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
 
                 if (ocoOrderAmount < minimumOcoOrderQuantity) {

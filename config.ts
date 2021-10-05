@@ -7,7 +7,10 @@ export default {
         "LTCUSDT"
     ],
     "timeIntervals": ["15m"],
-    "rsiCalculationLength": 14,
+    "genericOrder": {
+        "reduceAmountToSpendWithPercentage": 2.5,
+        "rsiCalculationLength": 14
+    },
     "production": {
         "numberOfCandlesToRetrieve": 50, 
         "minimumUSDTorderAmount": 10,
