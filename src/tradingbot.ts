@@ -275,6 +275,10 @@ export default class Tradingbot {
         if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
             const clientOrderId: string = data.newClientOrderId;
 
+            txtLogger.writeToLogFile(`FOOBAR ARAM`);
+            txtLogger.writeToLogFile(JSON.stringify(data, null, 4));
+
+
             // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
             if (data.orderType === 'LIMIT' && data.side === 'BUY' && data.orderStatus === OrderStatusEnum.FILLED) {
                 const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
@@ -357,19 +361,47 @@ export default class Tradingbot {
                 */
                 // START -  OPLOSSINGS VOORSTEL van MIKE:
                 const coinName: string = data.symbol.replace('USDT', '');
-                const balance = await this.binanceService.getAccountBalances(this.binanceRest);
-                const currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
-                const currentFreeCryptoBalance = Number(currentCryptoBalance.free);
+                let balance = await this.binanceService.getAccountBalances(this.binanceRest);
+                let currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
+                let currentFreeCryptoBalance = Number(currentCryptoBalance.free);
 
-                const ocoOrderAmount: number = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
+                // todo aram doesn't this mean ALL of the cryptos in the wallet will be sold?
+                // Let's say you wanna have 5000 DOT in your portfolio for long term investment, this would sell all of those?
+                let ocoOrderAmount: number = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize); 
                 const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
                 // Einde -  OPLOSSINGS VOORSTEL van MIKE:
+
+                txtLogger.writeToLogFile('currentCryptoBalance');
+                txtLogger.writeToLogFile(JSON.stringify(currentCryptoBalance, null, 4));
+                txtLogger.writeToLogFile('currentFreeCryptoBalance');
+                txtLogger.writeToLogFile(JSON.stringify(currentFreeCryptoBalance, null, 4));
+                txtLogger.writeToLogFile('ocoOrderAmount');
+                txtLogger.writeToLogFile(JSON.stringify(ocoOrderAmount, null, 4));
+
              
                 if (ocoOrderAmount < minimumOcoOrderQuantity) {
-                    txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
                     txtLogger.writeToLogFile(`Oco order quantity is lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);
-                    return;
+                    txtLogger.writeToLogFile(`Re-retrieving current free balance after a couple of seconds to ensure it's not a timing issue`);
+
+                    const delay = ms => new Promise(res => setTimeout(res, ms));
+                    await delay(3000);
+
+                    balance = await this.binanceService.getAccountBalances(this.binanceRest);
+                    currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
+                    currentFreeCryptoBalance = Number(currentCryptoBalance.free);
+                    ocoOrderAmount = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
+
+                  
+                    if (ocoOrderAmount < minimumOcoOrderQuantity) {
+                        txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
+                        txtLogger.writeToLogFile(`Oco order quantity is STILL lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);
+    
+                        return;
+                    }
+
+                    txtLogger.writeToLogFile(`Re-retrieving current free balance did the trick, continueing oco order logic`);
                 }
+
                 txtLogger.writeToLogFile(`Trying to create an OCO order`);
                 txtLogger.writeToLogFile(`The oco order amount is equal to: ${ocoOrderAmount}`);
                 txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
@@ -407,9 +439,12 @@ export default class Tradingbot {
 
                     return;
                 } else {
+                    // todo aram don't we want to splice the old buy order no matter if the oco order was succesful? Since the buy order was fulfilled? 
+                    // Or doesn't it matter since the process exits anyway above here when ocoOrder === undefined?
+                    // if that's true the activeOcoOrdersIds stuff is kind of obsolete as well
                     const index = this.activeBuyOrders.findIndex(o => o.clientOrderId === clientOrderId);
                     if (index > -1) {
-                        this.activeBuyOrders.splice(index, 1);
+                        this.activeBuyOrders.splice(index, 1); 
                     }
                     this.activeOcoOrdersIds.push(ocoOrder.listClientOrderId);
 
