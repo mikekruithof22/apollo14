@@ -16,7 +16,6 @@
         "15m"
     ],
     "genericOrder": {
-        "reduceAmountToSpendWithPercentage": 0.0,
         "rsiCalculationLength": 14
     },
     "production": {

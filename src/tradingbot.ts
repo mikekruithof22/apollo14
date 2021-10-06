@@ -60,7 +60,6 @@ export default class Tradingbot {
         const candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
         const tradingPairs: string[] = config.tradingPairs;
         const rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
-        const reduceAmountToSpendWithPercentage: number = config.genericOrder.reduceAmountToSpendWithPercentage;
 
         if (this.binanceRest === undefined) {
             txtLogger.writeToLogFile(`Program quit because:`);
@@ -93,8 +92,7 @@ export default class Tradingbot {
                         order,
                         minimumUSDTorderAmount,
                         tradingPair,
-                        orderConditionName,
-                        reduceAmountToSpendWithPercentage
+                        orderConditionName
                     );
                     return;
                 }
@@ -129,8 +127,7 @@ export default class Tradingbot {
                         order,
                         minimumUSDTorderAmount,
                         tradingPair,
-                        orderConditionName,
-                        reduceAmountToSpendWithPercentage
+                        orderConditionName
                     );
                 } else {
                     txtLogger.writeToLogFile(`No bullish divergence detected for: ${orderConditionName}.`);
@@ -152,8 +149,7 @@ export default class Tradingbot {
         order: ConfigOrderCondition,
         minimumUSDTorderAmount: number,
         tradingPair: string,
-        orderName: string,
-        reduceAmountToSpendWithPercentage: number
+        orderName: string
     ) {
         txtLogger.writeToLogFile(`Starting ordering logic method()`);
 
@@ -232,8 +228,7 @@ export default class Tradingbot {
         const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(
             currentOrderBookBids, 
             amountOffUSDTToSpend, 
-            stepSize, 
-            reduceAmountToSpendWithPercentage
+            stepSize 
         );
         const orderPrice: number = orderPriceAndAmount.price;
         const orderAmount: number = orderPriceAndAmount.amount;
@@ -276,14 +271,14 @@ export default class Tradingbot {
         }
     }
 
-    public async processFormattedUserDataMessage(data: WsUserDataEvents, reduceAmountToSpendWithPercentage: number) {
+    public async processFormattedUserDataMessage(data: WsUserDataEvents) {
         if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
             const clientOrderId: string = data.newClientOrderId;
 
             // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
             if (data.orderType === 'LIMIT' && data.side === 'BUY' && data.orderStatus === OrderStatusEnum.FILLED) {
                 const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
-                txtLogger.writeToLogFile(`Limit buy order with clientOrderId: ${clientOrderId} and order name: ${buyOrder?.orderName} is filled`);
+                txtLogger.writeToLogFile(`Limit buy order with clientOrderId: ${clientOrderId} and order name: ${buyOrder.orderName} is filled`);
 
                 const stepSize: number = buyOrder.stepSize;
                 const tickSize: number = buyOrder.tickSize;
@@ -292,10 +287,84 @@ export default class Tradingbot {
                 const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, tickSize);
                 const stopLimitPrice: number = exchangeLogic.callStopLimitPrice(stopLossPrice, tickSize);
 
-                const amountNotRoundedYet: number = ((100 - reduceAmountToSpendWithPercentage)/ 100) * data.quantity ;
-                const ocoOrderAmount: number = exchangeLogic.roundOrderAmount(amountNotRoundedYet, stepSize);
-                const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
+                /*
+                    TODO: ARAM hiero verder gaan. 
 
+
+                        FUNCTIONELE UITLEG: 
+                            0. Login bij Binance en zorg dat je minimaal 15 dollar vrij te bestenden USDT hebt 
+                                TIP: per test run je coins weer inwisselen naar USDT
+
+                            1.  
+                                a.production.devTest.triggerBuyOrderLogic = true (in de config.json)
+                                (je gaat nu automatisch een buy order inleggen en zodra die gevuld gaat de methode waarin dit commentaar staat af)
+                                b.  "tradingPairs": ["DOTUSDT"] 
+                                (per test maar een item, anders koop je te veel!)
+
+
+
+
+                            2. Urls die je altijd open moet hebben staan: 
+                            https://www.npmjs.com/package/binance
+                            https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md
+                            https://binance-docs.github.io/apidocs/spot/en/#change-log
+
+                            3. Dit stuk van de code legt een oco order in nadat een limit buy gevuld is.
+
+                            4. Kijk in de map 'production-logs' en filter op: 
+                                Creating OCO order
+
+                                VOORBEELD VAN DE LOG WAAR JE ZELF IEDER KEER MOET KIJKEN. 
+
+                                INFO - Tue, 05 Oct 2021 14:35:32 GMT - Trying to create an OCO order
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - The oco order amount is equal to: 13.4
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - The step size - which will be used in order to calculate the the amount - is: 1
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - The tick size - which will be used in order to calculate the the price - is: 3
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - Creating OCO order. Symbol: ADAUSDT orderAmount: 13.4 profitPrice: 2.222 stopLossPrice: 2.09 stopLimitPrice: 2.069
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - Try to create an OCO with the following options: {"symbol":"ADAUSDT","side":"SELL","quantity":13.4,"price":2.222,"stopPrice":2.09,"stopLimitPrice":2.069,"stopLimitTimeInForce":"GTC","newOrderRespType":"RESULT"}
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - formattedUserDataMessage eventreceived: {"eventType":"outboundAccountPosition","eventTime":1633444533651,"lastUpdateTime":1633444533650,"balances":[{"asset":"BNB","availableBalance":0.0033,"onOrderBalance":0},{"asset":"USDT","availableBalance":0.03031563,"onOrderBalance":0},{"asset":"ADA","availableBalance":13.4086,"onOrderBalance":0}],"wsMarket":"spot","wsKey":"spot_userData__o4qV5T36wfERwpZqLWroWlJkyoB8B7Eoh4E3xOUruod9NJWNS07Tugqg74tl"}
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - Oco Order was successfully created. Details:
+ INFO - Tue, 05 Oct 2021 14:35:32 GMT - {"orderListId":46903768,"contingencyType":"OCO","listStatusType":"EXEC_STARTED","listOrderStatus":"EXECUTING","listClientOrderId":"x-U5D79M5BfwbidwhW9kRTfUw","transactionTime":1633444534287,"symbol":"ADAUSDT","orders":[{"symbol":"ADAUSDT","orderId":2439997522,"clientOrderId":"x-U5D79M5BJ4N3E78os6gpbyr"},{"symbol":"ADAUSDT","orderId":2439997523,"clientOrderId":"x-U5D79M5BR4kQUTLU1fezsIE"}],"orderReports":[{"symbol":"ADAUSDT","orderId":2439997522,"orderListId":46903768,"clientOrderId":"x-U5D79M5BJ4N3E78os6gpbyr","transactTime":1633444534287,"price":"2.06900000","origQty":"13.40000000","executedQty":"0.00000000","cummulativeQuoteQty":"0.00000000","status":"NEW","timeInForce":"GTC","type":"STOP_LOSS_LIMIT","side":"SELL","stopPrice":"2.09000000"},{"symbol":"ADAUSDT","orderId":2439997523,"orderListId":46903768,"clientOrderId":"x-U5D79M5BR4kQUTLU1fezsIE","transactTime":1633444534287,"price":"2.22200000","origQty":"13.40000000","executedQty":"0.00000000","cummulativeQuoteQty":"0.00000000","status":"NEW","timeInForce":"GTC","type":"LIMIT_MAKER","side":"SELL"}]}
+
+
+                        UITLEG: 
+                            ISSUE DAT ARAM MAG FIXEN: soms is de amount voor de OCO order hoger dan het aantal dat daadwerkelijk is
+                                bijv. je koop 7.25 stuks en de balance bezit maar 7.23 stuks... 
+                                    ==> Error van Binance insufficient balance. 
+                                    (bot sluit zich daarna af!)
+
+
+
+                        OPLOSSINGS VOORSTEL van MIKE:
+                        1. Probeer onderstaande oplossing eens: 
+                            - hier haal ik de balance op met een call, vervolgens kijk ik hoeveel vrij te besteden 
+                            aantal je hebt. In de code: currentCryptoBalance.free
+
+                            Ik heb geen tijd gehad om de code te testen, ik denk dat ie het wel moet doen. 
+
+                        2. Test als volgt: 
+                                xrp,
+                                ada,
+                                dot, 
+                                eth     
+
+                            VOOR alle symbols graag testen eerst met een order van 15 dollar. 
+                            DAARNA zelfde test met een bedrag van 250 dollar! (De laatste test is het belangrijkst)
+                        
+                        3. TIP: per test run je coins weer inwisselen naar USDT
+
+
+                */
+                // START -  OPLOSSINGS VOORSTEL van MIKE:
+                const coinName: string = data.symbol.replace('USDT', '');
+                const balance = await this.binanceService.getAccountBalances(this.binanceRest);
+                const currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
+                const currentFreeCryptoBalance = Number(currentCryptoBalance.free);
+
+                const ocoOrderAmount: number = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
+                const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
+                // Einde -  OPLOSSINGS VOORSTEL van MIKE:
+             
                 if (ocoOrderAmount < minimumOcoOrderQuantity) {
                     txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
                     txtLogger.writeToLogFile(`Oco order quantity is lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);

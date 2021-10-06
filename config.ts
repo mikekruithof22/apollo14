@@ -8,7 +8,6 @@ export default {
     ],
     "timeIntervals": ["15m"],
     "genericOrder": {
-        "reduceAmountToSpendWithPercentage": 2.5,
         "rsiCalculationLength": 14
     },
     "production": {
