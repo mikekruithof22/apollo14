@@ -8,14 +8,19 @@ export default {
     ],
     "timeIntervals": ["15m"],
     "genericOrder": {
-        "rsiCalculationLength": 14
+        "rsiCalculationLength": 14,
+        "doNotOrder": {
+            "RSIValueIsBelow": 20
+        },
+        "limitBuyOrderExpirationTimeInSeconds": 5
     },
     "production": {
         "numberOfCandlesToRetrieve": 50, 
         "minimumUSDTorderAmount": 10,
         "devTest": {
             "triggerBuyOrderLogic": false,
-            "sellCurrentBalance": false
+            "sellCurrentBalance": false,
+            "triggerCancelLogic": true
         }
     },
     "test": {

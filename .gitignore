@@ -3,3 +3,4 @@ node_modules
 logs
 testLogs
 production-logs
+package-lock.json

@@ -69,7 +69,8 @@ export default class CalculateHelper {
         candleAmountToLookIntoTheFuture,
         takeLossPercentage,
         takeProfitPercentage,
-        orderConditionName
+        orderConditionName,
+        doNotOrderWhenRSIValueIsBelow
     ) => {
         const consoleLogSteps = config.test.consoleLogSteps;
 
@@ -99,10 +100,13 @@ export default class CalculateHelper {
                     // STEP 2 - calculate priceListDelta
                     const closePriceChange = CalculateHelper.calculatePercentageChange(compareWithCandle, currentCandle);
 
+                    const endingRsiValue: number = currentRsiValue;
+
                     // STEP 3 - determine if there is a bullish divergence
                     if (
                         rsiChange >= rsiMinimumRisingPercentage &&
-                        closePriceChange <= candleMinimumDeclingPercentage
+                        closePriceChange <= candleMinimumDeclingPercentage &&
+                        endingRsiValue >= doNotOrderWhenRSIValueIsBelow
                     ) {
                         if (consoleLogSteps === true) {
                             console.log('JACKPOT! - <<<<< BullishDivergence - BullishDivergence - BullishDivergence >>>>> - JACKPOT!');

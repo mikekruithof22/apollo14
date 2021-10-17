@@ -36,7 +36,7 @@ export default class Test {
         const candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
         const tradingPairs: string[] = config.tradingPairs;
         const rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
-
+        const doNotOrderWhenRSIValueIsBelow: number = config.genericOrder.doNotOrder.RSIValueIsBelow;
 
         // STEP 3 - Retrieve RSI & calculate bullish divergence foreach trading pair
         for await (let tradingPair of tradingPairs) {
@@ -67,7 +67,8 @@ export default class Test {
                     candleAmountToLookIntoTheFuture,
                     takeLossPercentage,
                     takeProfitPercentage,
-                    orderConditionName
+                    orderConditionName,
+                    doNotOrderWhenRSIValueIsBelow
                 );
                 historicalBullishDivergenceCandles.forEach(hit => {
                     if (hit !== undefined) {

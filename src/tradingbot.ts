@@ -1,4 +1,4 @@
-import { AllCoinsInformationResponse, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WsUserDataEvents } from 'binance';
+import { AllCoinsInformationResponse, CancelSpotOrderResult, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WsMessageSpotUserDataExecutionReportEventFormatted, WsUserDataEvents } from 'binance';
 import { AmountAndPrice, ConfigOrderCondition } from './models/logic';
 import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
@@ -57,9 +57,12 @@ export default class Tradingbot {
         const orderConditions: any[] = config.orderConditions;
         const minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
         const triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
+        const triggerCancelLogic: boolean = config.production.devTest.triggerCancelLogic;
         const candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
         const tradingPairs: string[] = config.tradingPairs;
         const rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
+        const doNotOrderWhenRSIValueIsBelow: number = config.genericOrder.doNotOrder.RSIValueIsBelow;
+        const limitBuyOrderExpirationTime: number = config.genericOrder.limitBuyOrderExpirationTimeInSeconds * 1000; // multiply with 1000 for milliseconds 
 
         if (this.binanceRest === undefined) {
             txtLogger.writeToLogFile(`Program quit because:`);
@@ -81,6 +84,7 @@ export default class Tradingbot {
             const closePriceList: ClosePrice[] = this.candleHelper.generateClosePricesList(candleList);
             txtLogger.writeToLogFile(`RSI calculation lenght is equal to ${rsiCalculationLength}`);
             const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
+            const mostRecentRsiValue = rsiCollection[rsiCollection.length - 1];
 
             for await (let order of orderConditions) {
                 const orderConditionName: string = `${tradingPair}-${order.name}`;
@@ -92,7 +96,9 @@ export default class Tradingbot {
                         order,
                         minimumUSDTorderAmount,
                         tradingPair,
-                        orderConditionName
+                        orderConditionName,
+                        limitBuyOrderExpirationTime,
+                        triggerCancelLogic
                     );
                     return;
                 }
@@ -114,21 +120,32 @@ export default class Tradingbot {
                 );
 
                 if (bullishDivergenceCandle !== undefined) {
-                    foundAtLeastOneBullishDivergence = true;
-
                     txtLogger.writeToLogFile(`Bullish divergence detected for: ${orderConditionName}. Next step will be the buyOrderingLogic() method`);
                     txtLogger.writeToLogFile(`Candle one: ${bullishDivergenceCandle.startWithCandle}, RSI one:${bullishDivergenceCandle.endiRsiValue}`);
                     txtLogger.writeToLogFile(`Candle two: ${bullishDivergenceCandle.endingCandle}, RSI two:${bullishDivergenceCandle.endiRsiValue}`);
                     txtLogger.writeToLogFile(`More detailed information can be found below:`);
                     txtLogger.writeToLogFile(`${JSON.stringify(bullishDivergenceCandle)}`);
-                    // STEP 4. 
-                    //      OPTIE I - A bullish divergence was found, continue to the ordering logic method.
-                    this.buyOrderingLogic(
-                        order,
-                        minimumUSDTorderAmount,
-                        tradingPair,
-                        orderConditionName
-                    );
+
+                    txtLogger.writeToLogFile(`Do not place an limit buy order when the most recent RSI value is below: ${doNotOrderWhenRSIValueIsBelow}`);
+                    txtLogger.writeToLogFile(`The most recent rsi value is equal to ${mostRecentRsiValue}`);
+
+                    if (mostRecentRsiValue >= doNotOrderWhenRSIValueIsBelow) {
+                        foundAtLeastOneBullishDivergence = true;
+                        txtLogger.writeToLogFile(`The RSI is higher or equal than the minimum configured, therefore the program will try to create an limit buy order`);
+
+                        // STEP 4. 
+                        //      OPTIE I - A bullish divergence was found, continue to the ordering logic method.
+                        this.buyOrderingLogic(
+                            order,
+                            minimumUSDTorderAmount,
+                            tradingPair,
+                            orderConditionName,
+                            limitBuyOrderExpirationTime,
+                            triggerCancelLogic
+                        );
+                    } else {
+                        txtLogger.writeToLogFile(`Because the RSI is lower than minimum configured the program will not place an limit buy order`);
+                    }
                 } else {
                     txtLogger.writeToLogFile(`No bullish divergence detected for: ${orderConditionName}.`);
                 }
@@ -149,7 +166,9 @@ export default class Tradingbot {
         order: ConfigOrderCondition,
         minimumUSDTorderAmount: number,
         tradingPair: string,
-        orderName: string
+        orderName: string,
+        limitBuyOrderExpirationTime: number,
+        triggerCancelLogic: boolean
     ) {
         txtLogger.writeToLogFile(`Starting ordering logic method()`);
 
@@ -159,7 +178,7 @@ export default class Tradingbot {
         const maxUsdtBuyAmount: number = order.order.maxUsdtBuyAmount;
         const maxPercentageOffBalance: number = order.order.maxPercentageOffBalance;
 
-        // STEP II. Cancel all open buy orders.
+        /* STEP ?. Cancel all open buy orders.
         const currentOpenOrders = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
         txtLogger.writeToLogFile(`Current open orders length is equal to: ${(currentOpenOrders as SpotOrder[]).length}`);
         txtLogger.writeToLogFile(`Current open order details: ${JSON.stringify(currentOpenOrders)}`);
@@ -177,8 +196,9 @@ export default class Tradingbot {
                 }
             }
         }
+        */
 
-        // STEP III. Check current amount off free USDT on the balance.
+        // STEP II. Check current amount off free USDT on the balance.
         const balance = await this.binanceService.getAccountBalances(this.binanceRest);
         const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
         const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
@@ -190,7 +210,7 @@ export default class Tradingbot {
             return;
         }
 
-        // STEP IV. Determine how much you can spend at the next buy order based on the order book.
+        // STEP III. Determine how much you can spend at the next buy order based on the order book.
         const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
         txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
 
@@ -222,14 +242,15 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
         txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
 
-        // STEP V. Retrieve bid prices.
+        // STEP IV. Retrieve bid prices.
         const currentOrderBook = await this.binanceService.getOrderBook(this.binanceRest, tradingPair);
         const currentOrderBookBids = exchangeLogic.bidsToObject((currentOrderBook as OrderBookResponse).bids);
         const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(
-            currentOrderBookBids, 
-            amountOffUSDTToSpend, 
-            stepSize 
+            currentOrderBookBids,
+            amountOffUSDTToSpend,
+            stepSize
         );
+
         const orderPrice: number = orderPriceAndAmount.price;
         const orderAmount: number = orderPriceAndAmount.amount;
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
@@ -244,7 +265,7 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
         txtLogger.writeToLogFile(`Total USDT value of the order is equal to: ${totalUsdtAmount}`);
 
-        // STEP VI. Create the buy order and add it to the activeBuyOrders array.
+        // STEP V. Create the buy order and add it to the activeBuyOrders array.
         const buyOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITBUY, tradingPair, orderAmount, orderPrice) as OrderResponseFull;
         if (buyOrder === undefined) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
@@ -265,201 +286,190 @@ export default class Tradingbot {
                 takeLossPercentage: takeLossPercentage,
                 minimumOrderQuantity: minimumOrderQuantity,
                 stepSize: stepSize,
-                tickSize: tickSize
+                tickSize: tickSize,
+                status: buyOrder.status
             }
             this.activeBuyOrders.push(currentBuyOrder);
+        }
+
+        if (triggerCancelLogic === true) { // TESTING PURPOSE ONLY!
+            this.cancelLimitBuyOrderCheck(tradingPair, buyOrder.clientOrderId, orderName);
+        }
+
+        if (buyOrder.status !== OrderStatusEnum.FILLED) {
+            // STEP VI. Activate cancelLimitBuyOrderCheck() because after an amount of seconds you want to cancel the limit buy order if it is not filled.
+            setTimeout(() => {
+                txtLogger.writeToLogFile(`The method cancelLimitBuyOrderCheck() is going to check if the limit buy order - ${orderName} - has been filled within the allocated time: ${limitBuyOrderExpirationTime / 1000} seconds`);
+                this.cancelLimitBuyOrderCheck(tradingPair, buyOrder.clientOrderId, orderName);
+            }, limitBuyOrderExpirationTime);
         }
     }
 
     public async processFormattedUserDataMessage(data: WsUserDataEvents) {
+
+        // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
         if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
             const clientOrderId: string = data.newClientOrderId;
 
-            txtLogger.writeToLogFile(`FOOBAR ARAM`);
-            txtLogger.writeToLogFile(JSON.stringify(data, null, 4));
-
-
-            // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
-            if (data.orderType === 'LIMIT' && data.side === 'BUY' && data.orderStatus === OrderStatusEnum.FILLED) {
+            if (data.orderType === 'LIMIT' && data.side === 'BUY') {
                 const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
-                txtLogger.writeToLogFile(`Limit buy order with clientOrderId: ${clientOrderId} and order name: ${buyOrder.orderName} is filled`);
 
-                const stepSize: number = buyOrder.stepSize;
-                const tickSize: number = buyOrder.tickSize;
-
-                const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, tickSize);
-                const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, tickSize);
-                const stopLimitPrice: number = exchangeLogic.callStopLimitPrice(stopLossPrice, tickSize);
-
-                /*
-                    TODO: ARAM hiero verder gaan. 
-
-
-                        FUNCTIONELE UITLEG: 
-                            0. Login bij Binance en zorg dat je minimaal 15 dollar vrij te bestenden USDT hebt 
-                                TIP: per test run je coins weer inwisselen naar USDT
-
-                            1.  
-                                a.production.devTest.triggerBuyOrderLogic = true (in de config.json)
-                                (je gaat nu automatisch een buy order inleggen en zodra die gevuld gaat de methode waarin dit commentaar staat af)
-                                b.  "tradingPairs": ["DOTUSDT"] 
-                                (per test maar een item, anders koop je te veel!)
-
-
-
-
-                            2. Urls die je altijd open moet hebben staan: 
-                            https://www.npmjs.com/package/binance
-                            https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md
-                            https://binance-docs.github.io/apidocs/spot/en/#change-log
-
-                            3. Dit stuk van de code legt een oco order in nadat een limit buy gevuld is.
-
-                            4. Kijk in de map 'production-logs' en filter op: 
-                                Creating OCO order
-
-                                VOORBEELD VAN DE LOG WAAR JE ZELF IEDER KEER MOET KIJKEN. 
-
-                                INFO - Tue, 05 Oct 2021 14:35:32 GMT - Trying to create an OCO order
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - The oco order amount is equal to: 13.4
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - The step size - which will be used in order to calculate the the amount - is: 1
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - The tick size - which will be used in order to calculate the the price - is: 3
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - Creating OCO order. Symbol: ADAUSDT orderAmount: 13.4 profitPrice: 2.222 stopLossPrice: 2.09 stopLimitPrice: 2.069
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - Try to create an OCO with the following options: {"symbol":"ADAUSDT","side":"SELL","quantity":13.4,"price":2.222,"stopPrice":2.09,"stopLimitPrice":2.069,"stopLimitTimeInForce":"GTC","newOrderRespType":"RESULT"}
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - formattedUserDataMessage eventreceived: {"eventType":"outboundAccountPosition","eventTime":1633444533651,"lastUpdateTime":1633444533650,"balances":[{"asset":"BNB","availableBalance":0.0033,"onOrderBalance":0},{"asset":"USDT","availableBalance":0.03031563,"onOrderBalance":0},{"asset":"ADA","availableBalance":13.4086,"onOrderBalance":0}],"wsMarket":"spot","wsKey":"spot_userData__o4qV5T36wfERwpZqLWroWlJkyoB8B7Eoh4E3xOUruod9NJWNS07Tugqg74tl"}
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - Oco Order was successfully created. Details:
- INFO - Tue, 05 Oct 2021 14:35:32 GMT - {"orderListId":46903768,"contingencyType":"OCO","listStatusType":"EXEC_STARTED","listOrderStatus":"EXECUTING","listClientOrderId":"x-U5D79M5BfwbidwhW9kRTfUw","transactionTime":1633444534287,"symbol":"ADAUSDT","orders":[{"symbol":"ADAUSDT","orderId":2439997522,"clientOrderId":"x-U5D79M5BJ4N3E78os6gpbyr"},{"symbol":"ADAUSDT","orderId":2439997523,"clientOrderId":"x-U5D79M5BR4kQUTLU1fezsIE"}],"orderReports":[{"symbol":"ADAUSDT","orderId":2439997522,"orderListId":46903768,"clientOrderId":"x-U5D79M5BJ4N3E78os6gpbyr","transactTime":1633444534287,"price":"2.06900000","origQty":"13.40000000","executedQty":"0.00000000","cummulativeQuoteQty":"0.00000000","status":"NEW","timeInForce":"GTC","type":"STOP_LOSS_LIMIT","side":"SELL","stopPrice":"2.09000000"},{"symbol":"ADAUSDT","orderId":2439997523,"orderListId":46903768,"clientOrderId":"x-U5D79M5BR4kQUTLU1fezsIE","transactTime":1633444534287,"price":"2.22200000","origQty":"13.40000000","executedQty":"0.00000000","cummulativeQuoteQty":"0.00000000","status":"NEW","timeInForce":"GTC","type":"LIMIT_MAKER","side":"SELL"}]}
-
-
-                        UITLEG: 
-                            ISSUE DAT ARAM MAG FIXEN: soms is de amount voor de OCO order hoger dan het aantal dat daadwerkelijk is
-                                bijv. je koop 7.25 stuks en de balance bezit maar 7.23 stuks... 
-                                    ==> Error van Binance insufficient balance. 
-                                    (bot sluit zich daarna af!)
-
-
-
-                        OPLOSSINGS VOORSTEL van MIKE:
-                        1. Probeer onderstaande oplossing eens: 
-                            - hier haal ik de balance op met een call, vervolgens kijk ik hoeveel vrij te besteden 
-                            aantal je hebt. In de code: currentCryptoBalance.free
-
-                            Ik heb geen tijd gehad om de code te testen, ik denk dat ie het wel moet doen. 
-
-                        2. Test als volgt: 
-                                xrp,
-                                ada,
-                                dot, 
-                                eth     
-
-                            VOOR alle symbols graag testen eerst met een order van 15 dollar. 
-                            DAARNA zelfde test met een bedrag van 250 dollar! (De laatste test is het belangrijkst)
-                        
-                        3. TIP: per test run je coins weer inwisselen naar USDT
-
-
-                */
-                // START -  OPLOSSINGS VOORSTEL van MIKE:
-                const coinName: string = data.symbol.replace('USDT', '');
-                let balance = await this.binanceService.getAccountBalances(this.binanceRest);
-                let currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
-                let currentFreeCryptoBalance = Number(currentCryptoBalance.free);
-
-                // todo aram doesn't this mean ALL of the cryptos in the wallet will be sold?
-                // Let's say you wanna have 5000 DOT in your portfolio for long term investment, this would sell all of those?
-                let ocoOrderAmount: number = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize); 
-                const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
-                // Einde -  OPLOSSINGS VOORSTEL van MIKE:
-
-                txtLogger.writeToLogFile('currentCryptoBalance');
-                txtLogger.writeToLogFile(JSON.stringify(currentCryptoBalance, null, 4));
-                txtLogger.writeToLogFile('currentFreeCryptoBalance');
-                txtLogger.writeToLogFile(JSON.stringify(currentFreeCryptoBalance, null, 4));
-                txtLogger.writeToLogFile('ocoOrderAmount');
-                txtLogger.writeToLogFile(JSON.stringify(ocoOrderAmount, null, 4));
-
-             
-                if (ocoOrderAmount < minimumOcoOrderQuantity) {
-                    txtLogger.writeToLogFile(`Oco order quantity is lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);
-                    txtLogger.writeToLogFile(`Re-retrieving current free balance after a couple of seconds to ensure it's not a timing issue`);
-
-                    const delay = ms => new Promise(res => setTimeout(res, ms));
-                    await delay(3000);
-
-                    balance = await this.binanceService.getAccountBalances(this.binanceRest);
-                    currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
-                    currentFreeCryptoBalance = Number(currentCryptoBalance.free);
-                    ocoOrderAmount = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
-
-                  
-                    if (ocoOrderAmount < minimumOcoOrderQuantity) {
-                        txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
-                        txtLogger.writeToLogFile(`Oco order quantity is STILL lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);
-    
-                        return;
-                    }
-
-                    txtLogger.writeToLogFile(`Re-retrieving current free balance did the trick, continueing oco order logic`);
-                }
-
-                txtLogger.writeToLogFile(`Trying to create an OCO order`);
-                txtLogger.writeToLogFile(`The oco order amount is equal to: ${ocoOrderAmount}`);
-                txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
-                txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
-
-                txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${ocoOrderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice} stopLimitPrice: ${stopLimitPrice}`);
-
-                const ocoOrder = await this.order.createOcoSellOrder(
-                    this.binanceRest,
-                    data.symbol,
-                    ocoOrderAmount,
-                    profitPrice,
-                    stopLossPrice,
-                    stopLimitPrice
-                );
-
-                if (ocoOrder === undefined) {
-                    txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
-                    txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
-
-                    const limitSellOrderAmount: number = ocoOrderAmount;
-                    const limitSellOrderPrice: number = data.price * 0.95;
-
-                    const limitSellOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITSELL, data.symbol, limitSellOrderAmount, limitSellOrderPrice) as OrderResponseFull;
-                    if (limitSellOrder === undefined) {
-                        txtLogger.writeToLogFile(`There was an error creating the limit sell order`, LogLevel.ERROR);
-                    } else {
-                        txtLogger.writeToLogFile(`Limit sell order created. Details:`);
-                        txtLogger.writeToLogFile(`Status: ${limitSellOrder.status}, orderId: ${limitSellOrder.orderId}, clientOrderId: ${limitSellOrder.clientOrderId}, price: ${limitSellOrder.price}`);
-                    }
-                    txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
-                    txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
-
-                    process.exit();
-
-                    return;
-                } else {
-                    // todo aram don't we want to splice the old buy order no matter if the oco order was succesful? Since the buy order was fulfilled? 
-                    // Or doesn't it matter since the process exits anyway above here when ocoOrder === undefined?
-                    // if that's true the activeOcoOrdersIds stuff is kind of obsolete as well
+                if (buyOrder !== undefined) {
                     const index = this.activeBuyOrders.findIndex(o => o.clientOrderId === clientOrderId);
-                    if (index > -1) {
-                        this.activeBuyOrders.splice(index, 1); 
-                    }
-                    this.activeOcoOrdersIds.push(ocoOrder.listClientOrderId);
+                    this.activeBuyOrders[index].status = 'FILLED';
 
-                    txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
-                    txtLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
+                    txtLogger.writeToLogFile(`Limit buy order with clientOrderId: ${clientOrderId} and order name: ${buyOrder.orderName} is filled`);
+                    await this.createOcoOrder(data, clientOrderId, buyOrder);
+                } else {
+                    txtLogger.writeToLogFile(`Buy order not found inside this.activeBuyOrders: ActiveBuyOrder[]`);
+                    // TODO: testmike wil je proces.exit? indien this.activeBuyOrders deze niet langer correct is? 
                 }
             }
         }
 
-        // // POSSIBILITY II - OCO order is finished - ALL_DONE
+        // POSSIBILITY II - Order canceled was successfull, in case of partial fill create OCO order
+        if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.CANCELED) {
+            const clientOrderId: string = data.newClientOrderId;
+
+            const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
+            txtLogger.writeToLogFile(`Limit buy order with orderId ${data.orderId} is successfully cancelled.`);
+
+            if (buyOrder !== undefined && buyOrder.status === 'PARTIALLY_FILLED') {
+                txtLogger.writeToLogFile(`The order was PARTIALLY_FILLED. Therefore, the next step will be trying to create an oco order.`);
+                await this.createOcoOrder(data, clientOrderId, buyOrder);
+            }
+        }
+
+        // // POSSIBILITY III - OCO order is finished - ALL_DONE
         if (data.eventType === 'listStatus' && data.listOrderStatus === 'ALL_DONE') {
             const listClientOrderId = data.listClientOrderId;
             txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
             txtLogger.writeToLogFile(`${JSON.stringify(data)}`);
             this.activeOcoOrdersIds = this.activeOcoOrdersIds.filter(id => id !== listClientOrderId);
+        }
+    }
+
+    public async cancelLimitBuyOrderCheck(tradingPair: string, clientOrderId: string, orderName: string) {
+        // STEP 1 - check if the limit buy order is not filled yet (it may be partially filled)
+        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
+        if (currentOpenOrders.length > 0) {
+            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId);
+            txtLogger.writeToLogFile(`Limit buy order details for ${orderName}:`);
+
+            // STEP 2 - If the limit buy order is still open cancel it ('NEW' or 'PARTIALLY_FILLED')
+            if (
+                limitBuyOrder !== undefined &&
+                (limitBuyOrder.status === 'NEW' || limitBuyOrder.status === 'PARTIALLY_FILLED')
+            ) {
+                txtLogger.writeToLogFile(`The limit buy order status is equal to: - ${limitBuyOrder.status}`);
+                txtLogger.writeToLogFile(`${JSON.stringify(limitBuyOrder)}`);
+                txtLogger.writeToLogFile(`Canceling the limit buy order with status ${limitBuyOrder.status}.`);
+                const cancelSpotOrderResult: CancelSpotOrderResult = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, limitBuyOrder.orderId);
+                txtLogger.writeToLogFile(`The cancel spot order results looks as follows:`);
+                txtLogger.writeToLogFile(`${JSON.stringify(cancelSpotOrderResult)}`);
+            } else {
+                txtLogger.writeToLogFile(`Limit buy order was not found among the current open orders and/or the status was not equal to: 'PARTIALLY_FILLED' or 'NEW', therefore return`);
+            }
+        } else {
+            txtLogger.writeToLogFile(`Currently there are no active open orders, therefore there is nothing to cancel`);
+        }
+    }
+
+    public async createOcoOrder(data: WsMessageSpotUserDataExecutionReportEventFormatted, clientOrderId: string, buyOrder: ActiveBuyOrder) {
+        txtLogger.writeToLogFile(`The method createOcoOrder() is triggered`);
+
+        const stepSize: number = buyOrder.stepSize;
+        const tickSize: number = buyOrder.tickSize;
+
+        const profitPrice: number = exchangeLogic.calcProfitPrice(Number(data.price), buyOrder.takeProfitPercentage, tickSize);
+        const stopLossPrice: number = exchangeLogic.calcStopLossPrice(Number(data.price), buyOrder.takeLossPercentage, tickSize);
+        const stopLimitPrice: number = exchangeLogic.callStopLimitPrice(stopLossPrice, tickSize);
+
+        const coinName: string = data.symbol.replace('USDT', '');
+        let balance = await this.binanceService.getAccountBalances(this.binanceRest);
+        let currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
+        let currentFreeCryptoBalance = Number(currentCryptoBalance.free);
+
+        // todo aram doesn't this mean ALL of the cryptos in the wallet will be sold?
+        // Let's say you wanna have 5000 DOT in your portfolio for long term investment, this would sell all of those?
+        let ocoOrderAmount: number = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
+        const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
+
+        txtLogger.writeToLogFile('currentCryptoBalance');
+        txtLogger.writeToLogFile(JSON.stringify(currentCryptoBalance, null, 4));
+        txtLogger.writeToLogFile('currentFreeCryptoBalance');
+        txtLogger.writeToLogFile(JSON.stringify(currentFreeCryptoBalance, null, 4));
+        txtLogger.writeToLogFile('ocoOrderAmount');
+        txtLogger.writeToLogFile(JSON.stringify(ocoOrderAmount, null, 4));
+
+        if (ocoOrderAmount < minimumOcoOrderQuantity) {
+            txtLogger.writeToLogFile(`Oco order quantity is lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);
+            txtLogger.writeToLogFile(`Re-retrieving current free balance after a couple of seconds to ensure it's not a timing issue`);
+
+            const delay = ms => new Promise(res => setTimeout(res, ms));
+            await delay(3000);
+
+            balance = await this.binanceService.getAccountBalances(this.binanceRest);
+            currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
+            currentFreeCryptoBalance = Number(currentCryptoBalance.free);
+            ocoOrderAmount = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
+
+            if (ocoOrderAmount < minimumOcoOrderQuantity) {
+                txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
+                txtLogger.writeToLogFile(`Oco order quantity is STILL lower than - ${ocoOrderAmount} - the minimum order quanity: ${minimumOcoOrderQuantity}`);
+                return;
+            }
+            txtLogger.writeToLogFile(`Re-retrieving current free balance did the trick, continueing oco order logic`);
+        }
+
+        txtLogger.writeToLogFile(`Trying to create an OCO order`);
+        txtLogger.writeToLogFile(`The oco order amount is equal to: ${ocoOrderAmount}`);
+        txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
+        txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
+
+        txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${ocoOrderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice} stopLimitPrice: ${stopLimitPrice}`);
+
+        const ocoOrder = await this.order.createOcoSellOrder(
+            this.binanceRest,
+            data.symbol,
+            ocoOrderAmount,
+            profitPrice,
+            stopLossPrice,
+            stopLimitPrice
+        );
+
+        if (ocoOrder === undefined) {
+            txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
+            txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
+
+            const limitSellOrderAmount: number = ocoOrderAmount;
+            const limitSellOrderPrice: number = data.price * 0.95;
+
+            const limitSellOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITSELL, data.symbol, limitSellOrderAmount, limitSellOrderPrice) as OrderResponseFull;
+            if (limitSellOrder === undefined) {
+                txtLogger.writeToLogFile(`There was an error creating the limit sell order`, LogLevel.ERROR);
+            } else {
+                txtLogger.writeToLogFile(`Limit sell order created. Details:`);
+                txtLogger.writeToLogFile(`Status: ${limitSellOrder.status}, orderId: ${limitSellOrder.orderId}, clientOrderId: ${limitSellOrder.clientOrderId}, price: ${limitSellOrder.price}`);
+            }
+            txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
+            txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
+
+            process.exit();
+
+            return;
+        } else {
+            // todo aram don't we want to splice the old buy order no matter if the oco order was succesful? Since the buy order was fulfilled? 
+            // Or doesn't it matter since the process exits anyway above here when ocoOrder === undefined?
+            // if that's true the activeOcoOrdersIds stuff is kind of obsolete as well
+            const index = this.activeBuyOrders.findIndex(o => o.clientOrderId === clientOrderId);
+            if (index > -1) {
+                this.activeBuyOrders.splice(index, 1);
+            }
+            this.activeOcoOrdersIds.push(ocoOrder.listClientOrderId);
+
+            txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
+            txtLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
         }
     }
 }

@@ -6,6 +6,7 @@ export class ActiveBuyOrder {
     minimumOrderQuantity: number;
     stepSize: number;
     tickSize: number;
+    status: string;
 }
 export class ActiveOcoOrder {
     listClientOrderId: string;
