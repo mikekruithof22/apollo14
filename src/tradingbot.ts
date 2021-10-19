@@ -78,7 +78,7 @@ export default class Tradingbot {
         }
 
         // STEP 4 - Retrieve RSI & calculate bullish divergence foreach trading pair
-        txtLogger.writeToLogFile(`There are ${orderConditions.length} order condition(s)`);
+        txtLogger.writeToLogFile(`There are ${orderConditions.length * tradingPairs.length} order condition(s)`);
 
         for await (let tradingPair of tradingPairs) {
 

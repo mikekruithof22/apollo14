@@ -82,6 +82,7 @@ export default class Test {
         // STEP 4 - Generate/update Excel file 
         if (generateExcelFile === true && excelFileContent.length >= 1) {
             console.log(`---------- bullishDivergenceCandles ----------`);
+            console.log(`There are ${orderConditions.length * tradingPairs.length} order condition(s)`);
             console.log(`Amount of bullish divergence(s): ${excelFileContent.length}`);
             const metaDataContent = calculate.calcTradeOutcomes(excelFileContent, numberOffApiCalls);
             this.exportService.exportHistoricalTest(excelFileContent, metaDataContent);
