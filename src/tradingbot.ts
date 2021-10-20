@@ -97,7 +97,7 @@ export default class Tradingbot {
 
                 if (triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
                     txtLogger.writeToLogFile(`DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order`);
-                    await this.buyOrderingLogic(
+                    await this.buyLimitOrderLogic(
                         order,
                         minimumUSDTorderAmount,
                         tradingPair,
@@ -136,7 +136,7 @@ export default class Tradingbot {
 
                         // STEP 5. 
                         //      OPTIE I - A bullish divergence was found, continue to the ordering logic method.
-                        await this.buyOrderingLogic(
+                        await this.buyLimitOrderLogic(
                             order,
                             minimumUSDTorderAmount,
                             tradingPair,
@@ -145,7 +145,7 @@ export default class Tradingbot {
                             triggerCancelLogic
                         );
                         return;
-                        // TODO: testmike, for now we will 'RETURN' out of the loop once we trigger the buy buyOrderingLogic
+                        // TODO: testmike, for now we will 'RETURN' out of the loop once we trigger the buy buyLimitOrderLogic
                         // This makes the program, for the time being way simpler! In the future we can let it continue.
                     } else {
                         txtLogger.writeToLogFile(`Because the RSI is lower than minimum configured the program will not place an limit buy order`);
@@ -161,11 +161,10 @@ export default class Tradingbot {
             //      OPTIE II  - Close the program & websocket because no bullish divergence(s) where found this time.
             txtLogger.writeToLogFile(`Program ended because:`);
             txtLogger.writeToLogFile(`No bullish divergence(s) where found during this run.`);
-            return;
         }
     }
 
-    public async buyOrderingLogic(
+    public async buyLimitOrderLogic(
         order: ConfigOrderCondition,
         minimumUSDTorderAmount: number,
         tradingPair: string,
@@ -173,7 +172,7 @@ export default class Tradingbot {
         limitBuyOrderExpirationTime: number,
         triggerCancelLogic: boolean
     ) {
-        txtLogger.writeToLogFile(`The method buyOrderingLogic() will try to place a limit buy order`);
+        txtLogger.writeToLogFile(`The method buyLimitOrderLogic() will try to place a limit buy order`);
 
         // STEP I. Prepare config.json order data 
         const takeProfitPercentage: number = order.order.takeProfitPercentage;
@@ -367,7 +366,7 @@ export default class Tradingbot {
             ) {
                 txtLogger.writeToLogFile(`The limit buy order status is equal to: - ${limitBuyOrder.status}`);
                 txtLogger.writeToLogFile(`${JSON.stringify(limitBuyOrder)}`);
-                txtLogger.writeToLogFile(`Trying to cancel the limit buy order .`);
+                txtLogger.writeToLogFile(`Trying to cancel the limit buy order.`);
                 const cancelSpotOrderResult: CancelSpotOrderResult = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, limitBuyOrder.orderId);
                 txtLogger.writeToLogFile(`The cancel spot order results looks as follows:`);
                 txtLogger.writeToLogFile(`${JSON.stringify(cancelSpotOrderResult)}`);

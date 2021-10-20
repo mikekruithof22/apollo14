@@ -1,5 +1,6 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
+    "basePair": "EUR",
     "tradingPairs": [
         "LUNAUSDT",
         "ADAUSDT",
@@ -20,11 +21,11 @@
         "doNotOrder": {
             "RSIValueIsBelow": 20
         },
-        "limitBuyOrderExpirationTimeInSeconds": 10
+        "limitBuyOrderExpirationTimeInSeconds": 60
     },
     "production": {
         "numberOfCandlesToRetrieve": 50,
-        "minimumUSDTorderAmount": 10,
+        "minimumUSDTorderAmount": 11,
         "devTest": {
             "triggerBuyOrderLogic": false,
             "sellCurrentBalance": false,
