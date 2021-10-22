@@ -39,7 +39,7 @@ export default class Tradingbot {
 
         const configCheck = configChecker.checkConfigData(config, true);
         if (configCheck.closeProgram === true) {
-            txtLogger.writeToLogFile(`Program quit because:`);
+            txtLogger.writeToLogFile(`The method runProgram() quit because:`);
             txtLogger.writeToLogFile(configCheck.message, LogLevel.ERROR);
             return;
         }
@@ -60,7 +60,7 @@ export default class Tradingbot {
         const triggerCancelLogic: boolean = config.production.devTest.triggerCancelLogic;
 
         if (this.binanceRest === undefined) {
-            txtLogger.writeToLogFile(`Program quit because:`);
+            txtLogger.writeToLogFile(`The method runProgram() quit because:`);
             txtLogger.writeToLogFile(`Generating binanceRest client failed.`, LogLevel.ERROR);
             return;
         }
@@ -72,7 +72,7 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}`);
 
         if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
-            txtLogger.writeToLogFile(`Program quit because:`);
+            txtLogger.writeToLogFile(`The method runProgram() quit because:`);
             txtLogger.writeToLogFile(`The free USDT balance amount is lower than the configured minimum amount: ${minimumUSDTorderAmount}.`);
             return;
         }
@@ -207,7 +207,7 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}`);
 
         if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
-            txtLogger.writeToLogFile(`Program quit because:`);
+            txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
             txtLogger.writeToLogFile(`The free USDT balance amount is lower than the configured minimum amount: ${minimumUSDTorderAmount}.`);
             return;
         }
@@ -256,7 +256,7 @@ export default class Tradingbot {
         const orderAmount: number = orderPriceAndAmount.amount;
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
 
-        if (orderAmount < minimumOrderQuantity) {
+        if ((orderAmount < minimumOrderQuantity) || (totalUsdtAmount < 10)) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
             txtLogger.writeToLogFile(`Order quantity is lower than - ${orderAmount} - the minimum allowed order quanity: ${minimumOrderQuantity}`);
             return;
@@ -398,12 +398,14 @@ export default class Tradingbot {
         let ocoOrderAmount: number = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
         const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
 
+        // Check when you sell that the oco amount * stopLimitPrice is equal or greather than 10 usdt. 
+        let usdtAmountForStopLimitPrice: number = stopLimitPrice * ocoOrderAmount; 
+
         txtLogger.writeToLogFile(`currentCryptoBalance`);
         txtLogger.writeToLogFile(JSON.stringify(currentCryptoBalance));
-        txtLogger.writeToLogFile(`currentFreeCryptoBalance`);
-        txtLogger.writeToLogFile(JSON.stringify(currentFreeCryptoBalance));
+        txtLogger.writeToLogFile(`currentFreeCryptoBalance: ${currentFreeCryptoBalance}`);
 
-        if (ocoOrderAmount < minimumOcoOrderQuantity) {
+        if ((ocoOrderAmount < minimumOcoOrderQuantity) || (usdtAmountForStopLimitPrice < 10)) {
             txtLogger.writeToLogFile(`Oco order quantity - ${ocoOrderAmount} - is lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
             txtLogger.writeToLogFile(`Re-retrieving current free balance after a couple of seconds to ensure it's not a timing issue!`);
 
@@ -415,8 +417,10 @@ export default class Tradingbot {
             currentFreeCryptoBalance = Number(currentCryptoBalance.free);
             ocoOrderAmount = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
 
-            if (ocoOrderAmount < minimumOcoOrderQuantity) {
-                txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
+            usdtAmountForStopLimitPrice = stopLimitPrice * ocoOrderAmount; 
+
+            if ((ocoOrderAmount < minimumOcoOrderQuantity) || (usdtAmountForStopLimitPrice < 10)) {
+                txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
                 txtLogger.writeToLogFile(`Oco order quantity - ${ocoOrderAmount} - is STILL lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
                 return;
             }
@@ -439,7 +443,7 @@ export default class Tradingbot {
         );
 
         if (ocoOrder === undefined) {
-            txtLogger.writeToLogFile(`The method ListenToAccountOrderChanges quit because:`);
+            txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
             txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
 
             const limitSellOrderAmount: number = ocoOrderAmount;
