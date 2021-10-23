@@ -83,7 +83,7 @@ export default class Tradingbot {
         for await (let tradingPair of tradingPairs) {
 
             const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
-            txtLogger.writeToLogFile(`Retrieving candles from Binance: ${url}`);
+            // txtLogger.writeToLogFile(`Retrieving candles from Binance: ${url}`);
 
             const candleList = await this.candleHelper.retrieveCandles(url);
             const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
@@ -93,7 +93,7 @@ export default class Tradingbot {
 
             for await (let order of orderConditions) {
                 const orderConditionName: string = `${tradingPair}-${order.name}`;
-                txtLogger.writeToLogFile(`Evaluating order condition: ${orderConditionName}`);
+                // txtLogger.writeToLogFile(`Evaluating order condition: ${orderConditionName}`);
 
                 if (triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
                     txtLogger.writeToLogFile(`DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order`);
@@ -151,7 +151,7 @@ export default class Tradingbot {
                         txtLogger.writeToLogFile(`Because the RSI is lower than minimum configured the program will not place an limit buy order`);
                     }
                 } else {
-                    txtLogger.writeToLogFile(`No-bullish-divergence-detected for: ${orderConditionName}.`);
+                    // txtLogger.writeToLogFile(`No-bullish-divergence-detected for: ${orderConditionName}.`);
                 }
             };
         }

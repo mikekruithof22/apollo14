@@ -116,7 +116,8 @@ export default class CalculateHelper {
                         const nextCandlesAfterHit = candleList.slice(firstIndex, lastIndex);
 
                         let obj = {
-                            id: candleList[currentCandleIndex].openTime,
+                            idFirstCandle: candleList[compareWithCandleIndex].openTime,
+                            idSecondCandle: candleList[currentCandleIndex].openTime,
                             startWithCandle: candleList[compareWithCandleIndex],
                             startRsiValue: compareWithRsiValue,
                             endingCandle: candleList[currentCandleIndex],
@@ -137,12 +138,18 @@ export default class CalculateHelper {
                 }
             }
         }
-
-        const uniquebullishDivergenceCandles = Array.from(new Set(bullishDivergenceCandles.map(a => a.id)))
+        // remove duplicate starting candles
+        const uniquebullishStartingDivergenceCandles = Array.from(new Set(bullishDivergenceCandles.map(a => a.idFirstCandle)))
             .map(id => {
-                return bullishDivergenceCandles.find(a => a.id === id)
+                return bullishDivergenceCandles.find(a => a.idFirstCandle === id)
             });
-        const candleInfo = uniquebullishDivergenceCandles.reverse();
+        // remove duplicate ending candles
+        const uniquebullishEndingDivergenceCandles = Array.from(new Set(uniquebullishStartingDivergenceCandles.map(a => a.idSecondCandle)))
+        .map(id => {
+            return uniquebullishStartingDivergenceCandles.find(a => a.idSecondCandle === id)
+        });
+
+        const candleInfo = uniquebullishEndingDivergenceCandles.reverse();
         const finalCandles = CalculateHelper.addBalanceCalcProperties(candleInfo, takeLossPercentage, takeProfitPercentage);
         return finalCandles;
     }
