@@ -4,6 +4,8 @@ const fs = require('fs');
 
 export default class TextLogger {
     public static writeToLogFile = (message: string, logLevel = LogLevel.INFO): string => {
+        console.log(message);
+        
         const fileLocation: string = TextLogger.generateFilePath();
         const date: Date = new Date();
         message = `\n ${logLevel} - ${date.toUTCString()} - ${message}`;
@@ -16,7 +18,6 @@ export default class TextLogger {
             message = `\n ${message} \n`;
         }
 
-        console.log(message);
 
         return fs.appendFileSync(`${fileLocation}`, `${message}`)
     }
@@ -24,13 +25,17 @@ export default class TextLogger {
     public static generateFilePath = (): string => {
         const directoryName = 'production-logs';
         if (!fs.existsSync(`./${directoryName}`)) {
-            fs.mkdir(`./${directoryName}`, (err) => {
+            console.log("production-logs directory not found, creating directory...");
+
+            fs.mkdir(`./${directoryName}`, (err: any) => {
                 if (err) throw err;
+                console.log("production logs directory created");
             });
         }
 
         const date: Date = new Date();
-        const fileName: string = `log - ${date.toLocaleDateString()}`;
+        // todo aram not sure but I think the month is one off
+        const fileName: string = `log-${date.getDate()}-${date.getMonth()}-${date.getFullYear()}`;
         const filePath: string = `./${directoryName}/${fileName}.txt`;
         return filePath;
     }

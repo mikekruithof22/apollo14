@@ -1,54 +1,25 @@
-import * as schedule from "node-schedule";
-
-import { WebsocketClient, WsKey } from './../node_modules/binance/lib/websocket-client';
-import { WsResponse, WsUserDataEvents } from "binance";
-
-import CronHelper from './helpers/cronHelper';
-import { LogLevel } from './models/log-level'; // todo aram check if loglevel can be included in txtLogger class
-import Tradingbot from './tradingbot';
-import WebSocket from 'isomorphic-ws';
-import WebSocketService from './binance/websocket';
-import config from "../config";
+import express from "express";
 import txtLogger from './helpers/txt-logger';
+import Main from './main';
 
-console.log("App is running");
+const app = express();
+// const port = 3000; // default port to listen
+const port = process.env.PORT || 3000;
 
-// setup
-const cronExpression = CronHelper.GetCronExpression();
-const wsService: WebSocketService = new WebSocketService();
-const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
-const tradingBot = new Tradingbot();
-
-websocketClient.subscribeSpotUserDataStream();
-
-// Retreive some config values
-const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
-
-websocketClient.on('open', async (data: {
-    wsKey: WsKey;
-    ws: WebSocket;
-    event?: any;
-}) => {
-    txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
-
-    if (runTestInsteadOfProgram === false) {
-        schedule.scheduleJob(cronExpression, async function () {
-            await tradingBot.runProgram();
-        });
-    } else {
-        await tradingBot.runProgram();
-    }
-
-    // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
+// define a route handler for the default home page
+app.get( "/", ( req, res ) => {
+    res.send( "Hello world! This is a TypeScript Node application running in Azure!" );
+    console.log("Hello console logger world");
+    txtLogger.writeToLogFile("Hello file logger world");
 });
 
-// We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
-websocketClient.on('reply', async (data: WsResponse) => {
-    txtLogger.writeToLogFile(`reply eventreceived: ${JSON.stringify(data)}`);
+app.get( "/start", ( req, res ) => {
+    res.send( "Starting app!" );
+    txtLogger.writeToLogFile("Starting app through start endpoint");
+    Main.Start();
 });
 
-// Listen To Order Changes
-websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
-    txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
-    await tradingBot.processFormattedUserDataMessage(data);
+// start the Express server
+app.listen( port, () => {
+    console.log( `server started at http://localhost:${ port }` );
 });
