@@ -2,7 +2,6 @@
     "brokerApiUrl": "https://api.binance.com/",
     "basePair": "EUR",
     "tradingPairs": [
-        "BTCUSDT",
         "ETHUSDT",
         "LUNAUSDT",
         "ADAUSDT",
@@ -41,7 +40,9 @@
         "KLAYUSDT",
         "FLOWUSDT",
         "QNTUSDT",
-        "KSMUSDT"
+        "KSMUSDT",
+        "NEOUSDT",
+        "WAVESUSDT"
     ],
     "timeIntervals": [
         "15m"
@@ -81,7 +82,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -100,7 +101,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -119,7 +120,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -138,7 +139,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -157,7 +158,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -176,7 +177,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -195,7 +196,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -214,7 +215,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
@@ -233,7 +234,7 @@
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 40
+                "numberOfMaximumIntervals": 32
             },
             "order": {
                 "takeProfitPercentage": 1,
