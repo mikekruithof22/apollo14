@@ -61,6 +61,10 @@
             "triggerBuyOrderLogic": false,
             "sellCurrentBalance": false,
             "triggerCancelLogic": false
+        },
+        "doNotOrderIf": {
+            "active": false,
+            "btc24hourChangeIsBelow": -10
         }
     },
     "test": {

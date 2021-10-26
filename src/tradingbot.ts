@@ -7,6 +7,7 @@ import { ActiveBuyOrder } from './models/trading-bot';
 import BinanceService from './binance/binance';
 import { BullishDivergenceResult } from './models/calculate';
 import CandleHelper from './helpers/candle';
+import DoNotPlaceOrderLogic from './helpers/doNotOrderChecks';
 import { LogLevel } from './models/log-level';
 import Order from './binance/order';
 import calculate from './helpers/calculate';
@@ -23,12 +24,14 @@ export default class Tradingbot {
     private binanceService: BinanceService;
     private candleHelper: CandleHelper;
     private order: Order;
+    private doNotPlaceOrderLogic: DoNotPlaceOrderLogic;
 
     constructor() {
         this.binanceService = new BinanceService();
         this.candleHelper = new CandleHelper();
         this.order = new Order();
         this.binanceRest = this.binanceService.generateBinanceRest();
+        this.doNotPlaceOrderLogic = new DoNotPlaceOrderLogic();
     }
 
     public async runProgram() {
@@ -54,6 +57,8 @@ export default class Tradingbot {
         const rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
         const doNotOrderWhenRSIValueIsBelow: number = config.genericOrder.doNotOrder.RSIValueIsBelow;
         const limitBuyOrderExpirationTime: number = config.genericOrder.limitBuyOrderExpirationTimeInSeconds * 1000; // multiply with 1000 for milliseconds 
+        const doNotOrderIfCheckIsActive: boolean = config.production.doNotOrderIf.active;
+        const doNotOrderIfbtc24hourChangeIsBelow: number = config.production.doNotOrderIf.btc24hourChangeIsBelow
 
         // devTest variables
         const triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
@@ -65,7 +70,18 @@ export default class Tradingbot {
             return;
         }
 
-        // STEP 3 If USDT is to low, you don't need to run the program, therefore quit.
+        // Step 3 - Evaluate do not order conditions
+        if (doNotOrderIfCheckIsActive === true) {
+            const btc24HourChange: number = await this.doNotPlaceOrderLogic.btc24HourChange();
+            if (doNotOrderIfbtc24hourChangeIsBelow >= btc24HourChange) {
+                txtLogger.writeToLogFile(`The method runProgram() quit because:`);
+                txtLogger.writeToLogFile(`A do not-order-if-check is triggerd. Namely:`);
+                txtLogger.writeToLogFile(`Do not place an order when BTC dropped more than: ${doNotOrderIfbtc24hourChangeIsBelow}. BTC dropped with ${btc24HourChange}`)
+                return;
+            }
+        }
+
+        // STEP 4 If USDT is to low, you don't need to run the program, therefore quit.
         const balance = await this.binanceService.getAccountBalances(this.binanceRest);
         const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
         const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
@@ -77,7 +93,7 @@ export default class Tradingbot {
             return;
         }
 
-        // STEP 4 - Retrieve RSI & calculate bullish divergence foreach trading pair
+        // STEP 5 - Retrieve RSI & calculate bullish divergence foreach trading pair
         txtLogger.writeToLogFile(`There are ${orderConditions.length * tradingPairs.length} order condition(s)`);
 
         for await (let tradingPair of tradingPairs) {
@@ -134,8 +150,8 @@ export default class Tradingbot {
                     if (mostRecentRsiValue >= doNotOrderWhenRSIValueIsBelow) {
                         foundAtLeastOneBullishDivergence = true;
 
-                        // STEP 5. 
-                        //      OPTIE I - A bullish divergence was found, continue to the ordering logic method.
+                        // STEP 6. 
+                        //      OPTION I - A bullish divergence was found, continue to the ordering logic method.
                         await this.buyLimitOrderLogic(
                             order,
                             minimumUSDTorderAmount,
@@ -157,8 +173,8 @@ export default class Tradingbot {
         }
 
         if (foundAtLeastOneBullishDivergence === false) {
-            // STEP 5. 
-            //      OPTIE II  - Close the program & websocket because no bullish divergence(s) where found this time.
+            // STEP 6. 
+            //      OPTION II  - Close the program & websocket because no bullish divergence(s) where found this time.
             txtLogger.writeToLogFile(`Program ended because:`);
             txtLogger.writeToLogFile(`No bullish divergence(s) where found during this run.`);
         }

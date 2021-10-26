@@ -21,6 +21,10 @@ export default {
             "triggerBuyOrderLogic": false,
             "sellCurrentBalance": false,
             "triggerCancelLogic": true
+        },
+        "doNotOrderIf": {
+            "active": false,
+            "btc24hourChangeIsBelow": -10
         }
     },
     "test": {
