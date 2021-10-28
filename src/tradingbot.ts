@@ -7,7 +7,6 @@ import { ActiveBuyOrder } from './models/trading-bot';
 import BinanceService from './binance/binance';
 import { BullishDivergenceResult } from './models/calculate';
 import CandleHelper from './helpers/candle';
-import DoNotPlaceOrderLogic from './helpers/doNotOrderChecks';
 import { LogLevel } from './models/log-level';
 import Order from './binance/order';
 import calculate from './helpers/calculate';
@@ -24,14 +23,12 @@ export default class Tradingbot {
     private binanceService: BinanceService;
     private candleHelper: CandleHelper;
     private order: Order;
-    private doNotPlaceOrderLogic: DoNotPlaceOrderLogic;
 
     constructor() {
         this.binanceService = new BinanceService();
         this.candleHelper = new CandleHelper();
         this.order = new Order();
         this.binanceRest = this.binanceService.generateBinanceRest();
-        this.doNotPlaceOrderLogic = new DoNotPlaceOrderLogic();
     }
 
     public async runProgram() {
@@ -68,17 +65,6 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`The method runProgram() quit because:`);
             txtLogger.writeToLogFile(`Generating binanceRest client failed.`, LogLevel.ERROR);
             return;
-        }
-
-        // Step 3 - Evaluate do not order conditions
-        if (doNotOrderIfCheckIsActive === true) {
-            const btc24HourChange: number = await this.doNotPlaceOrderLogic.btc24HourChange();
-            if (doNotOrderIfbtc24hourChangeIsBelow >= btc24HourChange) {
-                txtLogger.writeToLogFile(`The method runProgram() quit because:`);
-                txtLogger.writeToLogFile(`A do not-order-if-check is triggerd. Namely:`);
-                txtLogger.writeToLogFile(`Do not place an order when BTC dropped more than: ${doNotOrderIfbtc24hourChangeIsBelow}. BTC dropped with ${btc24HourChange}`)
-                return;
-            }
         }
 
         // STEP 4 If USDT is to low, you don't need to run the program, therefore quit.
