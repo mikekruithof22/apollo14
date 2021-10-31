@@ -14,7 +14,7 @@ import txtLogger from './helpers/txt-logger';
 
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
     public static async Start() {
-        txtLogger.writeToLogFile("App is running");
+        txtLogger.log('App is running');
 
         // setup
         const cronExpression = CronHelper.GetCronExpression();
@@ -22,6 +22,8 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
         const tradingBot = new Tradingbot();
 
+        txtLogger.log('Subscribing to webSocketClient');
+        
         websocketClient.subscribeSpotUserDataStream();
 
         // Retreive some config values
@@ -32,7 +34,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.log(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
 
             if (runTestInsteadOfProgram === false) {
                 schedule.scheduleJob(cronExpression, async function () {
@@ -47,12 +49,12 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
 
         // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
         websocketClient.on('reply', async (data: WsResponse) => {
-            txtLogger.writeToLogFile(`reply eventreceived: ${JSON.stringify(data)}`);
+            txtLogger.log(`reply eventreceived: ${JSON.stringify(data)}`);
         });
 
         // Listen To Order Changes
         websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
-            txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
+            txtLogger.log(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
             await tradingBot.processFormattedUserDataMessage(data);
         });
     }

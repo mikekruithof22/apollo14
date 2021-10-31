@@ -3,7 +3,7 @@ import { LogLevel } from "../models/log-level";
 const fs = require('fs');
 
 export default class TextLogger {
-    public static writeToLogFile = (message: string, logLevel = LogLevel.INFO): string => {
+    public static log = (message: string, logLevel = LogLevel.INFO): string => {
         console.log(message);
         
         const fileLocation: string = TextLogger.generateFilePath();

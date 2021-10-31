@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "to the moon",
   "scripts": {
-    "build": "tsc",
-    "prestart": "npm run build",
-    "start": "node dist/src/index.js",
+    "start": "ts-node src/index.ts",
     "test": "ts-node src/test.ts"
   },
   "author": "",

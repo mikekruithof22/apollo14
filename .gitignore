@@ -5,3 +5,4 @@ testLogs
 dist
 production-logs
 package-lock.json
+.vscode

@@ -39,7 +39,7 @@ export default class BinanceService {
                 // console.log(response)
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`getAccountBalances() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`getAccountBalances() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
         /*
             Example response:
@@ -73,7 +73,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(` getOrderBook() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(` getOrderBook() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
         /*  Example response::
             {
@@ -103,7 +103,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(` retrieveAllOpenOrders() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(` retrieveAllOpenOrders() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
         /*
       Example response:
@@ -181,7 +181,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`cancelOrder() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`cancelOrder() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
 
         /*
@@ -213,7 +213,7 @@ export default class BinanceService {
             .then(response => {
                 return response as ExchangeInfo;
             }).catch(err => {
-                txtLogger.writeToLogFile(`getExchangeInfo() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`getExchangeInfo() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
 
         /*
@@ -232,7 +232,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(` getSpotUserDataListenKey() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(` getSpotUserDataListenKey() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
     }
 }

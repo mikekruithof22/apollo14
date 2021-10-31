@@ -15,6 +15,8 @@ export default class WebSocketService {
             beautify: true,
         });
 
+        txtLogger.log(`Generated wsClient`);
+
         // notification when a connection is opened
         // wsClient.on('open', (data: {
         //     wsKey: WsKey;
@@ -30,7 +32,7 @@ export default class WebSocketService {
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.writeToLogFile(`Websocket event - connection closed', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.log(`Websocket event - connection closed', ${data.wsKey}, ${data.ws.url}`);
         });
 
         wsClient.on('reconnecting', (data: {
@@ -38,7 +40,7 @@ export default class WebSocketService {
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.writeToLogFile(`Websocket event - trying to reconnect...', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.log(`Websocket event - trying to reconnect...', ${data.wsKey}, ${data.ws.url}`);
         });
 
 
@@ -47,7 +49,7 @@ export default class WebSocketService {
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.writeToLogFile(`Websocket event - reconnected', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.log(`Websocket event - reconnected', ${data.wsKey}, ${data.ws.url}`);
         });
 
         return wsClient;

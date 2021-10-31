@@ -29,18 +29,20 @@ export default class Tradingbot {
         this.candleHelper = new CandleHelper();
         this.order = new Order();
         this.binanceRest = this.binanceService.generateBinanceRest();
+
+        txtLogger.log(`New TradingBot created`);
     }
 
     public async runProgram() {
         let foundAtLeastOneBullishDivergence: boolean = false;
 
         // STEP 1 - Sanity check the config.json.
-        txtLogger.writeToLogFile(`---------- Program started ---------- `);
+        txtLogger.log(`---------- Program started ---------- `);
 
         const configCheck = configChecker.checkConfigData(config, true);
         if (configCheck.closeProgram === true) {
-            txtLogger.writeToLogFile(`The method runProgram() quit because:`);
-            txtLogger.writeToLogFile(configCheck.message, LogLevel.ERROR);
+            txtLogger.log(`The method runProgram() quit because:`);
+            txtLogger.log(configCheck.message, LogLevel.ERROR);
             return;
         }
 
@@ -60,8 +62,8 @@ export default class Tradingbot {
         const triggerCancelLogic: boolean = config.production.devTest.triggerCancelLogic;
 
         if (this.binanceRest === undefined) {
-            txtLogger.writeToLogFile(`The method runProgram() quit because:`);
-            txtLogger.writeToLogFile(`Generating binanceRest client failed.`, LogLevel.ERROR);
+            txtLogger.log(`The method runProgram() quit because:`);
+            txtLogger.log(`Generating binanceRest client failed.`, LogLevel.ERROR);
             return;
         }
 
@@ -69,16 +71,16 @@ export default class Tradingbot {
         const balance = await this.binanceService.getAccountBalances(this.binanceRest);
         const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
         const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
-        txtLogger.writeToLogFile(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}`);
+        txtLogger.log(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}`);
 
         if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
-            txtLogger.writeToLogFile(`The method runProgram() quit because:`);
-            txtLogger.writeToLogFile(`The free USDT balance amount is lower than the configured minimum amount: ${minimumUSDTorderAmount}.`);
+            txtLogger.log(`The method runProgram() quit because:`);
+            txtLogger.log(`The free USDT balance amount is lower than the configured minimum amount: ${minimumUSDTorderAmount}.`);
             return;
         }
 
         // STEP 4 - Retrieve RSI & calculate bullish divergence foreach trading pair
-        txtLogger.writeToLogFile(`There are ${orderConditions.length * tradingPairs.length} order condition(s)`);
+        txtLogger.log(`There are ${orderConditions.length * tradingPairs.length} order condition(s)`);
 
         for await (let tradingPair of tradingPairs) {
 
@@ -96,7 +98,7 @@ export default class Tradingbot {
                 // txtLogger.writeToLogFile(`Evaluating order condition: ${orderConditionName}`);
 
                 if (triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
-                    txtLogger.writeToLogFile(`DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order`);
+                    txtLogger.log(`DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order`);
                     await this.buyLimitOrderLogic(
                         order,
                         minimumUSDTorderAmount,
@@ -125,11 +127,11 @@ export default class Tradingbot {
                 );
 
                 if (bullishDivergenceCandle !== undefined) {
-                    txtLogger.writeToLogFile(`***** Bullish divergence detected for: ${orderConditionName} *****`);
-                    txtLogger.writeToLogFile(`Details:`);
-                    txtLogger.writeToLogFile(JSON.stringify(bullishDivergenceCandle, null, 4))
+                    txtLogger.log(`***** Bullish divergence detected for: ${orderConditionName} *****`);
+                    txtLogger.log(`Details:`);
+                    txtLogger.log(JSON.stringify(bullishDivergenceCandle, null, 4))
 
-                    txtLogger.writeToLogFile(`The most recent rsi value is: ${bullishDivergenceCandle.endiRsiValue}. The minimun configured is: ${doNotOrderWhenRSIValueIsBelow}`);
+                    txtLogger.log(`The most recent rsi value is: ${bullishDivergenceCandle.endiRsiValue}. The minimun configured is: ${doNotOrderWhenRSIValueIsBelow}`);
 
                     if (mostRecentRsiValue >= doNotOrderWhenRSIValueIsBelow) {
                         foundAtLeastOneBullishDivergence = true;
@@ -148,7 +150,7 @@ export default class Tradingbot {
                         // TODO: testmike, for now we will 'RETURN' out of the loop once we trigger the buy buyLimitOrderLogic
                         // This makes the program, for the time being way simpler! In the future we can let it continue.
                     } else {
-                        txtLogger.writeToLogFile(`Because the RSI is lower than minimum configured the program will not place an limit buy order`);
+                        txtLogger.log(`Because the RSI is lower than minimum configured the program will not place an limit buy order`);
                     }
                 } else {
                     // txtLogger.writeToLogFile(`No-bullish-divergence-detected for: ${orderConditionName}.`);
@@ -159,8 +161,8 @@ export default class Tradingbot {
         if (foundAtLeastOneBullishDivergence === false) {
             // STEP 5. 
             //      OPTIE II  - Close the program & websocket because no bullish divergence(s) where found this time.
-            txtLogger.writeToLogFile(`Program ended because:`);
-            txtLogger.writeToLogFile(`No bullish divergence(s) where found during this run.`);
+            txtLogger.log(`Program ended because:`);
+            txtLogger.log(`No bullish divergence(s) where found during this run.`);
         }
     }
 
@@ -172,7 +174,7 @@ export default class Tradingbot {
         limitBuyOrderExpirationTime: number,
         triggerCancelLogic: boolean
     ) {
-        txtLogger.writeToLogFile(`The method buyLimitOrderLogic() will try to place a limit buy order`);
+        txtLogger.log(`The method buyLimitOrderLogic() will try to place a limit buy order`);
 
         // STEP I. Prepare config.json order data 
         const takeProfitPercentage: number = order.order.takeProfitPercentage;
@@ -204,32 +206,32 @@ export default class Tradingbot {
         const balance = await this.binanceService.getAccountBalances(this.binanceRest);
         const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
         const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
-        txtLogger.writeToLogFile(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}`);
+        txtLogger.log(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}`);
 
         if (currentFreeUSDTAmount < minimumUSDTorderAmount) {
-            txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
-            txtLogger.writeToLogFile(`The free USDT balance amount is lower than the configured minimum amount: ${minimumUSDTorderAmount}.`);
+            txtLogger.log(`The method buyLimitOrderLogic() quit because:`);
+            txtLogger.log(`The free USDT balance amount is lower than the configured minimum amount: ${minimumUSDTorderAmount}.`);
             return;
         }
 
         // STEP III. Determine how much you can spend at the next buy order based on the order book.
         const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
-        txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
+        txtLogger.log(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
 
         const symbol: string = `symbol=${tradingPair}`; // workaround, npm package sucks
         const exchangeInfo = await this.binanceService.getExchangeInfo(this.binanceRest, symbol) as ExchangeInfo;
 
         if (exchangeInfo === undefined) {
-            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
-            txtLogger.writeToLogFile(`getExchangeInfo() method failed.`, LogLevel.ERROR);
+            txtLogger.log(`Buy ordering logic is cancelled because:`);
+            txtLogger.log(`getExchangeInfo() method failed.`, LogLevel.ERROR);
             return;
         }
 
         const symbolResult: SymbolExchangeInfo = exchangeInfo.symbols.find(r => r.symbol === tradingPair);
 
         if (symbolResult === undefined) {
-            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
-            txtLogger.writeToLogFile(`symbolResult was undefined .`, LogLevel.ERROR);
+            txtLogger.log(`Buy ordering logic is cancelled because:`);
+            txtLogger.log(`symbolResult was undefined .`, LogLevel.ERROR);
             return;
         }
 
@@ -240,8 +242,8 @@ export default class Tradingbot {
         const minimumOrderQuantity: number = exchangeLogic.determineMinQty(lotSize);
         const tickSize: number = exchangeLogic.determineTickSize(priceFilter);
 
-        txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
-        txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
+        txtLogger.log(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
+        txtLogger.log(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
 
         // STEP IV. Retrieve bid prices.
         const currentOrderBook = await this.binanceService.getOrderBook(this.binanceRest, tradingPair);
@@ -257,24 +259,24 @@ export default class Tradingbot {
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
 
         if ((orderAmount < minimumOrderQuantity) || (totalUsdtAmount < 10)) {
-            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
-            txtLogger.writeToLogFile(`Order quantity is lower than - ${orderAmount} - the minimum allowed order quanity: ${minimumOrderQuantity}`);
+            txtLogger.log(`Buy ordering logic is cancelled because:`);
+            txtLogger.log(`Order quantity is lower than - ${orderAmount} - the minimum allowed order quanity: ${minimumOrderQuantity}`);
             return;
         }
 
-        txtLogger.writeToLogFile(`Based on the order book the following order limit buy order will be (very likely) filled immediately:`);
-        txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
-        txtLogger.writeToLogFile(`Total USDT value of the order is equal to: ${totalUsdtAmount}`);
+        txtLogger.log(`Based on the order book the following order limit buy order will be (very likely) filled immediately:`);
+        txtLogger.log(`Price: ${orderPrice}. Amount: ${orderAmount}`);
+        txtLogger.log(`Total USDT value of the order is equal to: ${totalUsdtAmount}`);
 
         // STEP V. Create the buy order and add it to the activeBuyOrders array.
         const buyOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITBUY, tradingPair, orderAmount, orderPrice) as OrderResponseFull;
         if (buyOrder === undefined) {
-            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
-            txtLogger.writeToLogFile(`There was an error creating the limit buy order`, LogLevel.ERROR);
+            txtLogger.log(`Buy ordering logic is cancelled because:`);
+            txtLogger.log(`There was an error creating the limit buy order`, LogLevel.ERROR);
             return;
         }
-        txtLogger.writeToLogFile(`Buy order created. Details:`);
-        txtLogger.writeToLogFile(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}, price: ${buyOrder.price}`);
+        txtLogger.log(`Buy order created. Details:`);
+        txtLogger.log(`Status: ${buyOrder.status}, orderId: ${buyOrder.orderId}, clientOrderId: ${buyOrder.clientOrderId}, price: ${buyOrder.price}`);
 
         if (buyOrder.status === OrderStatusEnum.PARTIALLY_FILLED ||
             buyOrder.status === OrderStatusEnum.NEW ||
@@ -294,14 +296,14 @@ export default class Tradingbot {
         }
 
         if (triggerCancelLogic === true) { // TESTING PURPOSE ONLY!
-            txtLogger.writeToLogFile(`DEVTEST - Cancel the limit buy order immediately`);
+            txtLogger.log(`DEVTEST - Cancel the limit buy order immediately`);
             this.cancelLimitBuyOrderCheck(tradingPair, buyOrder.clientOrderId, orderName);
         }
 
         if (buyOrder.status !== OrderStatusEnum.FILLED) {
             // STEP VI. Activate cancelLimitBuyOrderCheck() because after X seconds you want to cancel the limit buy order if it is not filled.
             setTimeout(() => {
-                txtLogger.writeToLogFile(`The method cancelLimitBuyOrderCheck() is going to check if the limit buy order - ${orderName} - has been filled within the allocated time: ${limitBuyOrderExpirationTime / 1000} seconds`);
+                txtLogger.log(`The method cancelLimitBuyOrderCheck() is going to check if the limit buy order - ${orderName} - has been filled within the allocated time: ${limitBuyOrderExpirationTime / 1000} seconds`);
                 this.cancelLimitBuyOrderCheck(tradingPair, buyOrder.clientOrderId, orderName);
             }, limitBuyOrderExpirationTime);
         }
@@ -320,10 +322,10 @@ export default class Tradingbot {
                     const index = this.activeBuyOrders.findIndex(o => o.clientOrderId === clientOrderId);
                     this.activeBuyOrders[index].status = 'FILLED';
 
-                    txtLogger.writeToLogFile(`Limit buy order with clientOrderId: ${clientOrderId} and order name: ${buyOrder.orderName} is filled`);
+                    txtLogger.log(`Limit buy order with clientOrderId: ${clientOrderId} and order name: ${buyOrder.orderName} is filled`);
                     await this.createOcoOrder(data, clientOrderId, buyOrder);
                 } else {
-                    txtLogger.writeToLogFile(`Buy order not found inside this.activeBuyOrders: ActiveBuyOrder[]`);
+                    txtLogger.log(`Buy order not found inside this.activeBuyOrders: ActiveBuyOrder[]`);
                     // TODO: testmike wil je proces.exit? indien this.activeBuyOrders deze niet langer correct is? 
                 }
             }
@@ -334,10 +336,10 @@ export default class Tradingbot {
             const clientOrderId: string = data.newClientOrderId;
 
             const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
-            txtLogger.writeToLogFile(`Limit buy order with clientOrderId ${clientOrderId} is successfully cancelled.`);
+            txtLogger.log(`Limit buy order with clientOrderId ${clientOrderId} is successfully cancelled.`);
 
             if (buyOrder !== undefined && buyOrder.status === 'PARTIALLY_FILLED') {
-                txtLogger.writeToLogFile(`The limit buy order was PARTIALLY_FILLED. Therefore, the next step will be trying to create an oco order.`);
+                txtLogger.log(`The limit buy order was PARTIALLY_FILLED. Therefore, the next step will be trying to create an oco order.`);
                 await this.createOcoOrder(data, clientOrderId, buyOrder);
             }
         }
@@ -345,8 +347,8 @@ export default class Tradingbot {
         // // POSSIBILITY III - OCO order is finished - ALL_DONE
         if (data.eventType === 'listStatus' && data.listOrderStatus === 'ALL_DONE') {
             const listClientOrderId = data.listClientOrderId;
-            txtLogger.writeToLogFile(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
-            txtLogger.writeToLogFile(`${JSON.stringify(data, null, 4)}`);
+            txtLogger.log(`Oco order with listClientOrderId: ${listClientOrderId} is filled. Details:`);
+            txtLogger.log(`${JSON.stringify(data, null, 4)}`);
             this.activeOcoOrdersIds = this.activeOcoOrdersIds.filter(id => id !== listClientOrderId);
         }
     }
@@ -356,30 +358,30 @@ export default class Tradingbot {
         const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
             const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId);
-            txtLogger.writeToLogFile(`Checking if it is necessary to cancel the limit buy order with the following details:`);
-            txtLogger.writeToLogFile(`orderName: ${orderName}, clientOrderId: ${clientOrderId} `);
+            txtLogger.log(`Checking if it is necessary to cancel the limit buy order with the following details:`);
+            txtLogger.log(`orderName: ${orderName}, clientOrderId: ${clientOrderId} `);
 
             // STEP 2 - If the limit buy order is still open cancel it ('NEW' or 'PARTIALLY_FILLED')
             if (
                 limitBuyOrder !== undefined &&
                 (limitBuyOrder.status === 'NEW' || limitBuyOrder.status === 'PARTIALLY_FILLED')
             ) {
-                txtLogger.writeToLogFile(`The limit buy order status is equal to: - ${limitBuyOrder.status}`);
-                txtLogger.writeToLogFile(`${JSON.stringify(limitBuyOrder)}`);
-                txtLogger.writeToLogFile(`Trying to cancel the limit buy order.`);
+                txtLogger.log(`The limit buy order status is equal to: - ${limitBuyOrder.status}`);
+                txtLogger.log(`${JSON.stringify(limitBuyOrder)}`);
+                txtLogger.log(`Trying to cancel the limit buy order.`);
                 const cancelSpotOrderResult: CancelSpotOrderResult = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, limitBuyOrder.orderId);
-                txtLogger.writeToLogFile(`The cancel spot order results looks as follows:`);
-                txtLogger.writeToLogFile(`${JSON.stringify(cancelSpotOrderResult)}`);
+                txtLogger.log(`The cancel spot order results looks as follows:`);
+                txtLogger.log(`${JSON.stringify(cancelSpotOrderResult)}`);
             } else {
-                txtLogger.writeToLogFile(`Limit buy order was not found among the current open orders and/or the status was not equal to: 'PARTIALLY_FILLED' or 'NEW', therefore nothing to cancel.`);
+                txtLogger.log(`Limit buy order was not found among the current open orders and/or the status was not equal to: 'PARTIALLY_FILLED' or 'NEW', therefore nothing to cancel.`);
             }
         } else {
-            txtLogger.writeToLogFile(`Currently there are no active open orders, therefore there is nothing to cancel.`);
+            txtLogger.log(`Currently there are no active open orders, therefore there is nothing to cancel.`);
         }
     }
 
     public async createOcoOrder(data: WsMessageSpotUserDataExecutionReportEventFormatted, clientOrderId: string, buyOrder: ActiveBuyOrder) {
-        txtLogger.writeToLogFile(`The method createOcoOrder() is triggered`);
+        txtLogger.log(`The method createOcoOrder() is triggered`);
 
         const stepSize: number = buyOrder.stepSize;
         const tickSize: number = buyOrder.tickSize;
@@ -401,13 +403,13 @@ export default class Tradingbot {
         // Check when you sell that the oco amount * stopLimitPrice is equal or greather than 10 usdt. 
         let usdtAmountForStopLimitPrice: number = stopLimitPrice * ocoOrderAmount; 
 
-        txtLogger.writeToLogFile(`currentCryptoBalance`);
-        txtLogger.writeToLogFile(JSON.stringify(currentCryptoBalance));
-        txtLogger.writeToLogFile(`currentFreeCryptoBalance: ${currentFreeCryptoBalance}`);
+        txtLogger.log(`currentCryptoBalance`);
+        txtLogger.log(JSON.stringify(currentCryptoBalance));
+        txtLogger.log(`currentFreeCryptoBalance: ${currentFreeCryptoBalance}`);
 
         if ((ocoOrderAmount < minimumOcoOrderQuantity) || (usdtAmountForStopLimitPrice < 10)) {
-            txtLogger.writeToLogFile(`Oco order quantity - ${ocoOrderAmount} - is lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
-            txtLogger.writeToLogFile(`Re-retrieving current free balance after a couple of seconds to ensure it's not a timing issue!`);
+            txtLogger.log(`Oco order quantity - ${ocoOrderAmount} - is lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
+            txtLogger.log(`Re-retrieving current free balance after a couple of seconds to ensure it's not a timing issue!`);
 
             const delay = ms => new Promise(res => setTimeout(res, ms));
             await delay(3000);
@@ -420,18 +422,18 @@ export default class Tradingbot {
             usdtAmountForStopLimitPrice = stopLimitPrice * ocoOrderAmount; 
 
             if ((ocoOrderAmount < minimumOcoOrderQuantity) || (usdtAmountForStopLimitPrice < 10)) {
-                txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
-                txtLogger.writeToLogFile(`Oco order quantity - ${ocoOrderAmount} - is STILL lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
+                txtLogger.log(`The method createOcoOrder() quit because:`);
+                txtLogger.log(`Oco order quantity - ${ocoOrderAmount} - is STILL lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
                 return;
             }
         }
 
-        txtLogger.writeToLogFile(`Trying to create an OCO order`);
-        txtLogger.writeToLogFile(`The oco order amount is equal to: ${ocoOrderAmount}`);
-        txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
-        txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
+        txtLogger.log(`Trying to create an OCO order`);
+        txtLogger.log(`The oco order amount is equal to: ${ocoOrderAmount}`);
+        txtLogger.log(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
+        txtLogger.log(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
 
-        txtLogger.writeToLogFile(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${ocoOrderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice} stopLimitPrice: ${stopLimitPrice}`);
+        txtLogger.log(`Creating OCO order. Symbol: ${data.symbol} orderAmount: ${ocoOrderAmount} profitPrice: ${profitPrice} stopLossPrice: ${stopLossPrice} stopLimitPrice: ${stopLimitPrice}`);
 
         const ocoOrder = await this.order.createOcoSellOrder(
             this.binanceRest,
@@ -443,21 +445,21 @@ export default class Tradingbot {
         );
 
         if (ocoOrder === undefined) {
-            txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
-            txtLogger.writeToLogFile(`Oco order creation failed.`, LogLevel.ERROR);
+            txtLogger.log(`The method createOcoOrder() quit because:`);
+            txtLogger.log(`Oco order creation failed.`, LogLevel.ERROR);
 
             const limitSellOrderAmount: number = ocoOrderAmount;
             const limitSellOrderPrice: number = data.price * 0.95;
 
             const limitSellOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITSELL, data.symbol, limitSellOrderAmount, limitSellOrderPrice) as OrderResponseFull;
             if (limitSellOrder === undefined) {
-                txtLogger.writeToLogFile(`There was an error creating the limit sell order`, LogLevel.ERROR);
+                txtLogger.log(`There was an error creating the limit sell order`, LogLevel.ERROR);
             } else {
-                txtLogger.writeToLogFile(`Limit sell order created. Details:`);
-                txtLogger.writeToLogFile(`Status: ${limitSellOrder.status}, orderId: ${limitSellOrder.orderId}, clientOrderId: ${limitSellOrder.clientOrderId}, price: ${limitSellOrder.price}`);
+                txtLogger.log(`Limit sell order created. Details:`);
+                txtLogger.log(`Status: ${limitSellOrder.status}, orderId: ${limitSellOrder.orderId}, clientOrderId: ${limitSellOrder.clientOrderId}, price: ${limitSellOrder.price}`);
             }
-            txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
-            txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
+            txtLogger.log(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
+            txtLogger.log(`Program is closed by 'process.exit`);
 
             process.exit();
 
@@ -472,8 +474,8 @@ export default class Tradingbot {
             }
             this.activeOcoOrdersIds.push(ocoOrder.listClientOrderId);
 
-            txtLogger.writeToLogFile(`Oco Order was successfully created. Details:`);
-            txtLogger.writeToLogFile(`${JSON.stringify(ocoOrder)}`);
+            txtLogger.log(`Oco Order was successfully created. Details:`);
+            txtLogger.log(`${JSON.stringify(ocoOrder)}`);
         }
     }
 }

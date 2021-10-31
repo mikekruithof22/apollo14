@@ -9,13 +9,12 @@ const port = process.env.PORT || 3000;
 // define a route handler for the default home page
 app.get( "/", ( req, res ) => {
     res.send( "Hello world! This is a TypeScript Node application running in Azure!" );
-    console.log("Hello console logger world");
-    txtLogger.writeToLogFile("Hello file logger world");
+    txtLogger.log("Hello file logger world");
 });
 
 app.get( "/start", ( req, res ) => {
     res.send( "Starting app!" );
-    txtLogger.writeToLogFile("Starting app through start endpoint");
+    txtLogger.log("Starting app through start endpoint");
     Main.Start();
 });
 

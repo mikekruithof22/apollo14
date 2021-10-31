@@ -39,17 +39,17 @@ export default class Order {
                 options = this.generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
                 break;
             default:
-                txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
+                txtLogger.log(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
                 return;
         }
-        txtLogger.writeToLogFile(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
+        txtLogger.log(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
 
         return binanceRest
             .submitNewOrder(options)
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`createOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`createOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
 
         /*
@@ -94,14 +94,14 @@ export default class Order {
             stopLimitTimeInForce: 'GTC',
             newOrderRespType: 'RESULT',
         }
-        txtLogger.writeToLogFile(`Try to create an OCO with the following options: ${JSON.stringify(options)}`, LogLevel.INFO);
+        txtLogger.log(`Try to create an OCO with the following options: ${JSON.stringify(options)}`, LogLevel.INFO);
 
         return binanceRest
             .submitNewOCO(options)
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`createOcoSellOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`createOcoSellOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
     }
 
@@ -195,7 +195,7 @@ export default class Order {
                 options = this.generateStopLossSellOrderOptions(symbol, quantity, stopPrice);
                 break;
             default:
-                txtLogger.writeToLogFile(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
+                txtLogger.log(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
                 return;
         }
 
