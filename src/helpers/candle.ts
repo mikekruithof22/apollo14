@@ -1,7 +1,7 @@
 import { Candle, ClosePrice, LightWeightCandle } from '../models/candle';
 
 import dateHelper from './date';
-import fetch from '../../node_modules/node-fetch/lib/index.js';
+import fetch from 'node-fetch';
 
 export default class CandleHelper {
     public retrieveCandles = (url) => {

@@ -1,7 +1,7 @@
 import * as schedule from "node-schedule";
 
-import { WebsocketClient, WsKey } from 'binance/lib/websocket-client';
-import { WsResponse, WsUserDataEvents } from "binance";
+//import { WebsocketClient, WsKey } from 'binance';
+import { WebsocketClient, WsKey, WsResponse, WsUserDataEvents } from "binance";
 
 import CronHelper from './helpers/cronHelper';
 import { LogLevel } from './models/log-level'; // todo aram check if loglevel can be included in txtLogger class
@@ -10,7 +10,6 @@ import WebSocket from 'isomorphic-ws';
 import WebSocketService from './binance/websocket';
 import config from "../config";
 import txtLogger from './helpers/txt-logger';
-
 
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
     public static async Start() {
@@ -22,7 +21,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
         const tradingBot = new Tradingbot();
 
-        txtLogger.log('Subscribing to webSocketClient');
+        txtLogger.log('Subscribing to webSocketClient with new source for WebSocketClient');
         
         websocketClient.subscribeSpotUserDataStream();
 

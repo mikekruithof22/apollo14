@@ -1,9 +1,9 @@
 require('dotenv').config();
 
-import { BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams } from '../../node_modules/binance/lib/index';
+import { BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams } from 'binance';
 
 import { LogLevel } from '../models/log-level';
-import { MainClient } from '../../node_modules/binance/lib/main-client';
+import { MainClient } from 'binance';
 import txtLogger from '../helpers/txt-logger';
 
 /*
