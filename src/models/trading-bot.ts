@@ -8,6 +8,3 @@ export class ActiveBuyOrder {
     tickSize: number;
     status: string;
 }
-export class ActiveOcoOrder {
-    listClientOrderId: string;
-}

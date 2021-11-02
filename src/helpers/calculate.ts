@@ -1,59 +1,72 @@
-import { BullishDivergenceResult } from '../models/calculate';
+import { OrderConditionResult } from '../models/calculate';
 import config from '../../config';
 import stopLoss from './stop-loss';
+import { LightWeightCandle } from '../models/candle';
+import txtLogger from './txt-logger';
+import { LogLevel } from '../models/log-level';
 
 export default class CalculateHelper {
 
-    public static calculateBullishDivergence = (
-        closePriceList,
-        candleList,
-        rsiItems,
-        startCount,
-        stopCount,
-        rsiMinimumRisingPercentage,
-        candleMinimumDeclingPercentage,
-        orderConditionName
-    ): BullishDivergenceResult => {
-        for (var i = startCount; i < closePriceList.length; i++) {
-            const mostRecentCandle = closePriceList[closePriceList.length - 1];
-            const mostRecenCandleIndex = closePriceList.length - 1;
-            const mostRecentRsiValue = rsiItems[rsiItems.length - 1];
+    public static calculateBullishDivergenceOrCrashOrder = (
+        closePriceList: number[],
+        candleList: LightWeightCandle[],
+        rsiItems: number[],
+        startCount: number,
+        stopCount: number,
+        rsiMinimumRisingPercentage: number,
+        candleMinimumDeclingPercentage: number,
+        orderConditionName: string,
+        botPauseActive: boolean
+    ): OrderConditionResult => {
+        const mostRecentCandleIndex = closePriceList.length - 1;
+        const mostRecentClose = closePriceList[mostRecentCandleIndex];
+        const mostRecentRsiIndex = rsiItems.length - 1;
+        const mostRecentRsiValue = rsiItems[mostRecentRsiIndex];
+        const stopCandle = mostRecentCandleIndex - stopCount;
+        let compareWithRsiIndex = mostRecentRsiIndex;
 
-            const compareWithCandle = closePriceList[closePriceList.length - i];
-            const compareWithCandleIndex = closePriceList.length - i;
-            const compareWithRsiValue = rsiItems[rsiItems.length - i];
+        for (var i = closePriceList.length - 2; i >= stopCandle; i--) {
+            const compareWithClose = closePriceList[i];
+            compareWithRsiIndex--;
 
-            const closePriceDifference = mostRecentCandle - compareWithCandle;
-            const rsiDifference = mostRecentRsiValue - compareWithRsiValue;
+            try {
+                // STEP 1 - calculate priceListDelta
+                const closePriceChange = CalculateHelper.calculatePercentageChange(compareWithClose, mostRecentClose);
 
-            if (
-                !isNaN(closePriceDifference) &&
-                !isNaN(rsiDifference) &&
-                i <= stopCount
-            ) {
-                // STEP 1 - calculate RSI delta
-                const rsiChange = CalculateHelper.calculatePercentageChange(compareWithRsiValue, mostRecentRsiValue);
-
-                // STEP 2 - calculate priceListDelta
-                const closePriceChange = CalculateHelper.calculatePercentageChange(compareWithCandle, mostRecentCandle);
-
-                // STEP 3 - determine if there is a bullish divergence
-                if (
-                    rsiChange >= rsiMinimumRisingPercentage &&
-                    closePriceChange <= candleMinimumDeclingPercentage &&
-                    candleList !== undefined
-                ) {
+                // STEP 2 - determine if there is a crash
+                const crashConfig = config.production.largeCrashOrder;
+                if (crashConfig.maxAmountOfCandlesToLookBack >= mostRecentCandleIndex - i
+                    && closePriceChange <= crashConfig.minimumDeclingPercentage) {
                     return {
-                        startWithCandle: candleList[compareWithCandleIndex],
-                        startRsiValue: compareWithRsiValue,
-                        endingCandle: candleList[mostRecenCandleIndex],
-                        endiRsiValue: mostRecentRsiValue,
-                        orderConditionName: orderConditionName,
-                        totalCandles: mostRecenCandleIndex - compareWithCandleIndex
+                        startWithCandle: candleList[i],
+                        endingCandle: candleList[mostRecentCandleIndex],
+                        totalCandles: mostRecentCandleIndex - i,
+                        isCrashOrder: true
+                    } as OrderConditionResult;
+                }
+
+                // This part is only for bullish Divergences
+                if (mostRecentCandleIndex - i >= startCount &&
+                    !botPauseActive) {
+                    // STEP 3 - calculate RSI delta
+                    const compareWithRsiValue = rsiItems[compareWithRsiIndex];
+                    const rsiChange = CalculateHelper.calculatePercentageChange(compareWithRsiValue, mostRecentRsiValue);
+
+                    // STEP 4 - determine if there is a bullish divergence. Only when pause is not active
+                    if (rsiChange >= rsiMinimumRisingPercentage &&
+                        closePriceChange <= candleMinimumDeclingPercentage) {
+                        return {
+                            startWithCandle: candleList[i],
+                            startRsiValue: compareWithRsiValue,
+                            endingCandle: candleList[mostRecentCandleIndex],
+                            endiRsiValue: mostRecentRsiValue,
+                            orderConditionName: orderConditionName,
+                            totalCandles: mostRecentCandleIndex - i
+                        } as OrderConditionResult;
                     }
                 }
-            } else {
-                break;
+            } catch (e) {
+                txtLogger.writeToLogFile(`calculateBullishDivergenceOrCrashOrder() failed. ${JSON.stringify(e)}`, LogLevel.ERROR);
             }
         }
     }
@@ -145,9 +158,9 @@ export default class CalculateHelper {
             });
         // remove duplicate ending candles
         const uniquebullishEndingDivergenceCandles = Array.from(new Set(uniquebullishStartingDivergenceCandles.map(a => a.idSecondCandle)))
-        .map(id => {
-            return uniquebullishStartingDivergenceCandles.find(a => a.idSecondCandle === id)
-        });
+            .map(id => {
+                return uniquebullishStartingDivergenceCandles.find(a => a.idSecondCandle === id)
+            });
 
         const candleInfo = uniquebullishEndingDivergenceCandles.reverse();
         const finalCandles = CalculateHelper.addBalanceCalcProperties(candleInfo, takeLossPercentage, takeProfitPercentage);
@@ -182,7 +195,7 @@ export default class CalculateHelper {
         return bullishDivergenceCandles;
     }
 
-    public static calculatePercentageChange = (a, b) => {
+    public static calculatePercentageChange = (a: number, b: number) => {
         let percent;
         if (b !== 0) {
             if (a !== 0) {
@@ -234,11 +247,3 @@ export default class CalculateHelper {
         return metaDataContent;
     }
 }
-// module.exports = {
-//     calculateBullishDivergence,
-//     calculatePercentageChange,
-//     showCalculationLoging,
-//     calculateBullishHistoricalDivergences,
-//     calcAmountOfSuccessfulTrades,
-//     calcTradeOutcomes
-// };

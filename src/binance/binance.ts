@@ -1,10 +1,11 @@
 require('dotenv').config();
 
-import { BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams } from '../../node_modules/binance/lib/index';
+import { AllCoinsInformationResponse, BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams } from '../../node_modules/binance/lib/index';
 
 import { LogLevel } from '../models/log-level';
 import { MainClient } from '../../node_modules/binance/lib/main-client';
 import txtLogger from '../helpers/txt-logger';
+import BinanceError from '../models/binance-error';
 
 /*
     Documentation urls
@@ -28,40 +29,17 @@ export default class BinanceService {
         return binanceRest;
     }
 
-    public getAccountBalances = async (binanceRest: MainClient): Promise<any> => {
-        const options = {
-            timestamp: new Date().getTime()
+    public getAccountBalancesWithRetry = async (binanceRest: MainClient): Promise<AllCoinsInformationResponse[] | BinanceError> => {
+        const retryDelay = 3000;
+        var response = await this.getAccountBalances(binanceRest);
+        if (!this.isTimeStampError(response)) {
+            return response;
+        } else {
+            txtLogger.writeToLogFile(`Retrying getAccountBalances() with delay of ${retryDelay}ms`);
+            setTimeout(async () => {
+                return await this.getAccountBalances(binanceRest);
+            }, retryDelay);
         }
-        return binanceRest
-            .getBalances()
-            .then(response => {
-                // console.log('----- response ----------');
-                // console.log(response)
-                return response;
-            }).catch(err => {
-                txtLogger.writeToLogFile(`getAccountBalances() ${JSON.stringify(err)}`, LogLevel.ERROR);
-            });
-        /*
-            Example response:
-           [{
-                coin: 'WABI',
-                depositAllEnable: true,
-                withdrawAllEnable: true,
-                name: 'TAEL',
-                free: '0',
-                locked: '0',
-                freeze: '0',
-                withdrawing: '0',
-                ipoing: '0',
-                ipoable: '0',
-                storage: '0',
-                isLegalMoney: false,
-                trading: true,
-                networkList: [ [Object] ]
-            },
-            etc.
-            ]
-        */
     }
 
     public getOrderBook = async (binanceRest: MainClient, symbol: string): Promise<any> => {
@@ -206,7 +184,7 @@ export default class BinanceService {
 
     public getExchangeInfo = async (binanceRest: MainClient, symbol: string): Promise<ExchangeInfo | void> => {
         const options: ExchangeInfoParams = {
-            symbol: symbol        
+            symbol: symbol
         }
         return binanceRest
             .getExchangeInfo(options)
@@ -234,5 +212,40 @@ export default class BinanceService {
             }).catch(err => {
                 txtLogger.writeToLogFile(` getSpotUserDataListenKey() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
+    }
+
+    private getAccountBalances = async (binanceRest: MainClient): Promise<AllCoinsInformationResponse[] | BinanceError> => {
+        return binanceRest
+            .getBalances()
+            .then(response => {
+                return response as AllCoinsInformationResponse[];
+            }).catch(err => {
+                return err as BinanceError;
+            });
+        /*
+            Example response:
+           [{
+                coin: 'WABI',
+                depositAllEnable: true,
+                withdrawAllEnable: true,
+                name: 'TAEL',
+                free: '0',
+                locked: '0',
+                freeze: '0',
+                withdrawing: '0',
+                ipoing: '0',
+                ipoable: '0',
+                storage: '0',
+                isLegalMoney: false,
+                trading: true,
+                networkList: [ [Object] ]
+            },
+            etc.
+            ]
+        */
+    }
+
+    private isTimeStampError(response: AllCoinsInformationResponse[] | BinanceError): response is BinanceError {
+        return (response as BinanceError).code === -1021 && (response as BinanceError).message.startsWith("Timestamp")
     }
 }

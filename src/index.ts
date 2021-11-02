@@ -18,11 +18,13 @@ const cronExpression = CronHelper.GetCronExpression();
 const wsService: WebSocketService = new WebSocketService();
 const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
 const tradingBot = new Tradingbot();
+let candlesToWait: number = 0;
 
 websocketClient.subscribeSpotUserDataStream();
 
 // Retreive some config values
 const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
+const amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
 
 websocketClient.on('open', async (data: {
     wsKey: WsKey;
@@ -33,10 +35,23 @@ websocketClient.on('open', async (data: {
 
     if (runTestInsteadOfProgram === false) {
         schedule.scheduleJob(cronExpression, async function () {
-            await tradingBot.runProgram();
+            txtLogger.writeToLogFile(`---------- Program started ---------- `);
+            const crashDetected: boolean = await tradingBot.crashDetected();
+            if (crashDetected) {
+                txtLogger.writeToLogFile(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles`);
+                candlesToWait = amountOfCandlesToPauseBotFor;
+            }
+            if (candlesToWait > 0) {
+                txtLogger.writeToLogFile(`Pause active for ${candlesToWait} amount of candles.`);
+                txtLogger.writeToLogFile(`Only checking crash order condition per trading pair during pause.`);
+                await tradingBot.runProgram(true);
+                candlesToWait--;
+            } else {
+                await tradingBot.runProgram(false);
+            }
         });
     } else {
-        await tradingBot.runProgram();
+        await tradingBot.runProgram(false);
     }
 
     // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
