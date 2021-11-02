@@ -96,7 +96,6 @@ export default class Tradingbot {
             const rsiCollection: number[] = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
             const mostRecentRsiValue = rsiCollection[rsiCollection.length - 1];
 
-
             for await (let order of orderConditions) {
                 const orderConditionName: string = `${tradingPair}-${order.name}`;
 
@@ -167,7 +166,6 @@ export default class Tradingbot {
                                 triggerCancelLogic
                             );
                         }
-                      
                     }
                     // TODO: testmike, for now we will 'RETURN' out of the loop once we trigger the buy buyLimitOrderLogic
                     // This makes the program, for the time being way simpler! In the future we can let it continue.
@@ -176,11 +174,10 @@ export default class Tradingbot {
 
             }
         }
-   
+
         botPauseActive ?
             txtLogger.writeToLogFile(`No crash condition(s) where found during this run.`) :
             txtLogger.writeToLogFile(`No bullish divergence(s) or crash condition(s) where found during this run.`);
-    
     }
 
     public async buyLimitOrderLogic(
