@@ -4,15 +4,15 @@ import { ClosePrice, LightWeightCandle } from './models/candle';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
 import { ActiveBuyOrder } from './models/trading-bot';
-import BinanceService from './binance/binance';
+import BinanceService from './binance-service/binanceService';
 import { BullishDivergenceResult } from './models/calculate';
 import CandleHelper from './helpers/candle';
 import { LogLevel } from './models/log-level';
-import Order from './binance/order';
+import Order from './binance-service/order';
 import calculate from './helpers/calculate';
 import config from '../config';
 import configChecker from './helpers/config-sanity-check';
-import exchangeLogic from './binance/logic';
+import exchangeLogic from './binance-service/logic';
 import rsiHelper from './helpers/rsi';
 import txtLogger from './helpers/txt-logger';
 
