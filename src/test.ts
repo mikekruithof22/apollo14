@@ -1,9 +1,8 @@
-import { ClosePrice, LightWeightCandle } from './models/candle';
-
 import { BalanceObject } from './models/calculate';
 import CandleHelper from './helpers/candle';
 import ConfigSanityCheck from './helpers/config-sanity-check';
 import ExportService from './services/exportService';
+import { LightWeightCandle } from './models/candle';
 import calculate from './helpers/calculate';
 import config from '../config';
 import rsiHelper from './helpers/rsi';
@@ -43,7 +42,7 @@ export default class Test {
             const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
             const candleList = await this.candleHelper.retrieveCandles(url);
             const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
-            const closePriceList: ClosePrice[] = this.candleHelper.generateClosePricesList(candleList);
+            const closePriceList: number[] = this.candleHelper.generateClosePricesList(candleList);
             const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
 
             for await (let order of orderConditions) {
