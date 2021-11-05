@@ -45,7 +45,11 @@ export default {
         "generateExcelFile": true,
         "testWithHistoricalData": true,
         "consoleLogSteps": false,
-        "candleAmountToLookIntoTheFuture": 100
+        "candleAmountToLookIntoTheFuture": 100,
+        "leverage": {
+            "active": true,
+            "amount": 3
+        }
     },    
     "orderConditions": [
         {

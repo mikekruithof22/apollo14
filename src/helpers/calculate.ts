@@ -1,9 +1,9 @@
+import { LightWeightCandle } from '../models/candle';
+import { LogLevel } from '../models/log-level';
 import { OrderConditionResult } from '../models/calculate';
 import config from '../../config';
 import stopLoss from './stop-loss';
-import { LightWeightCandle } from '../models/candle';
 import txtLogger from './txt-logger';
-import { LogLevel } from '../models/log-level';
 
 export default class CalculateHelper {
 
@@ -171,12 +171,19 @@ export default class CalculateHelper {
         let balance = 1000;
 
         let bullishDivergenceCandles = [];
+        const leverageActive: boolean = config.test.leverage.active;
+        const leverageAmount: number = config.test.leverage.amount;
 
         for (var i = 0; i < candleInfo.length; i++) {
 
             const stopLossResult = stopLoss.stopLossCalculation(candleInfo[i].startCandle, candleInfo[i].nextCandlesAfterHit, takeLossPercentage, takeProfitPercentage);
             const stopLossMessage = stopLossResult.message;
-            balance = balance * (1 + stopLossResult.profitOrLossPercentage);
+
+            if (leverageActive === true) {
+                balance = balance * (1 + stopLossResult.profitOrLossPercentage * leverageAmount);
+            } else {
+                balance = balance * (1 + stopLossResult.profitOrLossPercentage);
+            }
             let obj = {
                 id: candleInfo[i].id,
                 startWithCandle: candleInfo[i].startWithCandle,
