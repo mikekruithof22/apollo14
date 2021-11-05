@@ -1,4 +1,4 @@
-import { AllCoinsInformationResponse, CancelSpotOrderResult, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPriceFilter, WsMessageSpotUserDataExecutionReportEventFormatted, WsUserDataEvents } from 'binance';
+import { AllCoinsInformationResponse, CancelSpotOrderResult, ExchangeInfo, MainClient, OrderBookResponse, OrderResponseFull, SpotOrder, SymbolExchangeInfo, SymbolFilter, SymbolLotSizeFilter, SymbolPercentPriceFilter, SymbolPriceFilter, WsMessageSpotUserDataExecutionReportEventFormatted, WsUserDataEvents } from 'binance';
 import { AmountAndPrice, ConfigOrderCondition, ConfigOrderConditionOrder } from './models/logic';
 import { OrderStatusEnum, OrderTypeEnum } from './models/order';
 
@@ -242,13 +242,24 @@ export default class Tradingbot {
 
         const lotSize: SymbolFilter = symbolResult.filters.find(f => f.filterType === 'LOT_SIZE') as SymbolLotSizeFilter;
         const priceFilter: SymbolFilter = symbolResult.filters.find(f => f.filterType === 'PRICE_FILTER') as SymbolPriceFilter;
-
         const stepSize: number = exchangeLogic.determineStepSize(lotSize);
         const minimumOrderQuantity: number = exchangeLogic.determineMinQty(lotSize);
         const tickSize: number = exchangeLogic.determineTickSize(priceFilter);
 
         txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
         txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
+
+        const percentPriceObj: SymbolPercentPriceFilter  = symbolResult.filters.find(f => f.filterType === 'PERCENT_PRICE') as SymbolPercentPriceFilter;
+        const multiplierDown: number = Number(percentPriceObj.multiplierDown);
+        const allowedStopLossPercentageBinance: number = 100 - (multiplierDown * 100);
+  
+        if (takeLossPercentage >= allowedStopLossPercentageBinance) {
+            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
+            txtLogger.writeToLogFile(`The configured takeLossPercentage ${takeLossPercentage} is lower than Binance allows: ${allowedStopLossPercentageBinance}.`);
+            txtLogger.writeToLogFile(`****** Creating a buy limit order is useless because later on an OCO sell order will be rejected by Binance. ****** `);
+            txtLogger.writeToLogFile(`It is higly recommended to change the takeLossPercentage inside the config.json based on this information`);
+            return;
+        }
 
         // STEP IV. Retrieve bid prices.
         const currentOrderBook = await this.binanceService.getOrderBook(this.binanceRest, tradingPair);
