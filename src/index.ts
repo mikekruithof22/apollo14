@@ -32,6 +32,7 @@ websocketClient.on('open', async (data: {
     event?: any;
 }) => {
     txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
+    txtLogger.writeToLogFile(`*** config.json is equal to:  ${JSON.stringify(config)}`);
 
     if (runTestInsteadOfProgram === false) {
         schedule.scheduleJob(cronExpression, async function () {
