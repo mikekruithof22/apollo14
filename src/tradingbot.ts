@@ -542,7 +542,7 @@ export default class Tradingbot {
                 return true;
             }
         }
-        txtLogger.writeToLogFile(`No crash found to pause bot for.`);
+        txtLogger.writeToLogFile(`No crash found therefore no need to pause the bot.`);
         return false;
     }
 }

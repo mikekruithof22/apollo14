@@ -45,8 +45,7 @@ export default {
         "generateExcelFile": true,
         "testWithHistoricalData": true,
         "consoleLogSteps": false,
-        "candleAmountToLookIntoTheFuture": 100,
-        "startBalance": 2500
+        "candleAmountToLookIntoTheFuture": 100
     },    
     "orderConditions": [
         {
