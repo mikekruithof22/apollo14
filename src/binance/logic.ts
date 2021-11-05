@@ -6,9 +6,9 @@ export default class Logic {
     public static calcAmountToSpend = (
         currentFreeUSDTAmount: number,
         maxUsdtBuyAmount: number,
-        maxPercentageOffBalance: number
+        maxPercentageOfBalance: number
     ): number => {
-        const currentAllowedOrderAmount: number = currentFreeUSDTAmount * (maxPercentageOffBalance / 100);
+        const currentAllowedOrderAmount: number = currentFreeUSDTAmount * (maxPercentageOfBalance / 100);
         const amountToSpend: number = currentAllowedOrderAmount > maxUsdtBuyAmount
             ? maxUsdtBuyAmount
             : currentAllowedOrderAmount;

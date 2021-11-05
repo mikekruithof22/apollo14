@@ -69,7 +69,7 @@
                 "takeProfitPercentage": 5,
                 "takeLossPercentage": 90,
                 "maxUsdtBuyAmount": 100,
-                "maxPercentageOffBalance": 100
+                "maxPercentageOfBalance": 100
             }
         },
         "pauseCondition": {
@@ -105,7 +105,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                "maxPercentageOffBalance": 100
+                "maxPercentageOfBalance": 100
             }
         },
         {
@@ -124,7 +124,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         },
         {
@@ -143,7 +143,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         },
         {
@@ -162,7 +162,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         },
         {
@@ -181,7 +181,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         },
         {
@@ -200,7 +200,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         },
         {
@@ -219,7 +219,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         },
         {
@@ -238,7 +238,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         },
         {
@@ -257,7 +257,7 @@
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 5,
                 "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                 "maxPercentageOfBalance": 75
             }
         }   
     ]

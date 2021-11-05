@@ -29,7 +29,7 @@ export default {
                 "takeProfitPercentage": 5,
                 "takeLossPercentage": 90,
                 "maxUsdtBuyAmount": 100,
-                "maxPercentageOffBalance": 100
+                "maxPercentageOfBalance": 100
             }
         },
         "pauseCondition": {
@@ -65,7 +65,7 @@ export default {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 75
+                "maxPercentageOfBalance": 75
             }
         }
     ]

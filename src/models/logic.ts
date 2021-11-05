@@ -29,7 +29,7 @@ export class ConfigOrderConditionOrder {
     takeProfitPercentage: number;
     takeLossPercentage: number;
     maxUsdtBuyAmount: number;
-    maxPercentageOffBalance: number;
+    maxPercentageOfBalance: number;
 }
 
 export class OrderCondition extends ConfigOrderCondition {

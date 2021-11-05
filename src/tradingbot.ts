@@ -181,7 +181,7 @@ export default class Tradingbot {
         const takeProfitPercentage: number = order.takeProfitPercentage;
         const takeLossPercentage: number = order.takeLossPercentage;
         const maxUsdtBuyAmount: number = order.maxUsdtBuyAmount;
-        const maxPercentageOffBalance: number = order.maxPercentageOffBalance;
+        const maxPercentageOfBalance: number = order.maxPercentageOfBalance;
 
         /* STEP ?. Cancel all open buy orders.
         const currentOpenOrders = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
@@ -220,7 +220,7 @@ export default class Tradingbot {
         }
 
         // STEP III. Determine how much you can spend at the next buy order based on the order book.
-        const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOffBalance);
+        const amountOffUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOfBalance);
         txtLogger.writeToLogFile(`The allocated USDT amount for this order is equal to: ${amountOffUSDTToSpend}`);
 
         const symbol: string = `symbol=${tradingPair}`; // workaround, npm package sucks
@@ -263,15 +263,19 @@ export default class Tradingbot {
         const orderAmount: number = orderPriceAndAmount.amount;
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
 
-        if ((orderAmount < minimumOrderQuantity) || (totalUsdtAmount < 10)) {
+        txtLogger.writeToLogFile(`Based on the order book the following order limit buy order will be (very likely) filled immediately:`);
+        txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}. Total USDT value of the order is equal to: ${totalUsdtAmount}`);
+
+        if (totalUsdtAmount < 11) {
+            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
+            txtLogger.writeToLogFile(`The total usdt amount of the order - ${totalUsdtAmount} - the minimum allowed order quanity: 10 dollar`);
+        }
+
+        if (orderAmount < minimumOrderQuantity) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
             txtLogger.writeToLogFile(`Order quantity is lower than - ${orderAmount} - the minimum allowed order quanity: ${minimumOrderQuantity}`);
             return;
         }
-
-        txtLogger.writeToLogFile(`Based on the order book the following order limit buy order will be (very likely) filled immediately:`);
-        txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}`);
-        txtLogger.writeToLogFile(`Total USDT value of the order is equal to: ${totalUsdtAmount}`);
 
         // STEP V. Create the buy order and add it to the activeBuyOrders array.
         const buyOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITBUY, tradingPair, orderAmount, orderPrice) as OrderResponseFull;
@@ -377,7 +381,7 @@ export default class Tradingbot {
                 txtLogger.writeToLogFile(`Trying to cancel the limit buy order.`);
                 const cancelSpotOrderResult: CancelSpotOrderResult = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, limitBuyOrder.orderId);
                 txtLogger.writeToLogFile(`The cancel spot order results looks as follows:`);
-                txtLogger.writeToLogFile(`${JSON.stringify(cancelSpotOrderResult)}`);
+                txtLogger.writeToLogFile(`${JSON.stringify(cancelSpotOrderResult, null, 4)}`);
             } else {
                 txtLogger.writeToLogFile(`Limit buy order was not found among the current open orders and/or the status was not equal to: 'PARTIALLY_FILLED' or 'NEW', therefore nothing to cancel.`);
             }
@@ -388,6 +392,18 @@ export default class Tradingbot {
 
     public async createOcoOrder(data: WsMessageSpotUserDataExecutionReportEventFormatted, clientOrderId: string, buyOrder: ActiveBuyOrder) {
         txtLogger.writeToLogFile(`The method createOcoOrder() is triggered`);
+
+        const tradingPair: string = data.symbol;
+        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
+        if (currentOpenOrders.length > 0) {
+            const activeOcoOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
+            txtLogger.writeToLogFile(`The amount of open OCO orders for ${tradingPair} length is equal to: ${activeOcoOrdersForTraidingPair.length}`);
+            if (activeOcoOrdersForTraidingPair.length >= 5) {
+                txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
+                txtLogger.writeToLogFile(`Binance does not allow more than 5 automaticly created OCO orders at once`);
+                return;
+            }
+        }
 
         const stepSize: number = buyOrder.stepSize;
         const tickSize: number = buyOrder.tickSize;
