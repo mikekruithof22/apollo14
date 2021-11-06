@@ -10,6 +10,7 @@ import rsiHelper from './helpers/rsi';
 export default class Test {
     private candleHelper: CandleHelper;
     private exportService: ExportService;
+
     constructor() {
         this.candleHelper = new CandleHelper();
         this.exportService = new ExportService();
@@ -20,8 +21,8 @@ export default class Test {
         let numberOffApiCalls: number = 0;
 
         // STEP 1 - Sanity check the config.json
-        const configCheck = ConfigSanityCheck.checkConfigData(config, true);
-        if (configCheck.closeProgram === true) {
+        const incorrectConfigData: boolean = ConfigSanityCheck.checkConfigData();
+        if (incorrectConfigData) {
             return;
         }
 

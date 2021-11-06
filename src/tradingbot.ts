@@ -28,6 +28,7 @@ export default class Tradingbot {
     private brokerApiUrl: string = config.brokerApiUrl;
     private candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
     private numberOfCandlesToRetrieve: number = config.production.numberOfCandlesToRetrieve + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+    private maxAllowedActiveOrdersForTraidingPair: number = config.production.maxAllowedActiveOrdersForTraidingPair;
     private orderConditions: ConfigOrderCondition[] = config.orderConditions;
     private minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
     private tradingPairs: string[] = config.tradingPairs;
@@ -49,10 +50,11 @@ export default class Tradingbot {
 
     public async runProgram(botPauseActive: boolean) {
         // STEP 1 - Sanity check the config.json.
-        const configCheck = configChecker.checkConfigData(config, true);
-        if (configCheck.closeProgram === true) {
+        const incorrectConfigData: boolean = configChecker.checkConfigData();
+
+        if (incorrectConfigData) {
             txtLogger.writeToLogFile(`The method runProgram() quit because:`);
-            txtLogger.writeToLogFile(configCheck.message, LogLevel.ERROR);
+            txtLogger.writeToLogFile(`The the method checkConfigData() detected wrong config values`);
             return;
         }
 
@@ -71,7 +73,7 @@ export default class Tradingbot {
 
         const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
         const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
-        txtLogger.writeToLogFile(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}.`);
+        txtLogger.writeToLogFile(`Free USDT balance amount: ${currentFreeUSDTAmount}.`);
 
         if (currentFreeUSDTAmount < this.minimumUSDTorderAmount) {
             txtLogger.writeToLogFile(`The method runProgram() quit because:`);
@@ -160,7 +162,6 @@ export default class Tradingbot {
                     // This makes the program, for the time being way simpler! In the future we can let it continue.
                     return;
                 }
-
             }
         }
 
@@ -202,6 +203,13 @@ export default class Tradingbot {
         if (currentOpenOrders.length > 0) {
             const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
             txtLogger.writeToLogFile(`The amount of open orders for ${tradingPair} length is equal to: ${activeOrdersForTraidingPair.length}`);
+            
+            if (activeOrdersForTraidingPair.length >= this.maxAllowedActiveOrdersForTraidingPair) {
+                txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
+                txtLogger.writeToLogFile(`The configured maximum amount of active orders for this tradingPair - ${activeOrdersForTraidingPair.length} - is larger or equal to the amouunt configured inside the config.json - ${this.maxAllowedActiveOrdersForTraidingPair}`);
+                return;
+            }
+            
             if (activeOrdersForTraidingPair.length >= 5) {
                 txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
                 txtLogger.writeToLogFile(`Binance does not allow more than 5 automaticly created orders`);
@@ -377,7 +385,7 @@ export default class Tradingbot {
                 limitBuyOrder !== undefined &&
                 (limitBuyOrder.status === 'NEW' || limitBuyOrder.status === 'PARTIALLY_FILLED')
             ) {
-                txtLogger.writeToLogFile(`The limit buy order status is equal to: - ${limitBuyOrder.status}`);
+                txtLogger.writeToLogFile(`Limit buy order status: ${limitBuyOrder.status}`);
                 txtLogger.writeToLogFile(`${JSON.stringify(limitBuyOrder)}`);
                 txtLogger.writeToLogFile(`Trying to cancel the limit buy order.`);
                 const cancelSpotOrderResult: CancelSpotOrderResult = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, limitBuyOrder.orderId);

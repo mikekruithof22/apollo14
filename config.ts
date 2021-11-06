@@ -17,6 +17,7 @@ export default {
     },
     "production": {
         "numberOfCandlesToRetrieve": 50, 
+        "maxAllowedActiveOrdersForTraidingPair": 3,
         "minimumUSDTorderAmount": 10,
         "devTest": {
             "triggerBuyOrderLogic": false,
@@ -44,8 +45,6 @@ export default {
     "test": {
         "numberOfCandlesToRetrieve": 1000,
         "generateExcelFile": true,
-        "testWithHistoricalData": true,
-        "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 100,
         "leverage": {
             "active": true,

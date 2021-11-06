@@ -1,7 +1,6 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
-    "basePair": "EUR",
-    "emailRecipient": "a.gulzadian@gmail.com",
+    "emailRecipient": "<your@email.com>",
     "tradingPairs": [
         "ETHUSDT",        
         "LUNAUSDT",
@@ -43,7 +42,7 @@
         "QNTUSDT",
         "KSMUSDT",
         "NEOUSDT",
-        "WAVESUSDT"        
+        "WAVESUSDT"                     
     ],
     "timeIntervals": [
         "15m"
@@ -57,7 +56,8 @@
     },
     "production": {
         "numberOfCandlesToRetrieve": 50,
-        "minimumUSDTorderAmount": 11,
+        "maxAllowedActiveOrdersForTraidingPair": 3,
+        "minimumUSDTorderAmount": 12,
         "devTest": {
             "triggerBuyOrderLogic": false,
             "sellCurrentBalance": false,
@@ -68,7 +68,7 @@
             "minimumDeclingPercentage": -15,
             "order": {
                 "takeProfitPercentage": 5,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 100,
                 "maxPercentageOfBalance": 100
             }
@@ -84,8 +84,6 @@
     "test": {
         "numberOfCandlesToRetrieve": 1000,
         "generateExcelFile": true,
-        "testWithHistoricalData": true,
-        "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 100,
         "leverage": {
             "active": false,
@@ -107,8 +105,8 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
-                "maxUsdtBuyAmount": 12,
+                "takeLossPercentage": 20,
+                "maxUsdtBuyAmount": 18,
                 "maxPercentageOfBalance": 100
             }
         },
@@ -126,7 +124,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                 "maxPercentageOfBalance": 100
             }
@@ -145,7 +143,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }
@@ -164,7 +162,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }
@@ -183,7 +181,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }
@@ -202,7 +200,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }
@@ -221,7 +219,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }
@@ -240,7 +238,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }
@@ -259,7 +257,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }
@@ -278,7 +276,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 70,
+                "takeLossPercentage": 15,
                 "maxUsdtBuyAmount": 12,
                  "maxPercentageOfBalance": 100
             }

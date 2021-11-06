@@ -85,7 +85,6 @@ export default class CalculateHelper {
         orderConditionName,
         doNotOrderWhenRSIValueIsBelow
     ) => {
-        const consoleLogSteps = config.test.consoleLogSteps;
 
         let bullishDivergenceCandles = [];
 
@@ -121,9 +120,6 @@ export default class CalculateHelper {
                         closePriceChange <= candleMinimumDeclingPercentage &&
                         endingRsiValue >= doNotOrderWhenRSIValueIsBelow
                     ) {
-                        if (consoleLogSteps === true) {
-                            console.log('JACKPOT! - <<<<< BullishDivergence - BullishDivergence - BullishDivergence >>>>> - JACKPOT!');
-                        }
                         const firstIndex = currentCandleIndex + 1;
                         const lastIndex = firstIndex + candleAmountToLookIntoTheFuture;
                         const nextCandlesAfterHit = candleList.slice(firstIndex, lastIndex);
