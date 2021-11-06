@@ -9,10 +9,10 @@ export default {
     ],
     "timeIntervals": ["15m"],
     "genericOrder": {
-        "rsiCalculationLength": 14,
+        "rsiCalculationLength": 14,  
         "doNotOrder": {
             "RSIValueIsBelow": 20
-        },
+        },      
         "limitBuyOrderExpirationTimeInSeconds": 5
     },
     "production": {
@@ -23,9 +23,22 @@ export default {
             "sellCurrentBalance": false,
             "triggerCancelLogic": true
         },
-        "doNotOrderIf": {
-            "active": false,
-            "btc24hourChangeIsBelow": -10
+        "largeCrashOrder": {
+            "maxAmountOfCandlesToLookBack": 15,
+            "minimumDeclingPercentage": -15,
+            "order": {
+                "takeProfitPercentage": 5,
+                "takeLossPercentage": 90,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOfBalance": 100
+            }
+        },
+        "pauseCondition": {
+            "active": true,
+            "tradingPair": "BTCUSDT",
+            "maxAmountOfCandlesToLookBack": 10,
+            "minimumDeclingPercentage": -5,
+            "amountOfCandlesToPauseBotFor": 32
         }
     },
     "test": {
@@ -34,8 +47,11 @@ export default {
         "testWithHistoricalData": true,
         "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 100,
-        "startBalance": 2500
-    },
+        "leverage": {
+            "active": true,
+            "amount": 3
+        }
+    },    
     "orderConditions": [
         {
             "name": "1.) VTHOUSDT",
@@ -53,7 +69,7 @@ export default {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 75
+                "maxPercentageOfBalance": 75
             }
         }
     ]

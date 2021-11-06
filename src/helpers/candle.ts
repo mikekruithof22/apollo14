@@ -1,4 +1,4 @@
-import { Candle, ClosePrice, LightWeightCandle } from '../models/candle';
+import { Candle, LightWeightCandle } from '../models/candle';
 
 import dateHelper from './date';
 import fetch from '../../node_modules/node-fetch/lib/index.js';
@@ -12,13 +12,7 @@ export default class CandleHelper {
             }).catch(error => console.log(error));
     }
 
-    public generateClosePricesList = (data): ClosePrice[] => {
-        let result = [];
-        data.forEach(element => {
-            result.push(parseFloat(element[4]));
-        });
-        return result;
-    }
+    public generateClosePricesList = (data): number[] => data.map(d => parseFloat(d[4]));
 
     public generateObjectsFromData = (data): Candle[] => {
         let result: Candle[] = [];
@@ -43,21 +37,17 @@ export default class CandleHelper {
         return result;
     }
 
-    public generateSmallObjectsFromData = (data): LightWeightCandle[] => {
-        let result: LightWeightCandle[] = [];
-        data.forEach(element => {
-            let obj: LightWeightCandle = {
+    public generateSmallObjectsFromData = (data): LightWeightCandle[] =>
+        data.map(element => {
+            return {
                 openTime: dateHelper.formatLongDate(new Date(element[0])),
                 open: element[1],
                 high: element[2],
                 low: element[3],
                 close: element[4],
                 closeTime: dateHelper.formatLongDate(new Date(element[6])),
-            }
-            result.push(obj);
-            obj = undefined;
+            } as LightWeightCandle
         });
-        return result;
-    }
+
 }
 

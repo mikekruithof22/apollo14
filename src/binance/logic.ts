@@ -6,9 +6,9 @@ export default class Logic {
     public static calcAmountToSpend = (
         currentFreeUSDTAmount: number,
         maxUsdtBuyAmount: number,
-        maxPercentageOffBalance: number
+        maxPercentageOfBalance: number
     ): number => {
-        const currentAllowedOrderAmount: number = currentFreeUSDTAmount * (maxPercentageOffBalance / 100);
+        const currentAllowedOrderAmount: number = currentFreeUSDTAmount * (maxPercentageOfBalance / 100);
         const amountToSpend: number = currentAllowedOrderAmount > maxUsdtBuyAmount
             ? maxUsdtBuyAmount
             : currentAllowedOrderAmount;
@@ -41,7 +41,7 @@ export default class Logic {
         }
         let finalAmount: number = 0;
         if (stepSize === 1) {
-            finalAmount = Math.floor(Number(((amountToSpend / price) * 0.99)));
+            finalAmount = Math.round(Number((amountToSpend / price) * 0.99));
         } else {
             // TODO: testMike, nagaan of dit echt nodig is. Want je hebt toch altijd 10 dollar als reserve?
             // subtract 0.5% for fees
@@ -114,7 +114,11 @@ export default class Logic {
     }
 
     public static roundOrderAmount(value: number, decimals: number): number {
-       return roundOrderAmountPrivate(value, decimals)
+        if (decimals === 1) {
+            return value = Math.floor(value);
+        } else {
+            return roundOrderAmountPrivate(value, decimals)
+        }
     }
 }
 

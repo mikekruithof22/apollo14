@@ -3,7 +3,7 @@
     "basePair": "EUR",
     "emailRecipient": "a.gulzadian@gmail.com",
     "tradingPairs": [
-        "ETHUSDT",
+        "ETHUSDT",        
         "LUNAUSDT",
         "ADAUSDT",
         "BNBUSDT",
@@ -43,16 +43,16 @@
         "QNTUSDT",
         "KSMUSDT",
         "NEOUSDT",
-        "WAVESUSDT"
+        "WAVESUSDT"        
     ],
     "timeIntervals": [
         "15m"
     ],
     "genericOrder": {
-        "rsiCalculationLength": 14,
+        "rsiCalculationLength": 14,       
         "doNotOrder": {
-            "RSIValueIsBelow": 20
-        },
+            "RSIValueIsBelow": 3
+        }, 
         "limitBuyOrderExpirationTimeInSeconds": 60
     },
     "production": {
@@ -63,9 +63,22 @@
             "sellCurrentBalance": false,
             "triggerCancelLogic": false
         },
-        "doNotOrderIf": {
-            "active": false,
-            "btc24hourChangeIsBelow": -10
+        "largeCrashOrder": {
+            "maxAmountOfCandlesToLookBack": 15,
+            "minimumDeclingPercentage": -15,
+            "order": {
+                "takeProfitPercentage": 5,
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOfBalance": 100
+            }
+        },
+        "pauseCondition": {
+            "active": true,
+            "tradingPair": "BTCUSDT",
+            "maxAmountOfCandlesToLookBack": 10,
+            "minimumDeclingPercentage": -5,
+            "amountOfCandlesToPauseBotFor": 32
         }
     },
     "test": {
@@ -74,9 +87,31 @@
         "testWithHistoricalData": true,
         "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 100,
-        "startBalance": 2500
-    },
+        "leverage": {
+            "active": false,
+            "amount": 3
+        }
+    },    
     "orderConditions": [
+        {
+            "name": "testmike",
+            "rsi": {
+                "minimumRisingPercentage": 2.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 32
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                "maxPercentageOfBalance": 100
+            }
+        },
         {
             "name": "4-30-1#5",
             "rsi": {
@@ -91,9 +126,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                "maxPercentageOffBalance": 100
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                "maxPercentageOfBalance": 100
             }
         },
         {
@@ -110,9 +145,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         },
         {
@@ -129,9 +164,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         },
         {
@@ -148,9 +183,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         },
         {
@@ -167,9 +202,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         },
         {
@@ -186,9 +221,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         },
         {
@@ -205,9 +240,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         },
         {
@@ -224,9 +259,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         },
         {
@@ -243,9 +278,9 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 5,
-                "maxUsdtBuyAmount": 100,
-                 "maxPercentageOffBalance": 75
+                "takeLossPercentage": 70,
+                "maxUsdtBuyAmount": 12,
+                 "maxPercentageOfBalance": 100
             }
         }
     ]

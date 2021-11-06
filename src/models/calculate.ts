@@ -12,13 +12,14 @@ export class HistoricalBullishDivergenceResult {
     startCandle: LightWeightCandle;
 }
 
-export class BullishDivergenceResult {
+export class OrderConditionResult {
     startWithCandle: any;
     startRsiValue: any;
     endingCandle: any;
     endiRsiValue: any;
     orderConditionName: any;
     totalCandles: any;
+    isCrashOrder: boolean;
 }
 
 export class BalanceObject {
