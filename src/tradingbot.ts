@@ -48,7 +48,6 @@ export default class Tradingbot {
     }
 
     public async runProgram(botPauseActive: boolean) {
-
         // STEP 1 - Sanity check the config.json.
         const configCheck = configChecker.checkConfigData(config, true);
         if (configCheck.closeProgram === true) {
@@ -183,27 +182,7 @@ export default class Tradingbot {
         const maxUsdtBuyAmount: number = order.maxUsdtBuyAmount;
         const maxPercentageOfBalance: number = order.maxPercentageOfBalance;
 
-        /* STEP ?. Cancel all open buy orders.
-        const currentOpenOrders = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
-        txtLogger.writeToLogFile(`Current open orders length is equal to: ${(currentOpenOrders as SpotOrder[]).length}`);
-        txtLogger.writeToLogFile(`Current open order details: ${JSON.stringify(currentOpenOrders)}`);
-        if ((currentOpenOrders as SpotOrder[]).length >= 1) {
-            for await (let order of (currentOpenOrders as SpotOrder[])) {
-                if (order.side === 'BUY') {
-                    const openBuyOrder = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, order.orderId);
-                    txtLogger.writeToLogFile(`Canceled open BUY - clientOrderId: ${order.clientOrderId} - with the following details:`);
-                    txtLogger.writeToLogFile(`${JSON.stringify(openBuyOrder)}`);
-
-                    const index = this.activeBuyOrders.findIndex(o => o.clientOrderId === order.clientOrderId);
-                    if (index > -1) {
-                        this.activeBuyOrders.splice(index, 1);
-                    }
-                }
-            }
-        }
-        */
-
-        // STEP II. Check current amount off free USDT on the balance.
+        // STEP II. Check current amount off free USDT on the balance and amount of open orders for this trading pair
         const balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
         if (balance instanceof BinanceError) {
             txtLogger.writeToLogFile(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
@@ -217,6 +196,17 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
             txtLogger.writeToLogFile(`The free USDT balance amount is lower than the configured minimum amount: ${this.minimumUSDTorderAmount}.`);
             return;
+        }
+
+        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
+        if (currentOpenOrders.length > 0) {
+            const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
+            txtLogger.writeToLogFile(`The amount of open orders for ${tradingPair} length is equal to: ${activeOrdersForTraidingPair.length}`);
+            if (activeOrdersForTraidingPair.length >= 5) {
+                txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
+                txtLogger.writeToLogFile(`Binance does not allow more than 5 automaticly created orders`);
+                return;
+            }
         }
 
         // STEP III. Determine how much you can spend at the next buy order based on the order book.
@@ -407,11 +397,11 @@ export default class Tradingbot {
         const tradingPair: string = data.symbol;
         const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
-            const activeOcoOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
-            txtLogger.writeToLogFile(`The amount of open OCO orders for ${tradingPair} length is equal to: ${activeOcoOrdersForTraidingPair.length}`);
-            if (activeOcoOrdersForTraidingPair.length >= 5) {
+            const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
+            txtLogger.writeToLogFile(`The amount of open orders for ${tradingPair} length is equal to: ${activeOrdersForTraidingPair.length}`);
+            if (activeOrdersForTraidingPair.length >= 5) {
                 txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
-                txtLogger.writeToLogFile(`Binance does not allow more than 5 automaticly created OCO orders at once`);
+                txtLogger.writeToLogFile(`Binance does not allow more than 5 automaticly created orders`);
                 return;
             }
         }

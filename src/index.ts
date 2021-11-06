@@ -60,11 +60,11 @@ websocketClient.on('open', async (data: {
 
 // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
 websocketClient.on('reply', async (data: WsResponse) => {
-    txtLogger.writeToLogFile(`reply eventreceived: ${JSON.stringify(data)}`);
+    txtLogger.writeToLogFile(`Reply event received: ${JSON.stringify(data)}`);
 });
 
 // Listen To Order Changes
 websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
-    txtLogger.writeToLogFile(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
+    txtLogger.writeToLogFile(`formattedUserDataMessage event received: ${JSON.stringify(data)}`);
     await tradingBot.processFormattedUserDataMessage(data);
 });
