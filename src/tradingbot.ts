@@ -376,7 +376,10 @@ export default class Tradingbot {
         // STEP 1 - check if the limit buy order is not filled yet (it may be partially filled)
         const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
-            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId);
+            // TODO: testmike, o.b.v. ronald zijn suggestie van 6-11-2021 - zie email:
+            // "Wat je volgens mij moet doen is in de Websocket method als de cancel terugkomt in de activeBuyOrders zoeken naar een clientId die overeenkomt met de origClientOrderId en niet de newClientOrderId."
+            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.origQuoteOrderQty === clientOrderId); // was voorheen: clientOrderId
+
             txtLogger.writeToLogFile(`Checking if it is necessary to cancel the limit buy order with the following details:`);
             txtLogger.writeToLogFile(`orderName: ${orderName}, clientOrderId: ${clientOrderId} `);
 
