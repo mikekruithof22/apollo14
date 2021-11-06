@@ -15,19 +15,17 @@ export default class WebSocketService {
             beautify: true,
         });
 
-        txtLogger.log(`Generated wsClient and subscribing right away`);
-
-        wsClient.subscribeSpotUserDataStream();
+        txtLogger.log(`Generated wsClient`);
 
         // notification when a connection is opened
-        wsClient.on('open', (data: {
-            wsKey: WsKey;
-            ws: WebSocket;
-            event?: any;
-        }) => {
-            this.websocketKey = data.wsKey;
-            txtLogger.log(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
-        });
+        // wsClient.on('open', (data: {
+        //     wsKey: WsKey;
+        //     ws: WebSocket;
+        //     event?: any;
+        // }) => {
+        //     this.websocketKey = data.wsKey;
+        //     txtLogger.log(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
+        // });
 
         wsClient.on('close', (data: {
             wsKey: WsKey;

@@ -12,7 +12,10 @@ import config from "../config";
 import txtLogger from './helpers/txt-logger';
 
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
-    private scheduledJob: schedule.Job;
+    private tradingBot = new Tradingbot();
+    private scheduledJob: schedule.Job = new schedule.Job(async function () {
+        await tradingBot.runProgram();
+    });
     
     public async Start() {
         txtLogger.log('App is running');
@@ -21,32 +24,34 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         const cronExpression = CronHelper.GetCronExpression();
         const wsService: WebSocketService = new WebSocketService();
         const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
-        const tradingBot = new Tradingbot();
 
-        txtLogger.log('Subscribing to webSocketClient with new source for WebSocketClient');
+        txtLogger.log('Subscribing to webSocketClient');
         
-        // websocketClient.subscribeSpotUserDataStream();
+        //websocketClient.subscribeSpotUserDataStream();
+
+        this.scheduledJob.schedule(cronExpression);
+        this.scheduledJob.cancel();
 
         // Retreive some config values
         const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
 
-        // websocketClient.on('open', async (data: {
-        //     wsKey: WsKey;
-        //     ws: WebSocket;
-        //     event?: any;
-        // }) => {
-        //     txtLogger.log(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
+        websocketClient.on('open', async (data: {
+            wsKey: WsKey;
+            ws: WebSocket;
+            event?: any;
+        }) => {
+            txtLogger.log(`Websocket event - connection opened:', ${data.wsKey}, ${data.ws.url}`);
 
-        //     if (runTestInsteadOfProgram === false) {
-        //         schedule.scheduleJob(cronExpression, async function () {
-        //             await tradingBot.runProgram();
-        //         });
-        //     } else {
-        //         await tradingBot.runProgram();
-        //     }
+            if (runTestInsteadOfProgram === false) {
+                this.scheduledJob = schedule.scheduleJob(cronExpression, async function () {
+                    await tradingBot.runProgram();
+                });
+            } else {
+                await tradingBot.runProgram();
+            }
 
-        //     // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
-        // });
+            // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
+        });
 
         // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
         websocketClient.on('reply', async (data: WsResponse) => {
