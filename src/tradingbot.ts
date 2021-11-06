@@ -142,10 +142,10 @@ export default class Tradingbot {
                             `crashOrder-${tradingPair}`,
                         );
                     } else {
-                        txtLogger.writeToLogFile(`***** Bullish divergence detected for: ${orderConditionName} *****`);
+                        txtLogger.writeToLogFile(`***** Bullish divergence detected - ${orderConditionName} *****`);
                         txtLogger.writeToLogFile(`Details:`);
                         txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4))
-                        txtLogger.writeToLogFile(`The most recent rsi value is: ${orderConditionResult.endiRsiValue}. The minimun configured for this condition is: ${order.rsi.minimumRisingPercentage}`);
+                        txtLogger.writeToLogFile(`The most recent rsi value is: ${orderConditionResult.endiRsiValue}. The minimum configured for this condition is: ${order.rsi.minimumRisingPercentage}`);
                         if (mostRecentRsiValue < this.doNotOrderWhenRSIValueIsBelow) {
                             txtLogger.writeToLogFile(`Because the RSI is lower than minimum configured the program will not place an limit buy order`);
                         } else {

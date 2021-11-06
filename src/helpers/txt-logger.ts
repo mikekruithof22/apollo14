@@ -6,14 +6,11 @@ export default class TextLogger {
     public static writeToLogFile = (message: string, logLevel = LogLevel.INFO): string => {
         const fileLocation: string = TextLogger.generateFilePath();
         const date: Date = new Date();
-        message = `\n ${logLevel} - ${date.toUTCString()} - ${message}`;
 
         if (message.includes('Program started')) {
-            message = `\n\n ${message}`;
-        }
-
-        if (message.includes('Starting ordering logic method')) {
-            message = `\n ${message} \n`;
+            message = `\n\n  ${logLevel} - ${date.toUTCString()} - ${message}`;
+        } else {
+            message = `\n ${logLevel} - ${date.toLocaleTimeString()} - ${message}`;
         }
 
         console.log(message);
