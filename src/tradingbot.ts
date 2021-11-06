@@ -86,6 +86,7 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`Checking ${this.tradingPairs.length} trading pair(s) for crash condition.`);
             txtLogger.writeToLogFile(`Checking ${this.orderConditions.length * this.tradingPairs.length} order condition(s) for bullish divergences.`);
         }
+
         for await (let tradingPair of this.tradingPairs) {
 
             const url: string = `${this.brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${this.candleInterval}&limit=${this.numberOfCandlesToRetrieve}`;
@@ -127,9 +128,29 @@ export default class Tradingbot {
                 );
 
                 if (orderConditionResult !== undefined) {
+                    txtLogger.writeToLogFile(`***** Bullish divergence or crash condition detected for ${tradingPair} *****`);
+                    txtLogger.writeToLogFile(`Checking if there are already orders open for this tradingPair. In case there are to many open orders a limit buy order will NOT be placed.`);
+
+                    const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
+                    if (currentOpenOrders.length > 0) {
+                        const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
+                        txtLogger.writeToLogFile(`The amount of open orders is equal to: ${activeOrdersForTraidingPair.length}`);
+
+                        if (activeOrdersForTraidingPair.length >= this.maxAllowedActiveOrdersForTraidingPair) {
+                            txtLogger.writeToLogFile(`Limit buy order will NOT be created because:`);
+                            txtLogger.writeToLogFile(`The configured maximum amount of active orders for this tradingPair - ${activeOrdersForTraidingPair.length} - is larger or equal to the amount configured inside the config.json - ${this.maxAllowedActiveOrdersForTraidingPair}`);
+                            break;
+                        }
+
+                        if (activeOrdersForTraidingPair.length >= 5) {
+                            txtLogger.writeToLogFile(`Limit buy order will NOT be created because:`);
+                            txtLogger.writeToLogFile(`Binance does not allow more than 5 automaticly created orders`);
+                            break;
+                        }
+                    }
 
                     if (orderConditionResult.isCrashOrder) {
-                        txtLogger.writeToLogFile(`***** Crash condition detected for: ${tradingPair} *****`);
+                        txtLogger.writeToLogFile(`*** Condition type is equal to CRASH`);
                         txtLogger.writeToLogFile(`Details:`);
                         txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4))
 
@@ -142,7 +163,7 @@ export default class Tradingbot {
                             `crashOrder-${tradingPair}`,
                         );
                     } else {
-                        txtLogger.writeToLogFile(`***** Bullish divergence detected - ${orderConditionName} *****`);
+                        txtLogger.writeToLogFile(`*** Condition type is equal to BULLISH DIVERGENCE: ${orderConditionName}`);
                         txtLogger.writeToLogFile(`Details:`);
                         txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4))
                         txtLogger.writeToLogFile(`The most recent rsi value is: ${orderConditionResult.endiRsiValue}. The minimum configured for this condition is: ${order.rsi.minimumRisingPercentage}`);
@@ -183,7 +204,7 @@ export default class Tradingbot {
         const maxUsdtBuyAmount: number = order.maxUsdtBuyAmount;
         const maxPercentageOfBalance: number = order.maxPercentageOfBalance;
 
-        // STEP II. Check current amount off free USDT on the balance and amount of open orders for this trading pair
+        // STEP II. Check current amount off free USDT on the balance
         const balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
         if (balance instanceof BinanceError) {
             txtLogger.writeToLogFile(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
@@ -197,24 +218,6 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
             txtLogger.writeToLogFile(`The free USDT balance amount is lower than the configured minimum amount: ${this.minimumUSDTorderAmount}.`);
             return;
-        }
-
-        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
-        if (currentOpenOrders.length > 0) {
-            const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
-            txtLogger.writeToLogFile(`The amount of open orders for ${tradingPair} length is equal to: ${activeOrdersForTraidingPair.length}`);
-            
-            if (activeOrdersForTraidingPair.length >= this.maxAllowedActiveOrdersForTraidingPair) {
-                txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
-                txtLogger.writeToLogFile(`The configured maximum amount of active orders for this tradingPair - ${activeOrdersForTraidingPair.length} - is larger or equal to the amouunt configured inside the config.json - ${this.maxAllowedActiveOrdersForTraidingPair}`);
-                return;
-            }
-            
-            if (activeOrdersForTraidingPair.length >= 5) {
-                txtLogger.writeToLogFile(`The method buyLimitOrderLogic() quit because:`);
-                txtLogger.writeToLogFile(`Binance does not allow more than 5 automaticly created orders`);
-                return;
-            }
         }
 
         // STEP III. Determine how much you can spend at the next buy order based on the order book.
@@ -504,9 +507,8 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
             txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
 
-            Mailer.Send('Bot switched off', 'Oco order failed, therefore the bot was switched off');// TODO: testmike, is dit wel nodig?
+            Mailer.Send('Bot switched off', 'Oco order failed, therefore the bot was switched off'); // TODO: testmike, is dit wel nodig?
             process.exit();
-
             return;
         } else {
             // todo aram don't we want to splice the old buy order no matter if the oco order was succesful? Since the buy order was fulfilled? 

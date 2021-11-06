@@ -10,7 +10,7 @@ export default class ConfigSanityCheck {
         if (config.production.maxAllowedActiveOrdersForTraidingPair > 5) {
             message += `
             ERROR: The config value:
-                'maxAmountOfCandlesToLookBack' 
+                'maxAllowedActiveOrdersForTraidingPair' 
             cannot be higher than 5. Because Binance does not allow more then that.`;
         }
 

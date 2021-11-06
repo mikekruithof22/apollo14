@@ -66,8 +66,8 @@
             "minimumDeclingPercentage": -15,
             "order": {
                 "takeProfitPercentage": 5,
-                "takeLossPercentage": 15,
-                "maxUsdtBuyAmount": 100,
+                "takeLossPercentage": 25,
+                "maxUsdtBuyAmount": 500,
                 "maxPercentageOfBalance": 100
             }
         },
@@ -89,25 +89,6 @@
         }
     },    
     "orderConditions": [
-        {
-            "name": "testmike",
-            "rsi": {
-                "minimumRisingPercentage": 2.00
-            },
-            "candle": {
-                "minimumDeclingPercentage": -2.00
-            },
-            "calcBullishDivergence": {
-                "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 32
-            },
-            "order": {
-                "takeProfitPercentage": 1,
-                "takeLossPercentage": 8,
-                "maxUsdtBuyAmount": 18,
-                "maxPercentageOfBalance": 100
-            }
-        },
         {
             "name": "4-30-1#5",
             "rsi": {
