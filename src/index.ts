@@ -71,6 +71,6 @@ try {
     });    
 } catch (error) {
     error = error as Error;
-    var errorString = `Bot has stopped due to the following error: ${(error as Error).name} - ${(error as Error).stack}`;    
+    const errorString = `Bot has stopped due to the following error: ${(error as Error).name} - ${(error as Error).stack}`;    
     Mailer.Send('Bot crashed', errorString);
 }

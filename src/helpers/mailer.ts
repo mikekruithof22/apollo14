@@ -25,7 +25,7 @@ export default class Mailer {
             text: text
         };
 
-        transporter.sendMail(mailOptions, function(error, info) {
+        transporter.sendMail(mailOptions, (error) => {
             if (error) {
                 txtLogger.writeToLogFile(`Unable to send email from ${userName} to ${recipient}`);
                 txtLogger.writeToLogFile(error.message);

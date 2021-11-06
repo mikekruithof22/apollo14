@@ -31,7 +31,7 @@ export default class BinanceService {
 
     public getAccountBalancesWithRetry = async (binanceRest: MainClient): Promise<AllCoinsInformationResponse[] | BinanceError> => {
         const retryDelay = 3000;
-        var response = await this.getAccountBalances(binanceRest);
+        const response = await this.getAccountBalances(binanceRest);
         if (!this.isTimeStampError(response)) {
             return response;
         } else {
