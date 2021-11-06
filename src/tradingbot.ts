@@ -82,8 +82,8 @@ export default class Tradingbot {
         }
 
         // STEP 3 - Checking crash order conditions and bullish divergences for each tradingpair
-        txtLogger.writeToLogFile(`Checking ${this.tradingPairs.length} trading pair(s) for crash condition.`);
         if (!botPauseActive) {
+            txtLogger.writeToLogFile(`Checking ${this.tradingPairs.length} trading pair(s) for crash condition.`);
             txtLogger.writeToLogFile(`Checking ${this.orderConditions.length * this.tradingPairs.length} order condition(s) for bullish divergences.`);
         }
         for await (let tradingPair of this.tradingPairs) {
@@ -100,7 +100,7 @@ export default class Tradingbot {
                 const orderConditionName: string = `${tradingPair}-${order.name}`;
 
                 if (this.triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
-                    txtLogger.writeToLogFile(`DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order`);
+                    txtLogger.writeToLogFile(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order #####`);
                     await this.buyLimitOrderLogic(
                         order.order,
                         tradingPair,
@@ -348,7 +348,7 @@ export default class Tradingbot {
 
         // POSSIBILITY II - Order canceled was successfull, in case of partial fill create OCO order
         if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.CANCELED) {
-            const clientOrderId: string = data.newClientOrderId;
+            const clientOrderId: string = data.originalClientOrderId; // TODO: kijken of 'newClientOrderId' juist vervangen is door: 'originalClientOrderId'
 
             const buyOrder: ActiveBuyOrder = this.activeBuyOrders.find(b => b.clientOrderId === clientOrderId);
             txtLogger.writeToLogFile(`Limit buy order with clientOrderId ${clientOrderId} is successfully cancelled.`);
@@ -371,10 +371,7 @@ export default class Tradingbot {
         // STEP 1 - check if the limit buy order is not filled yet (it may be partially filled)
         const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
-            // TODO: testmike, o.b.v. ronald zijn suggestie van 6-11-2021 - zie email:
-            // "Wat je volgens mij moet doen is in de Websocket method als de cancel terugkomt in de activeBuyOrders zoeken naar een clientId die overeenkomt met de origClientOrderId en niet de newClientOrderId."
-            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.origQuoteOrderQty === clientOrderId); // was voorheen: clientOrderId
-
+            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId); 
             txtLogger.writeToLogFile(`Checking if it is necessary to cancel the limit buy order with the following details:`);
             txtLogger.writeToLogFile(`orderName: ${orderName}, clientOrderId: ${clientOrderId} `);
 
