@@ -12,7 +12,9 @@ import config from "../config";
 import txtLogger from './helpers/txt-logger';
 
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
-    public static async Start() {
+    private scheduledJob: schedule.Job;
+    
+    public async Start() {
         txtLogger.log('App is running');
 
         // setup
@@ -56,5 +58,17 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             txtLogger.log(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
             await tradingBot.processFormattedUserDataMessage(data);
         });
+    }
+
+    public  async Stop() {
+        txtLogger.log('Stopping scheduled job');
+
+        var jobCancelled = schedule.cancelJob(this.scheduledJob);
+
+        if (jobCancelled) {
+            txtLogger.log('Job cancelled');
+        } else {
+            txtLogger.log('Warning, unable to cancel job'); // todo aram maube we want an email to be sent out in this case?
+        }
     }
 }
