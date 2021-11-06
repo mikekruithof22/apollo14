@@ -11,10 +11,11 @@ import config from "../config";
 import txtLogger from './helpers/txt-logger';
 
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
-    private tradingBot = new Tradingbot();
+    private tradingBot: Tradingbot;
     private job: schedule.Job = new schedule.Job(async function () {
+        txtLogger.log(`Job invoked`)
         await this.tradingBot.runProgram();
-    });
+    }.bind(this));
     
     public async Start() {
         txtLogger.log('App is running');
@@ -23,6 +24,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         const cronExpression = CronHelper.GetCronExpression();
         const wsService: WebSocketService = new WebSocketService();
         const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
+        this.tradingBot = new Tradingbot()
 
         txtLogger.log('Subscribing to webSocketClient');
         
@@ -41,6 +43,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             if (runTestInsteadOfProgram === false) {
                 this.job.schedule(cronExpression);
             } else {
+                txtLogger.log(`Running job once `)
                 this.job.invoke();
             }
 
