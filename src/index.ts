@@ -18,6 +18,11 @@ app.get( "/start", ( req, res ) => {
     Main.Start();
 });
 
+app.get( "/test", ( req, res ) => {
+    res.send( "Test endpoint called!" );
+    txtLogger.log("Test endpoint called");
+});
+
 // start the Express server
 app.listen( port, () => {
     console.log( `server started at http://localhost:${ port }` );

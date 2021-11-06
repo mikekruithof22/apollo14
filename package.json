@@ -4,6 +4,7 @@
   "description": "to the moon",
   "scripts": {
     "build": "tsc",
+    "prestart": "npm run build",
     "start": "node dist/src/index.js",
     "test": "ts-node src/test.ts"
   },
