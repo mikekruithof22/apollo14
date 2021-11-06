@@ -1,6 +1,7 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
     "basePair": "EUR",
+    "emailRecipient": "a.gulzadian@gmail.com",
     "tradingPairs": [
         "ETHUSDT",        
         "LUNAUSDT",
