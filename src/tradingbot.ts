@@ -454,9 +454,16 @@ export default class Tradingbot {
 
             usdtAmountForStopLimitPrice = stopLimitPrice * ocoOrderAmount;
 
-            if ((ocoOrderAmount < minimumOcoOrderQuantity) || (usdtAmountForStopLimitPrice < 10)) {
+            if (ocoOrderAmount < minimumOcoOrderQuantity) {
                 txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
                 txtLogger.writeToLogFile(`Oco order quantity - ${ocoOrderAmount} - is STILL lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
+
+                if (usdtAmountForStopLimitPrice < 10) {
+                    const totalStopLossAmount: number = ocoOrderAmount * usdtAmountForStopLimitPrice;
+                    txtLogger.writeToLogFile(`The configured takeLossPercentage ${usdtAmountForStopLimitPrice} multiplied by the ${ocoOrderAmount} is equal to ${totalStopLossAmount}`);
+                    txtLogger.writeToLogFile(`****** Creating a stoploss price which will lead cummulativly to a lower than 10 USDT price will be rejected by Binance ****** `);
+                    txtLogger.writeToLogFile(`It is higly recommended to change the takeLossPercentage inside the config.json based on this information.`);
+                }    
                 return;
             }
         }
