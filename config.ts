@@ -1,5 +1,6 @@
 export default {
     "brokerApiUrl": "https://api.binance.com/",
+    "emailRecipient": "a.gulzadian@gmail.com",
     "tradingPairs": [
         "DOTUSDT",
         "BTCUSDT",

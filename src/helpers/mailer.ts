@@ -1,9 +1,12 @@
 import * as nodemailer from 'nodemailer';
 import txtLogger from './txt-logger';
+import config from '../../config';
+require('dotenv').config();
 
-const userName = "apollo1111tothemoon@gmail.com";
-const password = "notaprophet";
-const recipient = "a.gulzadian@gmail.com";
+const userName = process.env.EMAIL_USERNAME;
+const password = process.env.EMAIL_PASSWORD;
+
+const recipient = config.emailRecipient;
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -13,17 +16,14 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const mailOptions = {
-    from: 'The Idea project',
-    to: recipient,
-    subject: 'Bitcoin is crashing',
-    text: "Lorem ipsum dolor sit amet"
-};
-
-export default class mailer {
-
-    public static Send = () => {
-        txtLogger.writeToLogFile(`Foobar ${userName} - ${password} - ${recipient}`);
+export default class Mailer {
+    public static Send(subject: string = 'The bot is down', text: string = 'The bot is down for unspecified reasons, please check the logs' ) {
+        const mailOptions = {
+            from: 'Apollo',
+            to: recipient,
+            subject: subject,
+            text: text
+        };
 
         transporter.sendMail(mailOptions, function(error, info) {
             if (error) {
