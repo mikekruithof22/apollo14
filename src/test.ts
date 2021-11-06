@@ -25,6 +25,7 @@ export default class Test {
         if (incorrectConfigData) {
             return;
         }
+        console.log(`Checking for bulish divergences, one moment please...`);
 
         // STEP 2 - Prepare configuration data 
         const brokerApiUrl: string = config.brokerApiUrl;

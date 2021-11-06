@@ -9,6 +9,7 @@ import CalculateHelper from './helpers/calculate';
 import CandleHelper from './helpers/candle';
 import { LightWeightCandle } from './models/candle';
 import { LogLevel } from './models/log-level';
+import Mailer from './helpers/Mailer';
 import Order from './binance/order';
 import { OrderConditionResult } from './models/calculate';
 import calculate from './helpers/calculate';
@@ -39,7 +40,6 @@ export default class Tradingbot {
     
     // devTest config
     private triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
-    private triggerCancelLogic: boolean = config.production.devTest.triggerCancelLogic;
 
     constructor() {
         this.binanceService = new BinanceService();
@@ -313,11 +313,6 @@ export default class Tradingbot {
             this.activeBuyOrders.push(currentBuyOrder);
         }
 
-        if (this.triggerCancelLogic === true) { // TESTING PURPOSE ONLY!
-            txtLogger.writeToLogFile(`DEVTEST - Cancel the limit buy order immediately`);
-            this.cancelLimitBuyOrderCheck(tradingPair, buyOrder.clientOrderId, orderName);
-        }
-
         if (buyOrder.status !== OrderStatusEnum.FILLED) {
             // STEP VI. Activate cancelLimitBuyOrderCheck() because after X seconds you want to cancel the limit buy order if it is not filled.
             if (this.limitBuyOrderExpirationTime > 0) {
@@ -512,6 +507,7 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
             txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
 
+            Mailer.Send('Bot switched off', 'Oco order failed, therefore the bot was switched off');// TODO: testmike, is dit wel nodig?
             process.exit();
 
             return;

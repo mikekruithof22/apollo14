@@ -21,8 +21,6 @@ export default {
         "minimumUSDTorderAmount": 10,
         "devTest": {
             "triggerBuyOrderLogic": false,
-            "sellCurrentBalance": false,
-            "triggerCancelLogic": true
         },
         "largeCrashOrder": {
             "maxAmountOfCandlesToLookBack": 15,

@@ -1,6 +1,6 @@
 {
     "brokerApiUrl": "https://api.binance.com/",
-    "emailRecipient": "<your@email.com>",
+    "emailRecipient": "<your-email-adres-here>",
     "tradingPairs": [
         "ETHUSDT",        
         "LUNAUSDT",
@@ -59,9 +59,7 @@
         "maxAllowedActiveOrdersForTraidingPair": 3,
         "minimumUSDTorderAmount": 12,
         "devTest": {
-            "triggerBuyOrderLogic": false,
-            "sellCurrentBalance": false,
-            "triggerCancelLogic": false
+            "triggerBuyOrderLogic": false
         },
         "largeCrashOrder": {
             "maxAmountOfCandlesToLookBack": 15,
@@ -105,7 +103,7 @@
             },
             "order": {
                 "takeProfitPercentage": 1,
-                "takeLossPercentage": 20,
+                "takeLossPercentage": 8,
                 "maxUsdtBuyAmount": 18,
                 "maxPercentageOfBalance": 100
             }

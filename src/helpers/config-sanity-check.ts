@@ -9,9 +9,16 @@ export default class ConfigSanityCheck {
 
         if (config.production.maxAllowedActiveOrdersForTraidingPair > 5) {
             message += `
-            ERROR: The config value
-            'maxAmountOfCandlesToLookBack' 
+            ERROR: The config value:
+                'maxAmountOfCandlesToLookBack' 
             cannot be higher than 5. Because Binance does not allow more then that.`;
+        }
+
+        if (config.emailRecipient.indexOf('@') === -1 ) {
+            message += `
+            ERROR: The config value:
+                'emailRecipient' 
+            does not contain a valid email address.`;
         }
 
         if (message.includes('ERROR')) {
