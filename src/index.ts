@@ -4,12 +4,12 @@ import { WebsocketClient, WsKey } from './../node_modules/binance/lib/websocket-
 import { WsResponse, WsUserDataEvents } from "binance";
 
 import CronHelper from './helpers/cronHelper';
+import Mailer from './helpers/Mailer';
 import Tradingbot from './tradingbot';
 import WebSocket from 'isomorphic-ws';
 import WebSocketService from './binance/websocket';
 import config from "../config";
 import txtLogger from './helpers/txt-logger';
-import Mailer from './helpers/Mailer';
 
 console.log("App is running");
 
@@ -32,7 +32,7 @@ try {
         ws: WebSocket;
         event?: any;
     }) => {
-        txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
+        txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}`);
         txtLogger.writeToLogFile(`*** config.json is equal to:  ${JSON.stringify(config)}`);
 
         if (runTestInsteadOfProgram === false) {

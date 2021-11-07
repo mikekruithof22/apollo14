@@ -37,7 +37,7 @@ export default class Tradingbot {
     private limitBuyOrderExpirationTime: number = config.genericOrder.limitBuyOrderExpirationTimeInSeconds * 1000; // multiply with 1000 for milliseconds 
     private doNotOrderWhenRSIValueIsBelow: number = config.genericOrder.doNotOrder.RSIValueIsBelow;
     private pauseConditionActiveboolean = config.production.pauseCondition.active;
-    
+
     // devTest config
     private triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
 
@@ -250,10 +250,10 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`The step size - which will be used in order to calculate the the amount - is: ${stepSize}`);
         txtLogger.writeToLogFile(`The tick size - which will be used in order to calculate the the price - is: ${tickSize}`);
 
-        const percentPriceObj: SymbolPercentPriceFilter  = symbolResult.filters.find(f => f.filterType === 'PERCENT_PRICE') as SymbolPercentPriceFilter;
+        const percentPriceObj: SymbolPercentPriceFilter = symbolResult.filters.find(f => f.filterType === 'PERCENT_PRICE') as SymbolPercentPriceFilter;
         const multiplierDown: number = Number(percentPriceObj.multiplierDown);
         const allowedStopLossPercentageBinance: number = 100 - (multiplierDown * 100);
-  
+
         if (takeLossPercentage >= allowedStopLossPercentageBinance) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
             txtLogger.writeToLogFile(`The configured takeLossPercentage ${takeLossPercentage} is lower than Binance allows: ${allowedStopLossPercentageBinance}.`);
@@ -374,7 +374,7 @@ export default class Tradingbot {
         // STEP 1 - check if the limit buy order is not filled yet (it may be partially filled)
         const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
-            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId); 
+            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId);
             txtLogger.writeToLogFile(`Checking if it is necessary to cancel the limit buy order with the following details:`);
             txtLogger.writeToLogFile(`orderName: ${orderName}, clientOrderId: ${clientOrderId} `);
 
@@ -422,26 +422,34 @@ export default class Tradingbot {
         const coinName: string = data.symbol.replace('USDT', '');
         let balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
         if (balance instanceof BinanceError) {
-            // TODO: Do we need to do something here?
             txtLogger.writeToLogFile(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
             return;
         }
         let currentCryptoBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === coinName);
         let currentFreeCryptoBalance = Number(currentCryptoBalance.free);
 
-        // todo aram doesn't this mean ALL of the cryptos in the wallet will be sold?
-        // Let's say you wanna have 5000 DOT in your portfolio for long term investment, this would sell all of those?
+        // TODO: testmike, note: ALL of the crypto trading pairs inside the wallet will be sold!
         let ocoOrderAmount: number = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
         const minimumOcoOrderQuantity: number = buyOrder.minimumOrderQuantity;
 
-        // Check when you sell that the oco amount * stopLimitPrice is equal or greather than 10 usdt. 
-        let usdtAmountForStopLimitPrice: number = stopLimitPrice * ocoOrderAmount;
+        const usdtAmountForProfitPrice: number = profitPrice * ocoOrderAmount;
+        const usdtAmountForStopLimitPrice: number = stopLimitPrice * ocoOrderAmount;
+        const usdtAmountForStopLossPrice: number = stopLossPrice * ocoOrderAmount;
 
-        txtLogger.writeToLogFile(`currentCryptoBalance`);
+        if ((usdtAmountForProfitPrice < 11) || (usdtAmountForStopLimitPrice < 11) || (usdtAmountForStopLossPrice < 11)) {
+            txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
+            txtLogger.writeToLogFile(`One of the following values is lower than minimum of 10 usdt:`);
+            txtLogger.writeToLogFile(`usdt amount for profit price: ${usdtAmountForProfitPrice}, usdt amount for stop limit price: ${usdtAmountForStopLimitPrice}, usdt amount for stop limit price: ${usdtAmountForStopLossPrice}`)
+            txtLogger.writeToLogFile(`****** Creating an oco order with values lower than 10 USDT price will be rejected by Binance ****** `);
+            txtLogger.writeToLogFile(`It is higly recommended to change the takeLossPercentage inside the config.json based on this information.`);
+            return;
+        }
+
+        txtLogger.writeToLogFile(`Current crypto balance (including the none free part)`);
         txtLogger.writeToLogFile(JSON.stringify(currentCryptoBalance));
-        txtLogger.writeToLogFile(`currentFreeCryptoBalance: ${currentFreeCryptoBalance}`);
+        txtLogger.writeToLogFile(`Current free crypto balance: ${currentFreeCryptoBalance}`);
 
-        if ((ocoOrderAmount < minimumOcoOrderQuantity) || (usdtAmountForStopLimitPrice < 10)) {
+        if (ocoOrderAmount < minimumOcoOrderQuantity) {
             txtLogger.writeToLogFile(`Oco order quantity - ${ocoOrderAmount} - is lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
             txtLogger.writeToLogFile(`Re-retrieving current free balance after a couple of seconds to ensure it's not a timing issue!`);
 
@@ -450,7 +458,6 @@ export default class Tradingbot {
 
             balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
             if (balance instanceof BinanceError) {
-                // TODO: Do we need to do something here?
                 txtLogger.writeToLogFile(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
                 return;
             }
@@ -458,18 +465,9 @@ export default class Tradingbot {
             currentFreeCryptoBalance = Number(currentCryptoBalance.free);
             ocoOrderAmount = exchangeLogic.roundOrderAmount(currentFreeCryptoBalance, stepSize);
 
-            usdtAmountForStopLimitPrice = stopLimitPrice * ocoOrderAmount;
-
             if (ocoOrderAmount < minimumOcoOrderQuantity) {
                 txtLogger.writeToLogFile(`The method createOcoOrder() quit because:`);
                 txtLogger.writeToLogFile(`Oco order quantity - ${ocoOrderAmount} - is STILL lower than the minimum order quanity: ${minimumOcoOrderQuantity}`);
-
-                if (usdtAmountForStopLimitPrice < 10) {
-                    const totalStopLossAmount: number = ocoOrderAmount * usdtAmountForStopLimitPrice;
-                    txtLogger.writeToLogFile(`The configured takeLossPercentage ${usdtAmountForStopLimitPrice} multiplied by the ${ocoOrderAmount} is equal to ${totalStopLossAmount}`);
-                    txtLogger.writeToLogFile(`****** Creating a stoploss price which will lead cummulativly to a lower than 10 USDT price will be rejected by Binance ****** `);
-                    txtLogger.writeToLogFile(`It is higly recommended to change the takeLossPercentage inside the config.json based on this information.`);
-                }    
                 return;
             }
         }

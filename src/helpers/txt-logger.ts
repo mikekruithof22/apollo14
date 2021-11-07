@@ -7,7 +7,7 @@ export default class TextLogger {
         const fileLocation: string = TextLogger.generateFilePath();
         const date: Date = new Date();
         if (message.includes('Program started')) {
-            message = `\n\n  ${logLevel} - ${date.toLocaleDateString()} ${date.toLocaleTimeString()} - ${message}`;
+            message = `\n\n ${logLevel} - ${date.toLocaleDateString()} ${date.toLocaleTimeString()} - ${message}`;
         } else {
             message = `\n ${logLevel} - ${date.toLocaleTimeString()} - ${message}`;
         }
