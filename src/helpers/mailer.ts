@@ -1,6 +1,8 @@
 import * as nodemailer from 'nodemailer';
-import txtLogger from './txt-logger';
+
 import config from '../../config';
+import txtLogger from './txt-logger';
+
 require('dotenv').config();
 
 const userName = process.env.EMAIL_USERNAME;
@@ -11,8 +13,8 @@ const recipient = config.emailRecipient;
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-    user: userName,
-    pass: password
+        user: userName,
+        pass: password
     }
 });
 

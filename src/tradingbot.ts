@@ -33,6 +33,7 @@ export default class Tradingbot {
     private orderConditions: ConfigOrderCondition[] = config.orderConditions;
     private minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
     private tradingPairs: string[] = config.tradingPairs;
+    private basePair: string = config.basePair;
     private rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
     private limitBuyOrderExpirationTime: number = config.genericOrder.limitBuyOrderExpirationTimeInSeconds * 1000; // multiply with 1000 for milliseconds 
     private doNotOrderWhenRSIValueIsBelow: number = config.genericOrder.doNotOrder.RSIValueIsBelow;
@@ -87,10 +88,9 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`Checking ${this.orderConditions.length * this.tradingPairs.length} order condition(s) for bullish divergences.`);
         }
 
-        for await (let tradingPair of this.tradingPairs) {
-
+        for await (let pair of this.tradingPairs) {
+            const tradingPair: string = `${pair}${this.basePair}`;
             const url: string = `${this.brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${this.candleInterval}&limit=${this.numberOfCandlesToRetrieve}`;
-
             const candleList = await this.candleHelper.retrieveCandles(url);
             const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
             const closePriceList: number[] = this.candleHelper.generateClosePricesList(candleList);
@@ -98,7 +98,7 @@ export default class Tradingbot {
             const mostRecentRsiValue = rsiCollection[rsiCollection.length - 1];
 
             for await (let order of this.orderConditions) {
-                const orderConditionName: string = `${tradingPair}-${order.name}`;
+                const orderConditionName: string = `${pair}-${this.basePair}-${order.name}`; 
 
                 if (this.triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
                     txtLogger.writeToLogFile(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order #####`);
@@ -509,8 +509,6 @@ export default class Tradingbot {
             process.exit();
             return;
         } else {
-            // todo aram don't we want to splice the old buy order no matter if the oco order was succesful? Since the buy order was fulfilled? 
-            // Or doesn't it matter since the process exits anyway above here when ocoOrder === undefined?
             const index = this.activeBuyOrders.findIndex(o => o.clientOrderId === clientOrderId);
             if (index > -1) {
                 this.activeBuyOrders.splice(index, 1);
