@@ -16,13 +16,25 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         txtLogger.log(`Job invoked`)
         await this.tradingBot.runProgram();
     }.bind(this));
+
+    public async Renew() { // todo aram maybe use this as a reset to renew all objects, websocket etc.?
+
+    }
     
     public async Start() {
         txtLogger.log('App is running');
 
+        // todo aram add an 'in progress' boolean to the class to prevent the start endpoint calling multiple  trading bots etc.
+        // maybe even add a result for the start function where it becomes clear of the start was succesful 
+        // (and in the case of being "in progress" it would be false)
+        // and if not, why not, and have that sent to the frontend again, so you can see like details of your run
+
         // setup
         const cronExpression = CronHelper.GetCronExpression();
-        const wsService: WebSocketService = new WebSocketService();
+        // todo aram consider moving the websocket stuff to private consts, this way you can call a 
+        // /monitor endpoint or something and ask for the current state of the webconnection etc.
+        // could be like the start of the dashboard feature
+        const wsService: WebSocketService = new WebSocketService(); 
         const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
         this.tradingBot = new Tradingbot()
 

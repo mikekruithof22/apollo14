@@ -26,7 +26,7 @@ app.get( "/stop", ( req, res ) => {
 });
 
 app.get( "/test", ( req, res ) => {
-    res.send( "Test endpoint called!" );
+    res.send( `Test endpoint called`);
     txtLogger.log("Test endpoint called");
 });
 
