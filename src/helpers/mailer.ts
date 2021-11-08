@@ -29,11 +29,11 @@ export default class Mailer {
 
         transporter.sendMail(mailOptions, (error) => {
             if (error) {
-                txtLogger.writeToLogFile(`Unable to send email from ${userName} to ${recipient}`);
-                txtLogger.writeToLogFile(error.message);
+                txtLogger.log(`Unable to send email from ${userName} to ${recipient}`);
+                txtLogger.log(error.message);
             } 
             else {
-                txtLogger.writeToLogFile(`Email succesfully sent from ${userName} to ${recipient}`);
+                txtLogger.log(`Email succesfully sent from ${userName} to ${recipient}`);
             }
         });
     }

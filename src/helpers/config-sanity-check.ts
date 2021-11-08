@@ -27,7 +27,7 @@ export default class ConfigSanityCheck {
             Don't forget to buy the REAL Bitcoin!
             ------------------------------------------------`;
             closeProgram = true;
-            txtLogger.writeToLogFile(message);
+            txtLogger.log(message);
         }
 
         return closeProgram;
