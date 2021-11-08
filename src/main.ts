@@ -12,6 +12,8 @@ import txtLogger from './helpers/txt-logger';
 
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
     private tradingBot: Tradingbot;
+    private inProgress: boolean = false;
+
     private job: schedule.Job = new schedule.Job(async function () {
         txtLogger.log(`Job invoked`)
         await this.tradingBot.runProgram();
@@ -22,6 +24,12 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     }
     
     public async Start() {
+        if (this.inProgress) {
+            txtLogger.log('Main already in progress, skipping...'); // todo aram is this enough?
+            return;
+        }
+
+        this.inProgress = true; 
         txtLogger.log('App is running');
 
         // todo aram add an 'in progress' boolean to the class to prevent the start endpoint calling multiple  trading bots etc.
@@ -75,6 +83,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     }
 
     public  async Stop() {
+        this.inProgress = false;
         txtLogger.log('Stopping scheduled job');
 
         var jobCancelled = this.job.cancel();
