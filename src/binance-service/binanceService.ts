@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-import { AllCoinsInformationResponse, BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams, MainClient } from '../../node_modules/binance/lib/index';
+import { AllCoinsInformationResponse, BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams, MainClient } from 'binance';
 
 import BinanceError from '../models/binance-error';
 import { LogLevel } from '../models/log-level';

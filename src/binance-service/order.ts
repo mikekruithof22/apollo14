@@ -1,7 +1,6 @@
-import { NewOCOParams, NewSpotOrderParams } from '../../node_modules/binance/lib/index';
+import { NewOCOParams, NewSpotOrderParams, MainClient } from 'binance';
 
 import { LogLevel } from '../models/log-level';
-import { MainClient } from '../../node_modules/binance/lib/main-client';
 import { OrderTypeEnum } from '../models/order';
 import dateHelper from '../helpers/date';
 import txtLogger from '../helpers/txt-logger';
