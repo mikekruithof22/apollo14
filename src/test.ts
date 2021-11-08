@@ -5,6 +5,7 @@ import ExportService from './services/exportService';
 import { LightWeightCandle } from './models/candle';
 import calculate from './helpers/calculate';
 import config from '../config';
+import fetch from '../node_modules/node-fetch/lib/index.js';
 import rsiHelper from './helpers/rsi';
 
 export default class Test {
@@ -42,14 +43,14 @@ export default class Test {
 
         // STEP 3 - Retrieve RSI & calculate bullish divergence foreach trading pair
         for await (let tradingPair of tradingPairs) {
-            const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}${basePair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;            
+            const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}${basePair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
             const candleList = await this.candleHelper.retrieveCandles(url);
             const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
             const closePriceList: number[] = this.candleHelper.generateClosePricesList(candleList);
             const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
 
             for await (let order of orderConditions) {
-                const orderConditionName: string = `${tradingPair}-${basePair}-${order.name}`;             
+                const orderConditionName: string = `${tradingPair}-${basePair}-${order.name}`;
                 const rsiMinimumRisingPercentage: number = order.rsi.minimumRisingPercentage;
                 const candleMinimumDeclingPercentage: number = order.candle.minimumDeclingPercentage;
                 const startCount: number = order.calcBullishDivergence.numberOfMinimumIntervals;
@@ -92,7 +93,27 @@ export default class Test {
 
         }
     }
+
+    public async getTop100BinanceCoins() {
+        const result = await fetch('https://api.coingecko.com/api/v3/exchanges/binance')
+            .then(res => { return res.json() })
+            .then(data => {
+                return data;
+            }).catch(error => console.log(error));
+        const tickers = result.tickers;
+        for (var i = 0; i < tickers.length; i++) {
+            console.log('# Ticker - target');
+            console.log(`   ${tickers[i].base} ${tickers[i].target}`);
+        }
+
+        console.log('### NOTE: in case you want to generate Excel files make sure to change the following value inside the config.json')
+        console.log('test.retrieveTop100CoinsInsteadOftest = true')
+    }
 }
 
-const test = new Test()
-test.runTestInTerminal();
+const test = new Test();
+if (config.test.retrieveTop100CoinsInsteadOftest) {
+    test.getTop100BinanceCoins();
+} else {
+    test.runTestInTerminal();
+}

@@ -48,7 +48,8 @@ export default {
         "leverage": {
             "active": true,
             "amount": 3
-        }
+        },
+        "retrieveTop100CoinsInsteadOftest": true
     },    
     "orderConditions": [
         {

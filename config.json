@@ -87,7 +87,8 @@
         "leverage": {
             "active": false,
             "amount": 3
-        }
+        },
+        "retrieveTop100CoinsInsteadOftest": false
     },    
     "orderConditions": [
         {
