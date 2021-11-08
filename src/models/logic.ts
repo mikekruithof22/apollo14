@@ -23,6 +23,10 @@ export class ConfigOrderCondition {
         numberOfMaximumIntervals: number;
     }
     order: ConfigOrderConditionOrder;
+    doNotOrder: {
+        active: boolean;
+        btc24HourDeclineIsLowerThen: number;
+    }
 }
 
 export class ConfigOrderConditionOrder {

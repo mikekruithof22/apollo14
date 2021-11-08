@@ -2,10 +2,10 @@ require('dotenv').config();
 
 import { AllCoinsInformationResponse, BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams } from '../../node_modules/binance/lib/index';
 
+import BinanceError from '../models/binance-error';
 import { LogLevel } from '../models/log-level';
 import { MainClient } from '../../node_modules/binance/lib/main-client';
 import txtLogger from '../helpers/txt-logger';
-import BinanceError from '../models/binance-error';
 
 /*
     Documentation urls
@@ -83,6 +83,7 @@ export default class BinanceService {
             }).catch(err => {
                 txtLogger.writeToLogFile(` retrieveAllOpenOrders() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
+    }
         /*
       Example response:
     
@@ -110,6 +111,16 @@ export default class BinanceService {
           }
       ]
     */
+   
+
+    public retrieveAllTradingPairs = async (binanceRest: MainClient): Promise<ExchangeInfo | BinanceError> => {
+        return binanceRest
+            .getExchangeInfo()
+            .then(response => {
+                return response as ExchangeInfo;
+            }).catch(err => {
+                return err as BinanceError;
+            });
     }
 
     // public checkOrderStatus = async (binanceRest: MainClient, symbol: string, orderId: string, timestamp) => {
@@ -214,6 +225,46 @@ export default class BinanceService {
             });
     }
 
+    public get24hrChangeStatististics = async (binanceRest: MainClient, symbol: string): Promise<any> => {
+        const options: BasicSymbolParam = {
+            symbol: symbol
+        }
+
+        return binanceRest
+            .get24hrChangeStatististics(options)
+            .then(response => {
+                return response;
+            }).catch(err => {
+                txtLogger.writeToLogFile(` get24hrChangeStatististics() ${JSON.stringify(err)}`, LogLevel.ERROR);
+            });
+
+            /* 
+            {
+            symbol: 'BTCUSDT',
+            priceChange: '3684.44000000',
+            priceChangePercent: '5.951',
+            weightedAvgPrice: '64743.14646356',
+            prevClosePrice: '61911.00000000',
+            lastPrice: '65595.44000000',
+            lastQty: '0.00953000',
+            bidPrice: '65595.43000000',
+            bidQty: '0.09531000',
+            askPrice: '65595.44000000',
+            askQty: '1.92980000',
+            openPrice: '61911.00000000',
+            highPrice: '66423.00000000',
+            lowPrice: '61700.77000000',
+            volume: '47843.74933000',
+            quoteVolume: '3097554870.23826050',
+            openTime: 1636298221662,
+            closeTime: 1636384621662,
+            firstId: 1133222857,
+            lastId: 1135202650,
+            count: 1979794
+            }
+            */
+    }
+
     private getAccountBalances = async (binanceRest: MainClient): Promise<AllCoinsInformationResponse[] | BinanceError> => {
         return binanceRest
             .getBalances()
@@ -244,6 +295,7 @@ export default class BinanceService {
             ]
         */
     }
+
 
     private isTimeStampError(response: AllCoinsInformationResponse[] | BinanceError): response is BinanceError {
         return (response as BinanceError).code === -1021 && (response as BinanceError).message.startsWith("Timestamp")

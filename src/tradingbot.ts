@@ -9,12 +9,10 @@ import CalculateHelper from './helpers/calculate';
 import CandleHelper from './helpers/candle';
 import { LightWeightCandle } from './models/candle';
 import { LogLevel } from './models/log-level';
-import Mailer from './helpers/Mailer';
 import Order from './binance/order';
 import { OrderConditionResult } from './models/calculate';
 import calculate from './helpers/calculate';
 import config from '../config';
-import configChecker from './helpers/config-sanity-check';
 import exchangeLogic from './binance/logic';
 import rsiHelper from './helpers/rsi';
 import txtLogger from './helpers/txt-logger';
@@ -50,22 +48,13 @@ export default class Tradingbot {
     }
 
     public async runProgram(botPauseActive: boolean) {
-        // STEP 1 - Sanity check the config.json.
-        const incorrectConfigData: boolean = configChecker.checkConfigData();
-
-        if (incorrectConfigData) {
-            txtLogger.writeToLogFile(`The method runProgram() quit because:`);
-            txtLogger.writeToLogFile(`The the method checkConfigData() detected wrong config values`);
-            return;
-        }
-
         if (this.binanceRest === undefined) {
             txtLogger.writeToLogFile(`The method runProgram() quit because:`);
             txtLogger.writeToLogFile(`Generating binanceRest client failed.`, LogLevel.ERROR);
             return;
         }
 
-        // STEP 2 If USDT is to low, you don't need to run the program, therefore quit.
+        // STEP 1 If USDT is to low, you don't need to run the program, therefore quit.
         const balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
         if (balance instanceof BinanceError) {
             txtLogger.writeToLogFile(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
@@ -82,12 +71,39 @@ export default class Tradingbot {
             return;
         }
 
+        // STEP 2 - based on btc 24 hour drop some order conditions should be skipped, therefore remove those for this.orderConditions (only for this run) 
+        this.orderConditions = config.orderConditions;
+        const btcStatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, 'BTCUSDT');
+        const btc24HourChange: number = btcStatistics.priceChangePercent;
+
+        const orderConditionsWithActiveDoNotOrderCheck: ConfigOrderCondition[] = this.orderConditions.filter(o => o.doNotOrder.active === true);
+
+        let oderConditionsNamesToRemove: string[] = [];
+        if (orderConditionsWithActiveDoNotOrderCheck.length > 0) {
+            orderConditionsWithActiveDoNotOrderCheck.forEach(condition => {
+                if (condition.doNotOrder.btc24HourDeclineIsLowerThen >= btc24HourChange) {
+                    oderConditionsNamesToRemove.push(condition.name);
+                }
+            });
+        }
+
+        if (oderConditionsNamesToRemove.length > 0) {
+            oderConditionsNamesToRemove.forEach(name => {
+                const index = this.orderConditions.findIndex(i => i.name === name);
+                if (index > -1) {
+                    txtLogger.writeToLogFile(`Order condition ${name} will this run NOT be evaluated, because:`);
+                    txtLogger.writeToLogFile(`Last 24 hour BTC has dropped or risen ${btc24HourChange}% which is lower than configured inside the config.json`);
+                    this.orderConditions.splice(index, 1);
+                }
+            });
+        }
+
         // STEP 3 - Checking crash order conditions and bullish divergences for each tradingpair
         if (!botPauseActive) {
             txtLogger.writeToLogFile(`Checking ${this.tradingPairs.length} trading pair(s) for crash condition.`);
             txtLogger.writeToLogFile(`Checking ${this.orderConditions.length * this.tradingPairs.length} order condition(s) for bullish divergences.`);
         }
-
+   
         for await (let pair of this.tradingPairs) {
             const tradingPair: string = `${pair}${this.basePair}`;
             const url: string = `${this.brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${this.candleInterval}&limit=${this.numberOfCandlesToRetrieve}`;
@@ -99,7 +115,6 @@ export default class Tradingbot {
 
             for await (let order of this.orderConditions) {
                 const orderConditionName: string = `${pair}-${this.basePair}-${order.name}`; 
-
                 if (this.triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
                     txtLogger.writeToLogFile(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order #####`);
                     await this.buyLimitOrderLogic(
@@ -505,7 +520,6 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
             txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
 
-            Mailer.Send('Bot switched off', 'Oco order failed, therefore the bot was switched off'); // TODO: testmike, is dit wel nodig?
             process.exit();
             return;
         } else {

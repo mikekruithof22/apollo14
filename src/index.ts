@@ -4,11 +4,12 @@ import { WebsocketClient, WsKey } from './../node_modules/binance/lib/websocket-
 import { WsResponse, WsUserDataEvents } from "binance";
 
 import CronHelper from './helpers/cronHelper';
-import Mailer from './helpers/Mailer';
+import Mailer from './helpers/mailer';
 import Tradingbot from './tradingbot';
 import WebSocket from 'isomorphic-ws';
 import WebSocketService from './binance/websocket';
 import config from "../config";
+import configChecker from './helpers/config-sanity-check';
 import txtLogger from './helpers/txt-logger';
 
 console.log("App is running");
@@ -32,8 +33,15 @@ try {
         ws: WebSocket;
         event?: any;
     }) => {
-        txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}`);
+        // Sanity check the config.json.
+        const incorrectConfigData: boolean = configChecker.checkConfigData();
+        if (incorrectConfigData) {
+            txtLogger.writeToLogFile(`The websocket() quit because:`);
+            txtLogger.writeToLogFile(`The the method checkConfigData() detected wrong config values`);
+            return;
+        }
         txtLogger.writeToLogFile(`*** config.json is equal to:  ${JSON.stringify(config)}`);
+        txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}`);
 
         if (runTestInsteadOfProgram === false) {
             schedule.scheduleJob(cronExpression, async function () {

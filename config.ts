@@ -68,6 +68,10 @@ export default {
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 5000,
                 "maxPercentageOfBalance": 75
+            },
+            "doNotOrder": {
+                "active": false,
+                "btc24HourDeclineIsLowerThen": -2 
             }
         }
     ]
