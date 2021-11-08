@@ -14,7 +14,6 @@ export class ConfigOrderCondition {
     name: string;
     rsi: {
         minimumRisingPercentage: number;
-        calculationLength: number;
     }
     candle: {
         minimumDeclingPercentage: number;
@@ -23,14 +22,20 @@ export class ConfigOrderCondition {
         numberOfMinimumIntervals: number;
         numberOfMaximumIntervals: number;
     }
-    order: {
-        takeProfitPercentage: number;
-        takeLossPercentage: number;
-        maxUsdtBuyAmount: number;
-        maxPercentageOffBalance: number;
+    order: ConfigOrderConditionOrder;
+    doNotOrder: {
+        active: boolean;
+        btc24HourDeclineIsLowerThen: number;
     }
 }
 
+export class ConfigOrderConditionOrder {
+    takeProfitPercentage: number;
+    takeLossPercentage: number;
+    maxUsdtBuyAmount: number;
+    maxPercentageOfBalance: number;
+}
+
 export class OrderCondition extends ConfigOrderCondition {
-    tradingPair: string; 
+    tradingPair: string;
 }

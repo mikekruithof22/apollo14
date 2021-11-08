@@ -1,5 +1,7 @@
 export default {
     "brokerApiUrl": "https://api.binance.com/",
+    "emailRecipient": "a.gulzadian@gmail.com",
+    "basePair": "USDT",
     "tradingPairs": [
         "DOTUSDT",
         "BTCUSDT",
@@ -8,29 +10,47 @@ export default {
     ],
     "timeIntervals": ["15m"],
     "genericOrder": {
-        "rsiCalculationLength": 14,
+        "rsiCalculationLength": 14,  
         "doNotOrder": {
             "RSIValueIsBelow": 20
-        },
+        },      
         "limitBuyOrderExpirationTimeInSeconds": 5
     },
     "production": {
         "numberOfCandlesToRetrieve": 50, 
+        "maxAllowedActiveOrdersForTraidingPair": 3,
         "minimumUSDTorderAmount": 10,
         "devTest": {
             "triggerBuyOrderLogic": false,
-            "sellCurrentBalance": false,
-            "triggerCancelLogic": true
+        },
+        "largeCrashOrder": {
+            "maxAmountOfCandlesToLookBack": 15,
+            "minimumDeclingPercentage": -15,
+            "order": {
+                "takeProfitPercentage": 5,
+                "takeLossPercentage": 90,
+                "maxUsdtBuyAmount": 100,
+                "maxPercentageOfBalance": 100
+            }
+        },
+        "pauseCondition": {
+            "active": true,
+            "tradingPair": "BTCUSDT",
+            "maxAmountOfCandlesToLookBack": 10,
+            "minimumDeclingPercentage": -5,
+            "amountOfCandlesToPauseBotFor": 32
         }
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,
         "generateExcelFile": true,
-        "testWithHistoricalData": true,
-        "consoleLogSteps": false,
         "candleAmountToLookIntoTheFuture": 100,
-        "startBalance": 2500
-    },
+        "leverage": {
+            "active": true,
+            "amount": 3
+        },
+        "retrieveTop100CoinsInsteadOftest": true
+    },    
     "orderConditions": [
         {
             "name": "1.) VTHOUSDT",
@@ -48,7 +68,11 @@ export default {
                 "takeProfitPercentage": 1,
                 "takeLossPercentage": 2,
                 "maxUsdtBuyAmount": 5000,
-                "maxPercentageOffBalance": 75
+                "maxPercentageOfBalance": 75
+            },
+            "doNotOrder": {
+                "active": false,
+                "btc24HourDeclineIsLowerThen": -2 
             }
         }
     ]

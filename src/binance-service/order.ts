@@ -1,7 +1,7 @@
-import { NewOCOParams, NewSpotOrderParams } from 'binance';
+import { NewOCOParams, NewSpotOrderParams } from '../../node_modules/binance/lib/index';
 
 import { LogLevel } from '../models/log-level';
-import { MainClient } from 'binance';
+import { MainClient } from '../../node_modules/binance/lib/main-client';
 import { OrderTypeEnum } from '../models/order';
 import dateHelper from '../helpers/date';
 import txtLogger from '../helpers/txt-logger';
@@ -42,8 +42,8 @@ export default class Order {
                 txtLogger.log(`Method: createOrder() did not receive a proper options object`, LogLevel.ERROR);
                 return;
         }
-        txtLogger.log(`Try to create a ${orderType} with the following options:  ${JSON.stringify(options)}`, LogLevel.INFO);
-
+        txtLogger.log(`Try to create a ${orderType} with the following options:`, LogLevel.INFO);
+        txtLogger.log(`${JSON.stringify(options, null, 4)}`);
         return binanceRest
             .submitNewOrder(options)
             .then(response => {
@@ -94,8 +94,8 @@ export default class Order {
             stopLimitTimeInForce: 'GTC',
             newOrderRespType: 'RESULT',
         }
-        txtLogger.log(`Try to create an OCO with the following options: ${JSON.stringify(options)}`, LogLevel.INFO);
-
+        txtLogger.log(`Try to create an OCO with the following options:`, LogLevel.INFO);
+        txtLogger.log(`${JSON.stringify(options, null, 4)}`);
         return binanceRest
             .submitNewOCO(options)
             .then(response => {

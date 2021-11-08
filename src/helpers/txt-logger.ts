@@ -8,14 +8,10 @@ export default class TextLogger {
         
         const fileLocation: string = TextLogger.generateFilePath();
         const date: Date = new Date();
-        message = `\n ${logLevel} - ${date.toUTCString()} - ${message}`;
-
-        if (message.includes('Program started')) {
-            message = `\n\n ${message}`;
-        }
-
-        if (message.includes('Starting ordering logic method')) {
-            message = `\n ${message} \n`;
+        if (message.includes('Program started') || message.includes('*** config.json is equal to')) {
+            message = `\n\n ${logLevel} - ${date.toLocaleDateString()} ${date.toLocaleTimeString()} - ${message}`;
+        } else {
+            message = `\n ${logLevel} - ${date.toLocaleTimeString()} - ${message}`;
         }
 
 

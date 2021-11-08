@@ -1,14 +1,13 @@
 import * as schedule from "node-schedule";
-
-//import { WebsocketClient, WsKey } from 'binance';
 import { WebsocketClient, WsKey, WsResponse, WsUserDataEvents } from "binance";
-
 import CronHelper from './helpers/cronHelper';
 import Tradingbot from './tradingbot';
 import WebSocket from 'isomorphic-ws';
 import WebSocketService from './binance-service/websocket';
 import config from "../config";
 import txtLogger from './helpers/txt-logger';
+import Mailer from './helpers/mailer';
+import configChecker from './helpers/config-sanity-check';
 
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
     private tradingBot: Tradingbot;
@@ -17,8 +16,27 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     private websocketKey: WsKey;
 
     private job: schedule.Job = new schedule.Job(async function () {
-        txtLogger.log(`Job invoked`)
-        await this.tradingBot.runProgram();
+        let candlesToWait: number = 0;
+        const amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
+
+        txtLogger.log(`---------- Program started ---------- `);
+
+        const crashDetected: boolean = await this.tradingBot.crashDetected();
+        if (crashDetected) {
+            txtLogger.log(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles`);
+            candlesToWait = amountOfCandlesToPauseBotFor;
+        }
+
+        if (candlesToWait > 0) {
+            txtLogger.log(`Pause active for ${candlesToWait} amount of candles.`);
+            txtLogger.log(`Only checking crash order condition per trading pair during pause.`);
+            this.tradingBot.botPauseActive = true;
+            await this.tradingBot.runProgram();
+            candlesToWait--;
+        } else {
+            this.tradingBot.botPauseActive = false;
+            await this.tradingBot.runProgram();
+        }
     }.bind(this));
 
     public async Renew() { // todo aram maybe use this as a reset to renew all objects, websocket etc.?
@@ -33,6 +51,79 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
 
         return `The inProgress state of the app is ${this.inProgress}. The created state of the websocketClient is ${websocketClientCreated}`;
     }
+
+public async StartOld() {
+    try {
+        const cronExpression = CronHelper.GetCronExpression();
+        const wsService: WebSocketService = new WebSocketService();
+        const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
+        const tradingBot = new Tradingbot();
+        let candlesToWait: number = 0;
+    
+        websocketClient.subscribeSpotUserDataStream();
+    
+        // Retreive some config values
+        const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
+        const amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
+    
+        websocketClient.on('open', async (data: {
+            wsKey: WsKey;
+            ws: WebSocket;
+            event?: any;
+        }) => {
+            // Sanity check the config.json.
+            const incorrectConfigData: boolean = configChecker.checkConfigData();
+            if (incorrectConfigData) {
+                txtLogger.log(`The websocket() quit because:`);
+                txtLogger.log(`The the method checkConfigData() detected wrong config values`);
+                return;
+            }
+            txtLogger.log(`*** config.json is equal to:  ${JSON.stringify(config)}`);
+            txtLogger.log(`Websocket event - connection opened open:', ${data.wsKey}`);
+    
+            if (runTestInsteadOfProgram === false) {
+                schedule.scheduleJob(cronExpression, async function () {
+                    txtLogger.log(`---------- Program started ---------- `);
+                    const crashDetected: boolean = await tradingBot.crashDetected();
+                    if (crashDetected) {
+                        txtLogger.log(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles`);
+                        candlesToWait = amountOfCandlesToPauseBotFor;
+                    }
+                    if (candlesToWait > 0) {
+                        txtLogger.log(`Pause active for ${candlesToWait} amount of candles.`);
+                        txtLogger.log(`Only checking crash order condition per trading pair during pause.`);
+                        tradingBot.botPauseActive = true;
+                        await tradingBot.runProgram();
+                        candlesToWait--;
+                    } else {
+                        tradingBot.botPauseActive = false;
+                        await tradingBot.runProgram();
+                    }
+                });
+            } else {
+                tradingBot.botPauseActive = false;
+                await tradingBot.runProgram();
+            }
+    
+            // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
+        });
+    
+        // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
+        websocketClient.on('reply', async (data: WsResponse) => {
+            txtLogger.log(`Reply event received: ${JSON.stringify(data)}`);
+        });
+    
+        // Listen To Order Changes
+        websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
+            txtLogger.log(`formattedUserDataMessage event received: ${JSON.stringify(data)}`);
+            await tradingBot.processFormattedUserDataMessage(data);
+        });    
+    } catch (error) {
+        error = error as Error;
+        const errorString = `Bot has stopped due to the following error: ${(error as Error).name} - ${(error as Error).stack}`;    
+        Mailer.Send('Bot crashed', errorString);
+    }
+}
 
     public async Start() {
         if (this.inProgress) {
@@ -57,6 +148,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         this.websocketKey = wsService.websocketKey;
         this.websocketClient = wsService.generateWebsocketClient();
         this.tradingBot = new Tradingbot()
+        let candlesToWait: number = 0;
 
         txtLogger.log('Subscribing to webSocketClient');
         
@@ -70,12 +162,21 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.log(`Websocket event - connection opened:', ${data.wsKey}, ${data.ws.url}`);
-
+            // Sanity check the config.json.
+            const incorrectConfigData: boolean = configChecker.checkConfigData();
+            if (incorrectConfigData) {
+                txtLogger.log(`The websocket() quit because:`);
+                txtLogger.log(`The the method checkConfigData() detected wrong config values`);
+                return;
+            }
+            txtLogger.log(`*** config.json is equal to:  ${JSON.stringify(config)}`);
+            txtLogger.log(`Websocket event - connection opened:', ${data.wsKey}`);
+    
             if (runTestInsteadOfProgram === false) {
                 this.job.schedule(cronExpression);
             } else {
                 txtLogger.log(`Running job once `)
+                this.tradingBot.botPauseActive = false;
                 this.job.invoke();
             }
 

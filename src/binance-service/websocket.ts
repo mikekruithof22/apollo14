@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-import { WebsocketClient, WsKey } from 'binance';
+import { WebsocketClient, WsKey } from '../../node_modules/binance/lib/websocket-client';
 
 import WebSocket from 'isomorphic-ws';
 import txtLogger from '../helpers/txt-logger';
@@ -15,8 +15,6 @@ export default class WebSocketService {
             beautify: true,
         });
 
-        txtLogger.log(`Generated wsClient`);
-
         // notification when a connection is opened
         // wsClient.on('open', (data: {
         //     wsKey: WsKey;
@@ -24,7 +22,7 @@ export default class WebSocketService {
         //     event?: any;
         // }) => {
         //     this.websocketKey = data.wsKey;
-        //     txtLogger.log(`Websocket event - connection opened open:', ${data.wsKey}, ${data.ws.url}`);
+        //     txtLogger.log(`Websocket event - connection opened open:', ${data.wsKey}`);
         // });
 
         wsClient.on('close', (data: {
@@ -32,7 +30,7 @@ export default class WebSocketService {
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.log(`Websocket event - connection closed', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.log(`Websocket event - connection closed', ${data.wsKey}`);
         });
 
         wsClient.on('reconnecting', (data: {
@@ -40,7 +38,7 @@ export default class WebSocketService {
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.log(`Websocket event - trying to reconnect...', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.log(`Websocket event - trying to reconnect...', ${data.wsKey}`);
         });
 
 
@@ -49,7 +47,7 @@ export default class WebSocketService {
             ws: WebSocket;
             event?: any;
         }) => {
-            txtLogger.log(`Websocket event - reconnected', ${data.wsKey}, ${data.ws.url}`);
+            txtLogger.log(`Websocket event - reconnected', ${data.wsKey}`);
         });
 
         return wsClient;

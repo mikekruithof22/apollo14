@@ -1,6 +1,8 @@
 require('dotenv').config();
 
-import { BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams, MainClient } from 'binance';
+import { AllCoinsInformationResponse, BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams, MainClient } from '../../node_modules/binance/lib/index';
+
+import BinanceError from '../models/binance-error';
 import { LogLevel } from '../models/log-level';
 import txtLogger from '../helpers/txt-logger';
 
@@ -26,40 +28,17 @@ export default class BinanceService {
         return binanceRest;
     }
 
-    public getAccountBalances = async (binanceRest: MainClient): Promise<any> => {
-        const options = {
-            timestamp: new Date().getTime()
+    public getAccountBalancesWithRetry = async (binanceRest: MainClient): Promise<AllCoinsInformationResponse[] | BinanceError> => {
+        const retryDelay = 3000;
+        const response = await this.getAccountBalances(binanceRest);
+        if (!this.isTimeStampError(response)) {
+            return response;
+        } else {
+            txtLogger.log(`Retrying getAccountBalances() with delay of ${retryDelay}ms`);
+            setTimeout(async () => {
+                return await this.getAccountBalances(binanceRest);
+            }, retryDelay);
         }
-        return binanceRest
-            .getBalances()
-            .then(response => {
-                // console.log('----- response ----------');
-                // console.log(response)
-                return response;
-            }).catch(err => {
-                txtLogger.log(`getAccountBalances() ${JSON.stringify(err)}`, LogLevel.ERROR);
-            });
-        /*
-            Example response:
-           [{
-                coin: 'WABI',
-                depositAllEnable: true,
-                withdrawAllEnable: true,
-                name: 'TAEL',
-                free: '0',
-                locked: '0',
-                freeze: '0',
-                withdrawing: '0',
-                ipoing: '0',
-                ipoable: '0',
-                storage: '0',
-                isLegalMoney: false,
-                trading: true,
-                networkList: [ [Object] ]
-            },
-            etc.
-            ]
-        */
     }
 
     public getOrderBook = async (binanceRest: MainClient, symbol: string): Promise<any> => {
@@ -103,6 +82,7 @@ export default class BinanceService {
             }).catch(err => {
                 txtLogger.log(` retrieveAllOpenOrders() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
+    }
         /*
       Example response:
     
@@ -130,6 +110,16 @@ export default class BinanceService {
           }
       ]
     */
+   
+
+    public retrieveAllTradingPairs = async (binanceRest: MainClient): Promise<ExchangeInfo | BinanceError> => {
+        return binanceRest
+            .getExchangeInfo()
+            .then(response => {
+                return response as ExchangeInfo;
+            }).catch(err => {
+                return err as BinanceError;
+            });
     }
 
     // public checkOrderStatus = async (binanceRest: MainClient, symbol: string, orderId: string, timestamp) => {
@@ -143,7 +133,7 @@ export default class BinanceService {
     //         .then(response => {
     //             return response;
     //         }).catch(err => {
-    //             txtLogger.writeToLogFile(` checkOrderStatus() ${JSON.stringify(err)}`, LogLevel.ERROR);
+    //             txtLogger.log(` checkOrderStatus() ${JSON.stringify(err)}`, LogLevel.ERROR);
     //         });
     //     /*  Example response::
     //         {
@@ -204,7 +194,7 @@ export default class BinanceService {
 
     public getExchangeInfo = async (binanceRest: MainClient, symbol: string): Promise<ExchangeInfo | void> => {
         const options: ExchangeInfoParams = {
-            symbol: symbol        
+            symbol: symbol
         }
         return binanceRest
             .getExchangeInfo(options)
@@ -232,5 +222,81 @@ export default class BinanceService {
             }).catch(err => {
                 txtLogger.log(` getSpotUserDataListenKey() ${JSON.stringify(err)}`, LogLevel.ERROR);
             });
+    }
+
+    public get24hrChangeStatististics = async (binanceRest: MainClient, symbol: string): Promise<any> => {
+        const options: BasicSymbolParam = {
+            symbol: symbol
+        }
+
+        return binanceRest
+            .get24hrChangeStatististics(options)
+            .then(response => {
+                return response;
+            }).catch(err => {
+                txtLogger.log(` get24hrChangeStatististics() ${JSON.stringify(err)}`, LogLevel.ERROR);
+            });
+
+            /* 
+            {
+            symbol: 'BTCUSDT',
+            priceChange: '3684.44000000',
+            priceChangePercent: '5.951',
+            weightedAvgPrice: '64743.14646356',
+            prevClosePrice: '61911.00000000',
+            lastPrice: '65595.44000000',
+            lastQty: '0.00953000',
+            bidPrice: '65595.43000000',
+            bidQty: '0.09531000',
+            askPrice: '65595.44000000',
+            askQty: '1.92980000',
+            openPrice: '61911.00000000',
+            highPrice: '66423.00000000',
+            lowPrice: '61700.77000000',
+            volume: '47843.74933000',
+            quoteVolume: '3097554870.23826050',
+            openTime: 1636298221662,
+            closeTime: 1636384621662,
+            firstId: 1133222857,
+            lastId: 1135202650,
+            count: 1979794
+            }
+            */
+    }
+
+    private getAccountBalances = async (binanceRest: MainClient): Promise<AllCoinsInformationResponse[] | BinanceError> => {
+        return binanceRest
+            .getBalances()
+            .then(response => {
+                return response as AllCoinsInformationResponse[];
+            }).catch(err => {
+                return err as BinanceError;
+            });
+        /*
+            Example response:
+           [{
+                coin: 'WABI',
+                depositAllEnable: true,
+                withdrawAllEnable: true,
+                name: 'TAEL',
+                free: '0',
+                locked: '0',
+                freeze: '0',
+                withdrawing: '0',
+                ipoing: '0',
+                ipoable: '0',
+                storage: '0',
+                isLegalMoney: false,
+                trading: true,
+                networkList: [ [Object] ]
+            },
+            etc.
+            ]
+        */
+    }
+
+
+    private isTimeStampError(response: AllCoinsInformationResponse[] | BinanceError): response is BinanceError {
+        return (response as BinanceError).code === -1021 && (response as BinanceError).message.startsWith("Timestamp")
     }
 }
