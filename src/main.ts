@@ -13,6 +13,8 @@ import txtLogger from './helpers/txt-logger';
 export default class Main { // todo aram this wrapper is kind of uselss I think, can do all of this stuff directly in index.ts as well, maybe just for tidyness use this wrapper
     private tradingBot: Tradingbot;
     private inProgress: boolean = false;
+    private websocketClient: WebsocketClient;
+    private websocketKey: WsKey;
 
     private job: schedule.Job = new schedule.Job(async function () {
         txtLogger.log(`Job invoked`)
@@ -23,6 +25,15 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
 
     }
     
+    public async GetState() {
+        let websocketClientCreated: boolean = false
+        if (this.websocketClient !== undefined) {
+            websocketClientCreated = true;
+        }
+
+        return `The inProgress state of the app is ${this.inProgress}. The created state of the websocketClient is ${websocketClientCreated}`;
+    }
+
     public async Start() {
         if (this.inProgress) {
             txtLogger.log('Main already in progress, skipping...'); // todo aram is this enough?
@@ -43,17 +54,18 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         // /monitor endpoint or something and ask for the current state of the webconnection etc.
         // could be like the start of the dashboard feature
         const wsService: WebSocketService = new WebSocketService(); 
-        const websocketClient: WebsocketClient = wsService.generateWebsocketClient();
+        this.websocketKey = wsService.websocketKey;
+        this.websocketClient = wsService.generateWebsocketClient();
         this.tradingBot = new Tradingbot()
 
         txtLogger.log('Subscribing to webSocketClient');
         
-        websocketClient.subscribeSpotUserDataStream();
+        this.websocketClient.subscribeSpotUserDataStream();
 
         // Retreive some config values
         const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
 
-        websocketClient.on('open', async (data: {
+        this.websocketClient.on('open', async (data: {
             wsKey: WsKey;
             ws: WebSocket;
             event?: any;
@@ -71,12 +83,12 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         });
 
         // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
-        websocketClient.on('reply', async (data: WsResponse) => {
+        this.websocketClient.on('reply', async (data: WsResponse) => {
             txtLogger.log(`reply eventreceived: ${JSON.stringify(data)}`);
         });
 
         // Listen To Order Changes
-        websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
+        this.websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
             txtLogger.log(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
             await this.tradingBot.processFormattedUserDataMessage(data);
         });

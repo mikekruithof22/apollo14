@@ -10,7 +10,7 @@ const main = new Main();
 // define a route handler for the default home page
 app.get( "/", ( req, res ) => {
     res.send( "Hello world! This is a TypeScript Node application running in Azure!" );
-    txtLogger.log("Hello file logger world");
+    txtLogger.log("Hello world! Root endpoint was called");
 });
 
 app.get( "/start", ( req, res ) => {
@@ -23,6 +23,13 @@ app.get( "/stop", ( req, res ) => {
     res.send( "Stop endpoint called!" );
     txtLogger.log("Stopping app through stop endpoint");
     main.Stop();
+});
+
+app.get( "/state", ( req, res ) => {
+    main.GetState().then( state => {
+        res.send( `State check endpoint called: ${state}`);
+        txtLogger.log(`State endpoint called: ${state}`); 
+    });
 });
 
 app.get( "/test", ( req, res ) => {
