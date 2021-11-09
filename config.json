@@ -94,10 +94,10 @@
         {
             "name": "testmike",
             "rsi": {
-                "minimumRisingPercentage": 2.00
+                "minimumRisingPercentage": 4.00
             },
             "candle": {
-                "minimumDeclingPercentage": -2.00
+                "minimumDeclingPercentage": -4.00
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
@@ -111,7 +111,7 @@
             },
             "doNotOrder": {
                 "active": true,
-                "btc24HourDeclineIsLowerThen": -1 
+                "btc24HourDeclineIsLowerThen": -2
             }
         },
         {

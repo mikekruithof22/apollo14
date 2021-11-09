@@ -41,12 +41,11 @@ export default class Logic {
         }
         let finalAmount: number = 0;
         if (stepSize === 1) {
-            finalAmount = Math.round(Number((amountToSpend / price) * 0.99));
+            finalAmount = Math.floor(Number(amountToSpend / price));
         } else {
-            // TODO: testMike, nagaan of dit echt nodig is. Want je hebt toch altijd 10 dollar als reserve?
-            // subtract 0.5% for fees
-            finalAmount = Number(((amountToSpend / price) * 0.995).toFixed(stepSize));
+            finalAmount = Number((amountToSpend / price).toFixed(stepSize));
         }
+
         return {
             price: price,
             amount: finalAmount,

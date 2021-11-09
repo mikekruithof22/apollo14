@@ -71,38 +71,15 @@ export default class Tradingbot {
             return;
         }
 
-        // STEP 2 - based on btc 24 hour drop some order conditions should be skipped, therefore remove those for this.orderConditions (only for this run) 
-        this.orderConditions = config.orderConditions;
-        const btcStatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, 'BTCUSDT');
-        const btc24HourChange: number = btcStatistics.priceChangePercent;
-
-        const orderConditionsWithActiveDoNotOrderCheck: ConfigOrderCondition[] = this.orderConditions.filter(o => o.doNotOrder.active === true);
-
-        let oderConditionsNamesToRemove: string[] = [];
-        if (orderConditionsWithActiveDoNotOrderCheck.length > 0) {
-            orderConditionsWithActiveDoNotOrderCheck.forEach(condition => {
-                if (condition.doNotOrder.btc24HourDeclineIsLowerThen >= btc24HourChange) {
-                    oderConditionsNamesToRemove.push(condition.name);
-                }
-            });
-        }
-
-        if (oderConditionsNamesToRemove.length > 0) {
-            oderConditionsNamesToRemove.forEach(name => {
-                const index = this.orderConditions.findIndex(i => i.name === name);
-                if (index > -1) {
-                    txtLogger.writeToLogFile(`Order condition ${name} will this run NOT be evaluated, because:`);
-                    txtLogger.writeToLogFile(`Last 24 hour BTC has dropped or risen ${btc24HourChange}% which is lower than configured inside the config.json`);
-                    this.orderConditions.splice(index, 1);
-                }
-            });
-        }
-
-        // STEP 3 - Checking crash order conditions and bullish divergences for each tradingpair
+        // STEP 2 - Checking crash order conditions and bullish divergences for each tradingpair
         if (!botPauseActive) {
             txtLogger.writeToLogFile(`Checking ${this.tradingPairs.length} trading pair(s) for crash condition.`);
             txtLogger.writeToLogFile(`Checking ${this.orderConditions.length * this.tradingPairs.length} order condition(s) for bullish divergences.`);
         }
+
+        let oderConditionsNamesWhicHaveBeenSkipped: Set<string> = new Set()
+        const btcStatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, 'BTCUSDT');
+        const btc24HourChange: number = btcStatistics.priceChangePercent;
    
         for await (let pair of this.tradingPairs) {
             const tradingPair: string = `${pair}${this.basePair}`;
@@ -114,7 +91,12 @@ export default class Tradingbot {
             const mostRecentRsiValue = rsiCollection[rsiCollection.length - 1];
 
             for await (let order of this.orderConditions) {
-                const orderConditionName: string = `${pair}-${this.basePair}-${order.name}`; 
+                const orderConditionName: string = `${pair}-${this.basePair}-${order.name}`;          
+                if (order.doNotOrder.active === true && order.doNotOrder.btc24HourDeclineIsLowerThen >= btc24HourChange) {
+                    oderConditionsNamesWhicHaveBeenSkipped.add(order.name);
+                    break;
+                }
+
                 if (this.triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
                     txtLogger.writeToLogFile(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order #####`);
                     await this.buyLimitOrderLogic(
@@ -169,7 +151,7 @@ export default class Tradingbot {
                         txtLogger.writeToLogFile(`Details:`);
                         txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4))
 
-                        // STEP 4. 
+                        // STEP 3. 
                         //      OPTION I - A crash condition was detected , continue to the ordering logic method.
                         const ordercondition = config.production.largeCrashOrder.order as ConfigOrderConditionOrder;
                         await this.buyLimitOrderLogic(
@@ -185,7 +167,7 @@ export default class Tradingbot {
                         if (mostRecentRsiValue < this.doNotOrderWhenRSIValueIsBelow) {
                             txtLogger.writeToLogFile(`Because the RSI is lower than minimum configured the program will not place an limit buy order`);
                         } else {
-                            // STEP 4. 
+                            // STEP 3. 
                             //      OPTION II - A bullish divergence was found, continue to the ordering logic method.
                             await this.buyLimitOrderLogic(
                                 order.order,
@@ -198,7 +180,12 @@ export default class Tradingbot {
                     // This makes the program, for the time being way simpler! In the future we can let it continue.
                     return;
                 }
-            }
+            }   
+        }
+
+        if (oderConditionsNamesWhicHaveBeenSkipped.size > 0) {
+            txtLogger.writeToLogFile(`Total amount of order conditions which have been skipped this itteration is: ${oderConditionsNamesWhicHaveBeenSkipped.size}`);
+            txtLogger.writeToLogFile(`REASON: Last 24 hour BTC has dropped or risen ${btc24HourChange}% which is lower than configured inside the config.json`);
         }
 
         botPauseActive ?
@@ -289,6 +276,16 @@ export default class Tradingbot {
         const orderPrice: number = orderPriceAndAmount.price;
         const orderAmount: number = orderPriceAndAmount.amount;
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
+
+        if (totalUsdtAmount >= currentFreeUSDTAmount) {
+            txtLogger.writeToLogFile(`Buy ordering logic is cancelled because:`);
+            txtLogger.writeToLogFile(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount} and ${totalUsdtAmount}.`);
+            txtLogger.writeToLogFile(`Binace will reject the order because of this therefore, return this order`);
+            txtLogger.writeToLogFile(`It is higly recommended to change the 'maxPercentageOfBalance' inside the config.json based on this information.`);
+            txtLogger.writeToLogFile(`**** NOTE: limitation is on our side, we must fix it later on. Right now it is recommended to add max 90%`);
+            // TODO: testmike, dit is een tijdelijke fix/work around. Later fixen, eigenlijk een limitatie in de methode: calcOrderAmountAndPrice
+            return;
+        }
 
         txtLogger.writeToLogFile(`Based on the order book the following order limit buy order will be (very likely) filled immediately:`);
         txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}. Total USDT value of the order is equal to: ${totalUsdtAmount}`);
