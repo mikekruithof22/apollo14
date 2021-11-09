@@ -5,7 +5,7 @@ import ExportService from './services/exportService';
 import { LightWeightCandle } from './models/candle';
 import calculate from './helpers/calculate';
 import config from '../config';
-import fetch from '../node_modules/node-fetch/lib/index.js';
+import fetch from 'node-fetch';
 import rsiHelper from './helpers/rsi';
 
 export default class Test {

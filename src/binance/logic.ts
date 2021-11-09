@@ -1,5 +1,5 @@
 import { AmountAndPrice, BidObject } from "../models/logic";
-import { OrderBookRow, SymbolLotSizeFilter, SymbolPriceFilter } from "../../node_modules/binance/lib/index";
+import { OrderBookRow, SymbolLotSizeFilter, SymbolPriceFilter } from "binance";
 
 export default class Logic {
 

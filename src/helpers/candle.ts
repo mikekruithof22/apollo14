@@ -1,7 +1,7 @@
 import { Candle, LightWeightCandle } from '../models/candle';
 
 import dateHelper from './date';
-import fetch from '../../node_modules/node-fetch/lib/index.js';
+import fetch from 'node-fetch';
 
 export default class CandleHelper {
     public retrieveCandles = (url) => {
@@ -37,7 +37,7 @@ export default class CandleHelper {
         return result;
     }
 
-    public generateSmallObjectsFromData = (data): LightWeightCandle[] =>
+    public generateSmallObjectsFromData = (data): LightWeightCandle[] => 
         data.map(element => {
             return {
                 openTime: dateHelper.formatLongDate(new Date(element[0])),
@@ -48,6 +48,4 @@ export default class CandleHelper {
                 closeTime: dateHelper.formatLongDate(new Date(element[6])),
             } as LightWeightCandle
         });
-
 }
-

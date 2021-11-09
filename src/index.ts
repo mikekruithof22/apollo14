@@ -1,6 +1,6 @@
 import * as schedule from "node-schedule";
 
-import { WebsocketClient, WsKey } from './../node_modules/binance/lib/websocket-client';
+import { WebsocketClient, WsKey } from 'binance';
 import { WsResponse, WsUserDataEvents } from "binance";
 
 import CronHelper from './helpers/cronHelper';

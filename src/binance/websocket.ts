@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-import { WebsocketClient, WsKey } from '../../node_modules/binance/lib/websocket-client';
+import { WebsocketClient, WsKey } from 'binance';
 
 import WebSocket from 'isomorphic-ws';
 import txtLogger from '../helpers/txt-logger';
