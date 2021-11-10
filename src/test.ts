@@ -95,6 +95,8 @@ export default class Test {
     }
 
     public async getTop100BinanceCoins() {
+        console.log(`Retrieving top 100 coins from Binance by trading volume, one moment please...`);
+
         const result = await fetch('https://api.coingecko.com/api/v3/exchanges/binance')
             .then(res => { return res.json() })
             .then(data => {
@@ -106,8 +108,8 @@ export default class Test {
             console.log(`   ${tickers[i].base} ${tickers[i].target}`);
         }
 
-        console.log('### NOTE: in case you want to generate Excel files make sure to change the following value inside the config.json')
-        console.log('test.retrieveTop100CoinsInsteadOftest = true')
+        console.log('### NOTE: in case you want to generate Excel files make sure to change the following value inside the config.json');
+        console.log('test.retrieveTop100CoinsInsteadOftest = true');  
     }
 }
 

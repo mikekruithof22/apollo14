@@ -1,4 +1,4 @@
-export class BidObject {
+export class AskObject {
     price: number;
     amount: number;
 }

@@ -1,4 +1,4 @@
-import { AmountAndPrice, BidObject } from "../models/logic";
+import { AmountAndPrice, AskObject } from "../models/logic";
 import { OrderBookRow, SymbolLotSizeFilter, SymbolPriceFilter } from "binance";
 
 export default class Logic {
@@ -16,7 +16,7 @@ export default class Logic {
     }
 
     public static calcOrderAmountAndPrice = (
-        bids: BidObject[],
+        aks: AskObject[],
         amountToSpend: number,
         stepSize: number
     ): AmountAndPrice => {
@@ -24,13 +24,13 @@ export default class Logic {
         let price: number = 0;
         let tmpAmount: number = 0;
 
-        for (var i = 0; i < bids.length; i++) {
+        for (var i = 0; i < aks.length; i++) {
             let breakOutOfLoop: boolean = false;
             for (var j = 0; j <= i; j++) {
-                amount = amount + bids[j].amount;
-                tmpAmount = amount * bids[i].price;
+                amount = amount + aks[j].amount;
+                tmpAmount = amount * aks[i].price;
                 if (tmpAmount >= amountToSpend) {
-                    price = bids[i].price;
+                    price = aks[i].price;
                     breakOutOfLoop = true;
                     break;
                 }
@@ -99,10 +99,10 @@ export default class Logic {
        return Number((stopLossPrice * 0.99).toFixed(tickSize));
     }
 
-    public static bidsToObject = (bids: OrderBookRow[]): BidObject[] => {
-        let result: BidObject[] = [];
-        bids.forEach(element => {
-            let obj: BidObject = {
+    public static asksToObject = (asks: OrderBookRow[]): AskObject[] => {
+        let result: AskObject[] = [];
+        asks.forEach(element => {
+            let obj: AskObject = {
                 price: parseFloat(element[0] as string),
                 amount: parseFloat(element[1] as string),
             }
