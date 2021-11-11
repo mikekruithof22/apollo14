@@ -23,7 +23,7 @@ export default class ConfigSanityCheck {
 
         if (config.production.minimumUSDTorderAmount < 25) {
             message += `
-            WARNING: It is highly recommended to make sure that the:
+            NOTICE: It is highly recommended to make sure that the:
                 'minimumUSDTorderAmount' 
             is higher than 25 USDT.
             REASON: The lower the order amount the higer the chance that an price - like OCO stoploss or stoplimit price will be lower than 10. Binance will reject orders with values lower than 10.\n`;
@@ -31,7 +31,7 @@ export default class ConfigSanityCheck {
 
         if (config.test.devTest.triggerBuyOrderLogic === true) {
             message += `
-            WARNING: You are executing a development test because:
+            NOTICE: You are executing a development test because:
                 'triggerBuyOrderLogic' 
            is equal to true.\n`;
         }
@@ -46,14 +46,14 @@ export default class ConfigSanityCheck {
 
         if (orderCondtionNamesToWarnAbout.length > 0) {
             message += `
-            WARNING: It is highly recommended to make sure that the:
+            NOTICE: It is highly recommended to make sure that the:
                 'maxUsdtBuyAmount' 
              is higher than 25 USDT for the following OrderConditions:
                 ${orderCondtionNamesToWarnAbout}
             REASON: The lower the order amount the higer the chance that an price - like OCO stoploss or stoplimit price will be lower than 10. Binance will reject orders with values lower than 10.\n`;
         }
 
-        if (message.includes('ERROR') || message.includes('WARNING')) {
+        if (message.includes('ERROR') || message.includes('NOTICE')) {
             message += `
             The program closed after the config.json file was checked.
             Don't forget to buy the REAL Bitcoin! 
