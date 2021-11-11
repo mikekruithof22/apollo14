@@ -44,7 +44,7 @@ export default class ConfigSanityCheck {
             condition.order.maxUsdtBuyAmount
         });
 
-        if (orderCondtionNamesToWarnAbout.length > 0) {
+        if (orderCondtionNamesToWarnAbout && orderCondtionNamesToWarnAbout.length > 0) {
             message += `
             NOTICE: It is highly recommended to make sure that the:
                 'maxUsdtBuyAmount' 
