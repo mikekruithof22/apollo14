@@ -25,20 +25,20 @@ export default class Tradingbot {
     private order: Order;
     // config
     private brokerApiUrl: string = config.brokerApiUrl;
-    private candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
+    private candleInterval: string = config.generic.timeIntervals[0]; // For the time being only one interval, therefore [0].
     private numberOfCandlesToRetrieve: number = config.production.numberOfCandlesToRetrieve + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
     private maxAllowedActiveOrdersForTraidingPair: number = config.production.maxAllowedActiveOrdersForTraidingPair;
     private orderConditions: ConfigOrderCondition[] = config.orderConditions;
     private minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
     private tradingPairs: string[] = config.tradingPairs;
-    private basePair: string = config.basePair;
-    private rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
-    private limitBuyOrderExpirationTime: number = config.genericOrder.limitBuyOrderExpirationTimeInSeconds * 1000; // multiply with 1000 for milliseconds 
-    private doNotOrderWhenRSIValueIsBelow: number = config.genericOrder.doNotOrder.RSIValueIsBelow;
+    private baseCoin: string = config.baseCoin;
+    private rsiCalculationLength: number = config.generic.order.rsiCalculationLength;
+    private limitBuyOrderExpirationTime: number = config.generic.order.limitBuyOrderExpirationTimeInSeconds * 1000; // multiply with 1000 for milliseconds 
+    private doNotOrderWhenRSIValueIsBelow: number = config.generic.order.doNotOrder.RSIValueIsBelow;
     private pauseConditionActiveboolean = config.production.pauseCondition.active;
 
     // devTest config
-    private triggerBuyOrderLogic: boolean = config.production.devTest.triggerBuyOrderLogic;
+    private triggerBuyOrderLogic: boolean = config.test.devTest.triggerBuyOrderLogic;
 
     constructor() {
         this.binanceService = new BinanceService();
@@ -82,7 +82,7 @@ export default class Tradingbot {
         const btc24HourChange: number = btcStatistics.priceChangePercent;
 
         for await (let pair of this.tradingPairs) {
-            const tradingPair: string = `${pair}${this.basePair}`;
+            const tradingPair: string = `${pair}${this.baseCoin}`;
             const url: string = `${this.brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${this.candleInterval}&limit=${this.numberOfCandlesToRetrieve}`;
             const candleList = await this.candleHelper.retrieveCandles(url);
             const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
@@ -91,7 +91,7 @@ export default class Tradingbot {
             const mostRecentRsiValue = rsiCollection[rsiCollection.length - 1];
 
             for await (let order of this.orderConditions) {
-                const orderConditionName: string = `${pair}-${this.basePair}-${order.name}`;
+                const orderConditionName: string = `${pair}-${this.baseCoin}-${order.name}`;
                 if (order.doNotOrder.active === true && order.doNotOrder.btc24HourDeclineIsLowerThen >= btc24HourChange) {
                     oderConditionsNamesWhicHaveBeenSkipped.add(order.name);
                     break;
@@ -185,7 +185,7 @@ export default class Tradingbot {
 
         if (oderConditionsNamesWhicHaveBeenSkipped.size > 0) {
             txtLogger.writeToLogFile(`Total amount of order conditions which have been skipped this itteration is: ${oderConditionsNamesWhicHaveBeenSkipped.size}`);
-            txtLogger.writeToLogFile(`REASON: Last 24 hour BTC has dropped or risen ${btc24HourChange}% which is lower than configured inside the config.json`, LogLevel.WARN);
+            txtLogger.writeToLogFile(`REASON: Last 24 hour BTC has dropped or risen ${btc24HourChange}% which is lower than configured inside the config.json`);
         }
 
         botPauseActive ?
@@ -279,7 +279,7 @@ export default class Tradingbot {
 
         if ((totalUsdtAmount >= currentFreeUSDTAmount) || (totalUsdtAmount < 11) || (orderAmount < minimumOrderQuantity)) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because of one of the following options:`);
-            txtLogger.writeToLogFile(`OPTION A - The total usdt amount of the order - ${totalUsdtAmount} - the minimum allowed order quanity: 10 dollar`);
+            txtLogger.writeToLogFile(`OPTION A - The total usdt amount of the order - ${totalUsdtAmount} - is lower than the minimum allowed order quanity: 10 dollar`);
             txtLogger.writeToLogFile(`OPTION B - Order quantity is lower than - ${orderAmount} - the minimum allowed order quanity: ${minimumOrderQuantity}`);
             txtLogger.writeToLogFile(`OPTION C - Free USDT balance amount is equal to: ${currentFreeUSDTAmount} and ${totalUsdtAmount}.`);
             txtLogger.writeToLogFile(`Binace will reject the order because of this therefore, return this order`);
@@ -489,8 +489,8 @@ export default class Tradingbot {
             txtLogger.writeToLogFile(`usdt amount for profit price: ${usdtAmountForProfitPrice}, usdt amount for stop limit price: ${usdtAmountForStopLimitPrice}, usdt amount for stop limit price: ${usdtAmountForStopLossPrice}`)
             txtLogger.writeToLogFile(`Minimum oco order quanitity amount: ${minimumOcoOrderQuantity}, actual amount: ${ocoOrderAmount}`);
 
-            txtLogger.writeToLogFile(`****** Creating an oco order with values lower than 10 USDT price will be rejected by Binance ****** `);
-            txtLogger.writeToLogFile(`It is higly recommended to change the takeLossPercentage inside the config.json based on this information.`, LogLevel.WARN);
+            txtLogger.writeToLogFile(`****** Creating an oco order with values lower than 10 USDT price will be rejected by Binance ******`);
+            txtLogger.writeToLogFile(`It is higly recommended to change the 'takeLossPercentage' inside the config.json based on this information.`, LogLevel.WARN);
             return;
         }
 

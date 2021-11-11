@@ -25,7 +25,7 @@ try {
     websocketClient.subscribeSpotUserDataStream();
 
     // Retreive some config values
-    const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
+    const runTestInsteadOfProgram: boolean = config.test.devTest.triggerBuyOrderLogic;
     const amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
 
     websocketClient.on('open', async (data: {
@@ -40,6 +40,7 @@ try {
             txtLogger.writeToLogFile(`The the method checkConfigData() detected wrong config values`);
             return;
         }
+
         txtLogger.writeToLogFile(`*** config.json is equal to:  ${JSON.stringify(config)}`);
         txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}`);
 
