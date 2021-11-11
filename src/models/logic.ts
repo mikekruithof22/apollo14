@@ -1,8 +1,3 @@
-export class AskObject {
-    price: number;
-    amount: number;
-}
-
 export class AmountAndPrice {
     price: number;
     amount: number;

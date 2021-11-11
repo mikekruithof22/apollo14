@@ -265,10 +265,9 @@ export default class Tradingbot {
         }
 
         // STEP IV. Retrieve bid prices.
-        const currentOrderBook = await this.binanceService.getOrderBook(this.binanceRest, tradingPair);
-        const currentOrderBookAsks = exchangeLogic.asksToObject((currentOrderBook as OrderBookResponse).asks);
+        const currentOrderBook = await this.binanceService.getOrderBook(this.binanceRest, tradingPair) as OrderBookResponse;
         const orderPriceAndAmount: AmountAndPrice = exchangeLogic.calcOrderAmountAndPrice(
-            currentOrderBookAsks,
+            currentOrderBook.asks,
             amountOffUSDTToSpend,
             stepSize
         );
@@ -277,15 +276,13 @@ export default class Tradingbot {
         const orderAmount: number = orderPriceAndAmount.amount;
         const totalUsdtAmount: number = orderPriceAndAmount.totalUsdtAmount;
 
-        if ((totalUsdtAmount >= currentFreeUSDTAmount) || (totalUsdtAmount < 11) || (orderAmount < minimumOrderQuantity)) {
+        if ((totalUsdtAmount < 11) || (orderAmount < minimumOrderQuantity)) {
             txtLogger.writeToLogFile(`Buy ordering logic is cancelled because of one of the following options:`);
-            txtLogger.writeToLogFile(`OPTION A - The total usdt amount of the order - ${totalUsdtAmount} - is lower than the minimum allowed order quanity: 10 dollar`);
-            txtLogger.writeToLogFile(`OPTION B - Order quantity is lower than - ${orderAmount} - the minimum allowed order quanity: ${minimumOrderQuantity}`);
-            txtLogger.writeToLogFile(`OPTION C - Free USDT balance amount is equal to: ${currentFreeUSDTAmount} and ${totalUsdtAmount}.`);
+            txtLogger.writeToLogFile(`OPTION A - Free USDT balance amount is equal to: ${currentFreeUSDTAmount}. Cannot create an order which will result in the following costs: ${totalUsdtAmount}`);
+            txtLogger.writeToLogFile(`OPTION B - The total usdt amount ${totalUsdtAmount} is lower than the minimum allowed: 11 dollar`);
             txtLogger.writeToLogFile(`Binace will reject the order because of this therefore, return this order`);
             txtLogger.writeToLogFile(`It is higly recommended to change the 'maxPercentageOfBalance' inside the config.json based on this information.`, LogLevel.WARN);
             txtLogger.writeToLogFile(`**** NOTE: limitation is on our side, we must fix it later on. Right now it is recommended to add max 90%`);
-            // TODO: testmike, optie C is een tijdelijke fix/work around. Later fixen, eigenlijk een limitatie in de methode: calcOrderAmountAndPrice
             return;
         }
 

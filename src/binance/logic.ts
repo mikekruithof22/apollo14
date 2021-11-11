@@ -1,4 +1,4 @@
-import { AmountAndPrice, AskObject } from "../models/logic";
+import { AmountAndPrice } from "../models/logic";
 import { OrderBookRow, SymbolLotSizeFilter, SymbolPriceFilter } from "binance";
 
 export default class Logic {
@@ -16,35 +16,26 @@ export default class Logic {
     }
 
     public static calcOrderAmountAndPrice = (
-        aks: AskObject[],
+        orderBookRows: OrderBookRow[],
         amountToSpend: number,
         stepSize: number
     ): AmountAndPrice => {
         let amount: number = 0;
         let price: number = 0;
-        let tmpAmount: number = 0;
 
-        for (var i = 0; i < aks.length; i++) {
-            let breakOutOfLoop: boolean = false;
-            for (var j = 0; j <= i; j++) {
-                amount = amount + aks[j].amount;
-                tmpAmount = amount * aks[i].price;
-                if (tmpAmount >= amountToSpend) {
-                    price = aks[i].price;
-                    breakOutOfLoop = true;
-                    break;
-                }
-            }
-            if (breakOutOfLoop) {
+        for (var i = 0; i < orderBookRows.length; i++) {
+            let askPrice: number = parseFloat(orderBookRows[i][0] as string);
+            let askAmount: number = parseFloat(orderBookRows[i][1] as string);
+            amount = amount + askAmount;
+            let cost = amount * askPrice;
+            if (cost >= amountToSpend) {
+                price = askPrice;
                 break;
             }
         }
-        let finalAmount: number = 0;
-        if (stepSize === 1) {
-            finalAmount = Math.floor(Number(amountToSpend / price));
-        } else {
-            finalAmount = Number((amountToSpend / price).toFixed(stepSize));
-        }
+
+        let finalAmount = amountToSpend / price;
+        finalAmount = Logic.roundDown(finalAmount, stepSize);
 
         return {
             price: price,
@@ -96,20 +87,7 @@ export default class Logic {
     }
 
     public static callStopLimitPrice = (stopLossPrice: number, tickSize: number): number => {
-       return Number((stopLossPrice * 0.99).toFixed(tickSize));
-    }
-
-    public static asksToObject = (asks: OrderBookRow[]): AskObject[] => {
-        let result: AskObject[] = [];
-        asks.forEach(element => {
-            let obj: AskObject = {
-                price: parseFloat(element[0] as string),
-                amount: parseFloat(element[1] as string),
-            }
-            result.push(obj);
-            obj = undefined;
-        });
-        return result;
+        return Number((stopLossPrice * 0.99).toFixed(tickSize));
     }
 
     public static roundOrderAmount(value: number, decimals: number): number {
@@ -118,6 +96,11 @@ export default class Logic {
         } else {
             return roundOrderAmountPrivate(value, decimals)
         }
+    }
+
+    private static roundDown(value: number, decimals: number) {
+        decimals = decimals || 0;
+        return (Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals));
     }
 }
 

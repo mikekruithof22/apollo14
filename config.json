@@ -71,8 +71,7 @@
         "ICP",
         "AXS",
         "FTT",
-        "FIL",
-        "DAI",
+        "FIL",        
         "TRX",
         "ETC",
         "THETA",
@@ -296,7 +295,7 @@
             "order": {
                 "takeProfitPercentage": 0.85,
                 "takeLossPercentage": 25,
-                "maxUsdtBuyAmount": 25,
+                "maxUsdtBuyAmount": 500,
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
