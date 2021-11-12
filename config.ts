@@ -76,8 +76,14 @@ export default {
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "active": false,
-                "btc24HourDeclineIsLowerThen": 2
+                "btc24HourDecline": {
+                    "active": false,
+                    "isLowerThen": 1
+                },
+                "coin24HourDecline": {
+                    "active": false,
+                    "isLowerThen": -7.5
+                }
             }
         }
     ]

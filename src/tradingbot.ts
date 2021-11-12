@@ -93,7 +93,7 @@ export default class Tradingbot {
 
             for await (let order of this.orderConditions) {
                 const orderConditionName: string = `${pair}-${this.baseCoin}-${order.name}`;
-                if (order.doNotOrder.active === true && order.doNotOrder.btc24HourDeclineIsLowerThen >= btc24HourChange) {
+                if (order.doNotOrder.btc24HourDecline.active === true && order.doNotOrder.btc24HourDecline.isLowerThen >= btc24HourChange) {
                     oderConditionsNamesWhicHaveBeenSkipped.add(order.name);
                     break;
                 }
@@ -128,6 +128,17 @@ export default class Tradingbot {
                 if (orderConditionResult !== undefined) {
                     txtLogger.writeToLogFile(`***** Bullish divergence or crash condition detected for ${tradingPair} *****`);
                     txtLogger.writeToLogFile(`Checking if there are already orders open for this tradingPair. In case there are to many open orders a limit buy order will NOT be placed.`);
+
+                    if (order.doNotOrder.coin24HourDecline.active === true) {
+                        const cointatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, tradingPair);
+                        const coin24HourChange: number = cointatistics.priceChangePercent;
+
+                        if (order.doNotOrder.btc24HourDecline.isLowerThen >= coin24HourChange) {
+                            txtLogger.writeToLogFile(`Limit buy order will NOT be created because:`);
+                            txtLogger.writeToLogFile(`REASON: Last 24 hour ${tradingPair} has dropped or risen ${coin24HourChange}% which is lower than ${order.doNotOrder.btc24HourDecline.isLowerThen} which is configured inside the config.json`);
+                            break;
+                        }
+                    }
 
                     const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
                     if (currentOpenOrders.length > 0) {
