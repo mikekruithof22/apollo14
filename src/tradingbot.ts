@@ -9,6 +9,7 @@ import CalculateHelper from './helpers/calculate';
 import CandleHelper from './helpers/candle';
 import { LightWeightCandle } from './models/candle';
 import { LogLevel } from './models/log-level';
+import Mailer from './helpers/mailer';
 import Order from './binance/order';
 import { OrderConditionResult } from './models/calculate';
 import calculate from './helpers/calculate';
@@ -301,7 +302,6 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`Based on the order book the following order limit buy order will be (very likely) filled immediately:`);
         txtLogger.writeToLogFile(`Price: ${orderPrice}. Amount: ${orderAmount}. Total USDT value of the order is equal to: ${totalUsdtAmount}`);
 
-
         // STEP V. Create the buy order and add it to the activeBuyOrders array.
         const buyOrder = await this.order.createOrder(this.binanceRest, OrderTypeEnum.LIMITBUY, tradingPair, orderAmount, orderPrice) as OrderResponseFull;
         if (buyOrder === undefined) {
@@ -546,6 +546,7 @@ export default class Tradingbot {
             }
             txtLogger.writeToLogFile(`***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
             txtLogger.writeToLogFile(`Program is closed by 'process.exit`);
+            Mailer.Send('OOC order failed => bot switched off', `***SAFETY MEASURE***: When oco fails the bot will be switched off!`);
 
             process.exit();
             return;
