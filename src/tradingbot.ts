@@ -30,6 +30,7 @@ export default class Tradingbot {
     private maxAllowedActiveOrdersForTraidingPair: number = config.production.maxAllowedActiveOrdersForTraidingPair;
     private orderConditions: ConfigOrderCondition[] = config.orderConditions;
     private minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
+    private largeCrashOrderActive: boolean = config.production.largeCrashOrder.active;
     private tradingPairs: string[] = config.tradingPairs;
     private baseCoin: string = config.baseCoin;
     private rsiCalculationLength: number = config.generic.order.rsiCalculationLength;
@@ -146,7 +147,7 @@ export default class Tradingbot {
                         }
                     }
 
-                    if (orderConditionResult.isCrashOrder) {
+                    if (orderConditionResult.isCrashOrder && this.largeCrashOrderActive === true) {
                         txtLogger.writeToLogFile(`*** Condition type is equal to CRASH`);
                         txtLogger.writeToLogFile(`Details:`);
                         txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4))

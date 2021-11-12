@@ -27,6 +27,7 @@ try {
     // Retreive some config values
     const runTestInsteadOfProgram: boolean = config.test.devTest.triggerBuyOrderLogic;
     const amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
+    const largeCrashOrderActive: boolean = config.production.largeCrashOrder.active;
 
     websocketClient.on('open', async (data: {
         wsKey: WsKey;
@@ -40,7 +41,7 @@ try {
             txtLogger.writeToLogFile(`The the method checkConfigData() detected wrong config values`);
             return;
         }
-
+        
         txtLogger.writeToLogFile(`*** config.json is equal to:  ${JSON.stringify(config)}`);
         txtLogger.writeToLogFile(`Websocket event - connection opened open:', ${data.wsKey}`);
 
@@ -52,7 +53,7 @@ try {
                     txtLogger.writeToLogFile(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles`);
                     candlesToWait = amountOfCandlesToPauseBotFor;
                 }
-                if (candlesToWait > 0) {
+                if (candlesToWait > 0 && largeCrashOrderActive === true) {
                     txtLogger.writeToLogFile(`Pause active for ${candlesToWait} amount of candles.`);
                     txtLogger.writeToLogFile(`Only checking crash order condition per trading pair during pause.`);
                     await tradingBot.runProgram(true);
@@ -64,8 +65,6 @@ try {
         } else {
             await tradingBot.runProgram(false);
         }
-
-        // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
     });
 
     // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.

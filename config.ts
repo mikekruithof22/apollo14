@@ -32,6 +32,7 @@ export default {
         "maxAllowedActiveOrdersForTraidingPair": 2,
         "minimumUSDTorderAmount": 50,
         "largeCrashOrder": {
+            "active": true,
             "maxAmountOfCandlesToLookBack": 15,
             "minimumDeclingPercentage": -20,
             "order": {
