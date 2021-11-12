@@ -131,8 +131,8 @@ export default class Tradingbot {
                     txtLogger.writeToLogFile(`Checking if there are already orders open for this tradingPair. In case there are to many open orders a limit buy order will NOT be placed.`);
 
                     if (order.doNotOrder.coin24HourDecline.active === true) {
-                        const cointatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, tradingPair);
-                        const coin24HourChange: number = cointatistics.priceChangePercent;
+                        const coinStatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, tradingPair);
+                        const coin24HourChange: number = coinStatistics.priceChangePercent;
 
                         if (order.doNotOrder.btc24HourDecline.isLowerThen >= coin24HourChange) {
                             txtLogger.writeToLogFile(`Limit buy order will NOT be created because:`);
