@@ -356,6 +356,122 @@
                     "isLowerThen": -7.5
                 }
             }
+        },
+        {
+            "name": "testmike-a-3-15-1#25",
+            "rsi": {
+                "minimumRisingPercentage": 15.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -3.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 32
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 25,
+                "maxUsdtBuyAmount": 25,
+                "maxPercentageOfBalance": 50
+            },
+            "doNotOrder": {
+                "btc24HourDecline": {
+                    "active": true,
+                    "isLowerThen": 0.5
+                },
+                "coin24HourDecline": {
+                    "active": true,
+                    "isLowerThen": -0.5
+                }
+            }
+        },
+        {
+            "name": "testmike-b-2-25-1#25",
+            "rsi": {
+                "minimumRisingPercentage": 25.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.00
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 32
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 25,
+                "maxUsdtBuyAmount": 25,
+                "maxPercentageOfBalance": 50
+            },
+            "doNotOrder": {
+                "btc24HourDecline": {
+                    "active": true,
+                    "isLowerThen": 0.5
+                },
+                "coin24HourDecline": {
+                    "active": true,
+                    "isLowerThen": -0.5
+                }
+            }
+        },
+        {
+            "name": "testmike-c-2.5-20-1#25",
+            "rsi": {
+                "minimumRisingPercentage": 20.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -2.50
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 32
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 25,
+                "maxUsdtBuyAmount": 25,
+                "maxPercentageOfBalance": 50
+            },
+            "doNotOrder": {
+                "btc24HourDecline": {
+                    "active": true,
+                    "isLowerThen": 0.5
+                },
+                "coin24HourDecline": {
+                    "active": true,
+                    "isLowerThen": -0.5
+                }
+            }
+        },
+        {
+            "name": "testmike-d-2+1.5-40-1#25",
+            "rsi": {
+                "minimumRisingPercentage": 40.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -1.50
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 32
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 25,
+                "maxUsdtBuyAmount": 25,
+                "maxPercentageOfBalance": 50
+            },
+            "doNotOrder": {
+                "btc24HourDecline": {
+                    "active": true,
+                    "isLowerThen": 0.5
+                },
+                "coin24HourDecline": {
+                    "active": true,
+                    "isLowerThen": -0.5
+                }
+            }
         }
     ]
 }
