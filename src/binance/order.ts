@@ -49,7 +49,7 @@ export default class Order {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`createOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`createOrder() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
         /*
@@ -101,7 +101,7 @@ export default class Order {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`createOcoSellOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`createOcoSellOrder() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
     }
 

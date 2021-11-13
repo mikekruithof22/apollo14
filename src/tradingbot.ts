@@ -73,15 +73,21 @@ export default class Tradingbot {
             return;
         }
 
-        // STEP 2 - Checking crash order conditions and bullish divergences for each tradingpair
+        // STEP 2 - Checking crash order conditions and bullish divergences for each tradingpair & retrieving the 24 hour BTCUSDT statistics
         if (!botPauseActive) {
             txtLogger.writeToLogFile(`Checking ${this.tradingPairs.length} trading pair(s) for crash condition.`);
             txtLogger.writeToLogFile(`Checking ${this.orderConditions.length * this.tradingPairs.length} order condition(s) for bullish divergences.`);
         }
 
-        let oderConditionsNamesWhicHaveBeenSkipped: Set<string> = new Set()
+        let oderConditionsNamesWhicHaveBeenSkipped: Set<string> = new Set();
         const btcStatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, 'BTCUSDT');
-        const btc24HourChange: number = btcStatistics.priceChangePercent;
+        let btc24HourChange: number;
+        if (btcStatistics === undefined) {
+            txtLogger.writeToLogFile(`Something went wrong while retrieving the 24 hour BTCUSDT statistics. Therefore the  24 hour change cannot be determined.`, LogLevel.WARN);
+            txtLogger.writeToLogFile(`CONSEQUENCE: the checks with regard to 24 hour statistics cannot be executed.`);   
+        } else {
+            btc24HourChange = btcStatistics.priceChangePercent;
+        }
 
         for await (let pair of this.tradingPairs) {
             const tradingPair: string = `${pair}${this.baseCoin}`;
@@ -94,7 +100,10 @@ export default class Tradingbot {
 
             for await (let order of this.orderConditions) {
                 const orderConditionName: string = `${pair}-${this.baseCoin}-${order.name}`;
-                if (order.doNotOrder.btc24HourDecline.active === true && order.doNotOrder.btc24HourDecline.isLowerThen >= btc24HourChange) {
+                if (btc24HourChange !== undefined &&
+                    order.doNotOrder.btc24HourDecline.active === true && 
+                    order.doNotOrder.btc24HourDecline.isLowerThen >= btc24HourChange
+                ) {
                     oderConditionsNamesWhicHaveBeenSkipped.add(order.name);
                     break;
                 }
@@ -132,9 +141,15 @@ export default class Tradingbot {
 
                     if (order.doNotOrder.coin24HourDecline.active === true) {
                         const coinStatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, tradingPair);
-                        const coin24HourChange: number = coinStatistics.priceChangePercent;
+                        let coin24HourChange: number; 
+                        if (coinStatistics === undefined) {
+                            txtLogger.writeToLogFile(`Something went wrong while retrieving the 24 hour ${tradingPair} statistics. Therefore the 24 hour change cannot be determined.`, LogLevel.WARN);
+                            txtLogger.writeToLogFile(`CONSEQUENCE: the checks with regard to 24 hour statistics cannot be executed.`,);   
+                        } else {
+                            coin24HourChange = coinStatistics.priceChangePercent;
+                        }
 
-                        if (order.doNotOrder.btc24HourDecline.isLowerThen >= coin24HourChange) {
+                        if (coin24HourChange !== undefined && order.doNotOrder.btc24HourDecline.isLowerThen >= coin24HourChange) {
                             txtLogger.writeToLogFile(`Limit buy order will NOT be created because:`);
                             txtLogger.writeToLogFile(`REASON: Last 24 hour ${tradingPair} has dropped or risen ${coin24HourChange}% which is lower than ${order.doNotOrder.btc24HourDecline.isLowerThen} which is configured inside the config.json`);
                             break;

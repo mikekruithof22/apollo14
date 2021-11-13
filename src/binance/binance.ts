@@ -51,7 +51,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(` getOrderBook() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`getOrderBook() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
         /*  Example response::
             {
@@ -81,7 +81,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(` retrieveAllOpenOrders() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`retrieveAllOpenOrders() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
     }
     /*
@@ -170,7 +170,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(`cancelOrder() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`cancelOrder() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
         /*
@@ -202,7 +202,7 @@ export default class BinanceService {
             .then(response => {
                 return response as ExchangeInfo;
             }).catch(err => {
-                txtLogger.writeToLogFile(`getExchangeInfo() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`getExchangeInfo() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
         /*
@@ -221,7 +221,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(` getSpotUserDataListenKey() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`getSpotUserDataListenKey() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
     }
 
@@ -235,7 +235,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.writeToLogFile(` get24hrChangeStatististics() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.writeToLogFile(`get24hrChangeStatististics() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
         /* 

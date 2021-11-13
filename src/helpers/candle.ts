@@ -1,7 +1,9 @@
 import { Candle, LightWeightCandle } from '../models/candle';
 
+import { LogLevel } from '../models/log-level';
 import dateHelper from './date';
 import fetch from 'node-fetch';
+import txtLogger from './txt-logger';
 
 export default class CandleHelper {
     public retrieveCandles = (url) => {
@@ -9,7 +11,9 @@ export default class CandleHelper {
             .then(res => { return res.json() })
             .then(data => {
                 return data;
-            }).catch(error => console.log(error));
+            }).catch(err => {
+                txtLogger.writeToLogFile(`retrieveCandles() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
+            });
     }
 
     public generateClosePricesList = (data): number[] => data.map(d => parseFloat(d[4]));
