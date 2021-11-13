@@ -1,4 +1,6 @@
 import { LogLevel } from "../models/log-level";
+import Mailer from "./mailer";
+import config from '../../config';
 
 const fs = require('fs');
 
@@ -10,6 +12,16 @@ export default class TextLogger {
             message = `\n\n ${logLevel} - ${date.toLocaleDateString()} ${date.toLocaleTimeString()} - ${message}`;
         } else {
             message = `\n ${logLevel} - ${date.toLocaleTimeString()} - ${message}`;
+        }
+
+        if ((logLevel === LogLevel.ERROR || logLevel === LogLevel.FATAL) &&
+            config.test.devTest.triggerBuyOrderLogic === false) {
+            const emailMessage: string = `The last log line includes a line with an error (LogLevel.ERROR). The error message is as follows: 
+                                        
+            ${message}
+                                        
+            NOTE: This does not automaticly mean that the bot is switched off. It might still continue to run.`;
+            Mailer.Send('Last log line contains an error', emailMessage);
         }
 
         console.log(message);
