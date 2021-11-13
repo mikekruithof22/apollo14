@@ -1,5 +1,6 @@
-import { AmountAndPrice } from "../models/logic";
 import { OrderBookRow, SymbolLotSizeFilter, SymbolPriceFilter } from "binance";
+
+import { AmountAndPrice } from "../models/logic";
 
 export default class Logic {
 
@@ -36,6 +37,11 @@ export default class Logic {
 
         let finalAmount = amountToSpend / price;
         finalAmount = Logic.roundDown(finalAmount, stepSize);
+        if (stepSize === 1) { 
+            // Because stepsize is 1, you need to round down. For example: 24.86453 will become
+            // 24. If we don't do this Binane will reject. ==> Some crypto remainder will be left.
+            finalAmount = Math.floor(finalAmount);
+        }
 
         return {
             price: price,
