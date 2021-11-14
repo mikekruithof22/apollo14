@@ -36,7 +36,7 @@ export default class Logic {
         }
 
         let finalAmount = amountToSpend / price;
-        finalAmount = this.roundOrderAmount(finalAmount, stepSize);
+        finalAmount = Logic.roundOrderAmount(finalAmount, stepSize);
 
         return {
             price: price,
@@ -45,9 +45,9 @@ export default class Logic {
         }
     }
 
-    public static roundOrderAmount(value: number, decimals: number): number {
+    public static roundOrderAmount(amount: number, decimals: number): number {
         decimals = decimals || 0;
-        return (Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals));
+        return (Math.floor(amount * Math.pow(10, decimals)) / Math.pow(10, decimals));
     }
 
     public static determineStepSize = (lotSize: SymbolLotSizeFilter): number => {
