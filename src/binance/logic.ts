@@ -36,12 +36,7 @@ export default class Logic {
         }
 
         let finalAmount = amountToSpend / price;
-        finalAmount = Logic.roundDown(finalAmount, stepSize);
-        if (stepSize === 1) { 
-            // Because stepsize is 1, you need to round down. For example: 24.86453 will become
-            // 24. If we don't do this Binane will reject. ==> Some crypto remainder will be left.
-            finalAmount = Math.floor(finalAmount);
-        }
+        finalAmount = this.roundOrderAmount(finalAmount, stepSize);
 
         return {
             price: price,
@@ -50,7 +45,13 @@ export default class Logic {
         }
     }
 
+    public static roundOrderAmount(value: number, decimals: number): number {
+        decimals = decimals || 0;
+        return (Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals));
+    }
+
     public static determineStepSize = (lotSize: SymbolLotSizeFilter): number => {
+        // Lotsize.stepSize: '0.1000000' ==> means two behind the comma. Therefore stepSize will be: 1.
         // Lotsize.stepSize: '0.01000000' ==> means two behind the comma. Therefore stepSize will be: 2.
         let stepSize: string = lotSize.stepSize as string;
         const stepSizeNumber: number = parseFloat(stepSize);
@@ -58,14 +59,10 @@ export default class Logic {
         if (stepSize.startsWith('0.')) {
             return stepSize.split(".")[1].length || 2;
         } else {
+            // Lotsize.stepSize: '1.000000' ==> means two behind the comma. Therefore stepSize will be: 0.
             // Which means, it start with something like: '1.0'.
-            return parseFloat(stepSize);
+            return 0;
         }
-    }
-
-    public static determineMinQty = (lotSize: SymbolLotSizeFilter): number => {
-        const minQty: string = lotSize.minQty as string;
-        return parseFloat(minQty);
     }
 
     public static determineTickSize = (priceFilter: SymbolPriceFilter): number => {
@@ -96,26 +93,9 @@ export default class Logic {
         return Number((stopLossPrice * 0.99).toFixed(tickSize));
     }
 
-    public static roundOrderAmount(value: number, decimals: number): number {
-        if (decimals === 1) {
-            return value = Math.floor(value);
-        } else {
-            return roundOrderAmountPrivate(value, decimals)
-        }
-    }
-
-    private static roundDown(value: number, decimals: number) {
-        decimals = decimals || 0;
-        return (Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals));
+    public static determineMinQty = (lotSize: SymbolLotSizeFilter): number => {
+        const minQty: string = lotSize.minQty as string;
+        return parseFloat(minQty);
     }
 }
 
-function roundOrderAmountPrivate(value: number, decimals: number): number {
-    const parts = value.toString().split('.')
-
-    if (parts.length === 2) {
-        return Number([parts[0], parts[1].slice(0, decimals)].join('.'))
-    } else {
-        return Number(parts[0]);
-    }
-}
