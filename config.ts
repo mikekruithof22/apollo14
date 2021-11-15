@@ -50,7 +50,7 @@ export default {
             "amountOfCandlesToPauseBotFor": 32
         }
     },
-   
+
     "tradingPairs": [
         "ETH",
         "LUNA",
@@ -76,13 +76,13 @@ export default {
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         }

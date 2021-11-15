@@ -19,13 +19,13 @@ export class ConfigOrderCondition {
     }
     order: ConfigOrderConditionOrder;
     doNotOrder: {
-        btc24HourDecline: {
+        btc24HourChange: {
             active: boolean;
-            isLowerThen: number;
+            percentage: number;
         },
-        coin24HourDecline: {
+        coin24HourChange: {
             active: boolean;
-            isLowerThen : number;
+            percentage: number;
         }
     }
 }

@@ -30,7 +30,7 @@
     "production": {
         "numberOfCandlesToRetrieve": 50,
         "maxAllowedActiveOrdersForTraidingPair": 2,
-        "minimumUSDTorderAmount": 50,
+        "minimumUSDTorderAmount": 25,
         "largeCrashOrder": {
             "active": true,
             "maxAmountOfCandlesToLookBack": 15,
@@ -50,7 +50,7 @@
             "amountOfCandlesToPauseBotFor": 32
         }
     },
-    "tradingPairs": [
+    "tradingPairs": [        
         "ETH",
         "LUNA",
         "ADA",
@@ -93,9 +93,9 @@
         "WAVES",
         "LRC",
         "MANA",
-        "SAND"
+        "SAND"        
     ],
-    "orderConditions": [
+    "orderConditions": [        
         {
             "name": "4-30-1#50",
             "rsi": {
@@ -115,13 +115,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -144,13 +144,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -173,13 +173,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -202,13 +202,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -231,13 +231,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -260,13 +260,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -289,13 +289,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -318,13 +318,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -347,13 +347,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": false,
-                    "isLowerThen": 1
+                    "percentage": 1
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": false,
-                    "isLowerThen": -7.5
+                    "percentage": -7.5
                 }
             }
         },
@@ -376,13 +376,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": true,
-                    "isLowerThen": 0.5
+                    "percentage": 0.5
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": true,
-                    "isLowerThen": -0.5
+                    "percentage": -0.5
                 }
             }
         },
@@ -405,13 +405,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": true,
-                    "isLowerThen": 0.5
+                    "percentage": 0.5
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": true,
-                    "isLowerThen": -0.5
+                    "percentage": -0.5
                 }
             }
         },
@@ -434,13 +434,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": true,
-                    "isLowerThen": 0.5
+                    "percentage": 0.5
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": true,
-                    "isLowerThen": -0.5
+                    "percentage": -0.5
                 }
             }
         },
@@ -463,13 +463,13 @@
                 "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "btc24HourDecline": {
+                "btc24HourChange": {
                     "active": true,
-                    "isLowerThen": 0.5
+                    "percentage": 0.5
                 },
-                "coin24HourDecline": {
+                "coin24HourChange": {
                     "active": true,
-                    "isLowerThen": -0.5
+                    "percentage": -0.5
                 }
             }
         }

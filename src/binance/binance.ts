@@ -82,6 +82,7 @@ export default class BinanceService {
                 return response;
             }).catch(err => {
                 txtLogger.writeToLogFile(`retrieveAllOpenOrders() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
+                return [];
             });
     }
     /*

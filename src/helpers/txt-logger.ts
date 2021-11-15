@@ -38,7 +38,7 @@ export default class TextLogger {
         }
 
         const date: Date = new Date();
-        const fileName: string = `log - ${date.toLocaleDateString()}`;
+        const fileName: string = `log-${date.getDate()}-${date.getMonth()}-${date.getFullYear()}`;
         const filePath: string = `./${directoryName}/${fileName}.txt`;
         return filePath;
     }

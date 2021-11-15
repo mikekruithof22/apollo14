@@ -36,7 +36,7 @@ export default class Logic {
         }
 
         let finalAmount = amountToSpend / price;
-        finalAmount = Logic.roundOrderAmount(finalAmount, stepSize);
+        finalAmount = Logic.roundDown(finalAmount, stepSize);
 
         return {
             price: price,
@@ -45,52 +45,38 @@ export default class Logic {
         }
     }
 
-    public static roundOrderAmount(amount: number, decimals: number): number {
+    public static roundDown(amount: number, decimals: number): number {
         decimals = decimals || 0;
         return (Math.floor(amount * Math.pow(10, decimals)) / Math.pow(10, decimals));
     }
 
-    public static determineStepSize = (lotSize: SymbolLotSizeFilter): number => {
-        // Lotsize.stepSize: '0.1000000' ==> means two behind the comma. Therefore stepSize will be: 1.
-        // Lotsize.stepSize: '0.01000000' ==> means two behind the comma. Therefore stepSize will be: 2.
-        let stepSize: string = lotSize.stepSize as string;
-        const stepSizeNumber: number = parseFloat(stepSize);
-        stepSize = stepSizeNumber.toString(); // removes the extra zero's behind the first number
-        if (stepSize.startsWith('0.')) {
-            return stepSize.split(".")[1].length || 2;
-        } else {
-            // Lotsize.stepSize: '1.000000' ==> means two behind the comma. Therefore stepSize will be: 0.
-            // Which means, it start with something like: '1.0'.
-            return 0;
-        }
+    public static round(amount: number, decimals: number): number {
+        decimals = decimals || 0;
+        return (Math.round(amount * Math.pow(10, decimals)) / Math.pow(10, decimals));
     }
 
-    public static determineTickSize = (priceFilter: SymbolPriceFilter): number => {
-        let tickSize: string = priceFilter.tickSize as string;
-        const tickSizeNumber: number = parseFloat(tickSize);
-        tickSize = tickSizeNumber.toString(); // removes the extra zero's behind the first number
-        if (tickSize.startsWith('0.')) {
-            return tickSize.split(".")[1].length || 2;
-        } else {
-            // Which means, it start with something like: '1.0'.
-            return parseFloat(tickSize);
-        }
+    public static getdecimals = (size: string): number => {
+        // size: '1.0000000' ==> means zero decimals. Therefore decimals will be: 0.        
+        // size: '0.1000000' ==> means one decimal. Therefore decimals will be: 1.
+        // size: '0.01000000' ==> means two decimals. Therefore decimals will be: 2.
+        return Math.max(size.indexOf('1') - 1, 0);
     }
 
     public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, tickSize: number): number => {
         const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
         let takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
-        return Number(takeProfitPrice.toFixed(tickSize));
+        return Logic.round(takeProfitPrice, tickSize);
     }
 
     public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, tickSize: number): number => {
         const takeLossPercentageInPercentage = takeLossPercentage / 100;
         const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
-        return Number(takeLossPrice.toFixed(tickSize));
+        return Logic.round(takeLossPrice, tickSize);
     }
 
-    public static callStopLimitPrice = (stopLossPrice: number, tickSize: number): number => {
-        return Number((stopLossPrice * 0.99).toFixed(tickSize));
+    public static calcStopLimitPrice = (stopLossPrice: number, tickSize: number): number => {
+        return Logic.round(stopLossPrice * 0.99, tickSize);
+        //TODO: is the 0.99 necessary? Please explain why? must be different from stoploss?
     }
 
     public static determineMinQty = (lotSize: SymbolLotSizeFilter): number => {
