@@ -4,7 +4,7 @@ import txtLogger from './txt-logger';
 export default class ConfigSanityCheck {
 
     public static checkConfigData = () => {
-        let message: string = `\n\n ----- Roger Ver wants to say someting about your config.json: -----`;
+        let message: string = `\n\n ----- Roger Ver wants to say someting about your config.json: -----.\n`;
         let closeProgram: boolean = false;
 
         if (config.production.maxAllowedActiveOrdersForTraidingPair > 5) {
@@ -53,16 +53,25 @@ export default class ConfigSanityCheck {
             REASON: The lower the order amount the higer the chance that an price - like OCO stoploss or stoplimit price will be lower than 10. Binance will reject orders with values lower than 10.\n`;
         }
 
-        if (message.includes('ERROR') || message.includes('NOTICE')) {
-            message += `
-            The program closed after the config.json file was checked.
-            Don't forget to buy the REAL Bitcoin! 
-            ------------------------------------------------ \n\n `;
-            txtLogger.writeToLogFile(message);
+        if (config.production.largeCrashOrder.active === true && config.generic.emailRecipient.includes('mikekruithof')) {
+            message += 
+            `ERROR: Mike wants to make sure that: 
+                'largeCrashOrder.active'
+            is equal to false. Therfore, quit the program just for him.\n`;
         }
 
+
         if (message.includes('ERROR')) {
+            message += `
+            **********************************************************
+            The program closed after the config.json file was checked!
+            Don't forget to buy the REAL Bitcoin! 
+            **********************************************************.\n`;
             closeProgram = true;
+        }
+
+        if (message.includes('ERROR') || message.includes('NOTICE')) {
+            txtLogger.writeToLogFile(message);
         }
 
         return closeProgram;

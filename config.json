@@ -32,7 +32,7 @@
         "maxAllowedActiveOrdersForTraidingPair": 2,
         "minimumUSDTorderAmount": 25,
         "largeCrashOrder": {
-            "active": true,
+            "active": false,
             "maxAmountOfCandlesToLookBack": 15,
             "minimumDeclingPercentage": -20,
             "order": {
@@ -81,7 +81,6 @@
         "HBAR",
         "EGLD",
         "XMR",
-        "CAKE",
         "EOS",
         "GRT",
         "AAVE",
@@ -90,14 +89,11 @@
         "QNT",
         "KSM",
         "NEO",
-        "WAVES",
-        "LRC",
-        "MANA",
-        "SAND"        
+        "MANA"      
     ],
     "orderConditions": [        
         {
-            "name": "4-30-1#50",
+            "name": "4-30-1#25",
             "rsi": {
                 "minimumRisingPercentage": 30.00
             },
@@ -117,16 +113,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "4-20-1#50",
+            "name": "4-20-1#25",
             "rsi": {
                 "minimumRisingPercentage": 20.00
             },
@@ -146,16 +142,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "3.5-40-1#50",
+            "name": "3.5-40-1#25",
             "rsi": {
                 "minimumRisingPercentage": 40.00
             },
@@ -175,16 +171,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "3.5-30-1#50",
+            "name": "3.5-30-1#25",
             "rsi": {
                 "minimumRisingPercentage": 30.00
             },
@@ -204,16 +200,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "3-35-1#50",
+            "name": "3-35-1#25",
             "rsi": {
                 "minimumRisingPercentage": 35.00
             },
@@ -233,16 +229,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "2.5-50-1#50",
+            "name": "2.5-50-1#25",
             "rsi": {
                 "minimumRisingPercentage": 50.00
             },
@@ -262,16 +258,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "2.5-40-1#50",
+            "name": "2.5-40-1#25",
             "rsi": {
                 "minimumRisingPercentage": 45.00
             },
@@ -291,16 +287,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "2-60-1#50",
+            "name": "2-60-1#25",
             "rsi": {
                 "minimumRisingPercentage": 60.00
             },
@@ -320,16 +316,16 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
         {
-            "name": "2-50-1#55",
+            "name": "2-55-1#25",
             "rsi": {
                 "minimumRisingPercentage": 55.00
             },
@@ -349,11 +345,11 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": false,
-                    "percentage": 1
+                    "percentage": -2
                 },
                 "coin24HourChange": {
                     "active": false,
-                    "percentage": -7.5
+                    "percentage": -4
                 }
             }
         },
@@ -378,11 +374,11 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": true,
-                    "percentage": 0.5
+                    "percentage": 1
                 },
                 "coin24HourChange": {
                     "active": true,
-                    "percentage": -0.5
+                    "percentage": 0.5
                 }
             }
         },
@@ -407,11 +403,11 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": true,
-                    "percentage": 0.5
+                    "percentage": 1
                 },
                 "coin24HourChange": {
                     "active": true,
-                    "percentage": -0.5
+                    "percentage": 0.5
                 }
             }
         },
@@ -436,11 +432,11 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": true,
-                    "percentage": 0.5
+                    "percentage": 1
                 },
                 "coin24HourChange": {
                     "active": true,
-                    "percentage": -0.5
+                    "percentage": 0.5
                 }
             }
         },
@@ -465,13 +461,14 @@
             "doNotOrder": {
                 "btc24HourChange": {
                     "active": true,
-                    "percentage": 0.5
+                    "percentage": 1
                 },
                 "coin24HourChange": {
                     "active": true,
-                    "percentage": -0.5
+                    "percentage": 0.5
                 }
             }
         }
     ]
 }
+
