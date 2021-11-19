@@ -468,6 +468,35 @@
                     "percentage": 0.5
                 }
             }
+        },
+        {
+            "name": "testmike-e-2+1-5-1#25",
+            "rsi": {
+                "minimumRisingPercentage": 5.00
+            },
+            "candle": {
+                "minimumDeclingPercentage": -1
+            },
+            "calcBullishDivergence": {
+                "numberOfMinimumIntervals": 5,
+                "numberOfMaximumIntervals": 32
+            },
+            "order": {
+                "takeProfitPercentage": 1,
+                "takeLossPercentage": 25,
+                "maxUsdtBuyAmount": 25,
+                "maxPercentageOfBalance": 50
+            },
+            "doNotOrder": {
+                "btc24HourChange": {
+                    "active": true,
+                    "percentage": 2
+                },
+                "coin24HourChange": {
+                    "active": true,
+                    "percentage": 3.5
+                }
+            }
         }
     ]
 }

@@ -33,10 +33,12 @@ try {
     const incorrectConfigData: boolean = configChecker.checkConfigData();
     if (incorrectConfigData) {
         txtLogger.writeToLogFile(`The program quit because:`);
-        txtLogger.writeToLogFile(`The the method checkConfigData() detected wrong config values`);
+        txtLogger.writeToLogFile(`The the method checkConfigData() detected incorrect config values.`);
+        txtLogger.writeToLogFile(`Program is closed by 'process.exit.`);
         process.exit();
     }
-    txtLogger.writeToLogFile(`*** config.json is equal to:  ${JSON.stringify(config)}`);
+    txtLogger.writeToLogFile(`***** config.json is equal to:`);
+    txtLogger.writeToLogFile(`${JSON.stringify(config)}`);
 
     websocketClient.on('open', async (data: {
         wsKey: WsKey;
@@ -49,7 +51,8 @@ try {
                 txtLogger.writeToLogFile(`---------- Program started ---------- `);
                 const crashDetected: boolean = await tradingBot.crashDetected();
                 if (crashDetected) {
-                    txtLogger.writeToLogFile(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles`);
+                    txtLogger.writeToLogFile(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles. Config details:`);
+                    txtLogger.writeToLogFile(`${JSON.stringify(config.production.pauseCondition, null, 4)}`);                    
                     candlesToWait = amountOfCandlesToPauseBotFor;
                 }
                 if (candlesToWait > 0) {
@@ -57,6 +60,8 @@ try {
                     if (largeCrashOrderActive) {
                         txtLogger.writeToLogFile(`Only checking crash order condition per trading pair during pause.`);
                         await tradingBot.runProgram(true);
+                    } else {
+                        txtLogger.writeToLogFile(`NOT going to check for crash orders, because this is functionally is turned off (config.production.largeCrashOrder.active = false).`);
                     }
                     candlesToWait--;
                 } else {
