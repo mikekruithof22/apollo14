@@ -122,7 +122,7 @@ export default class Tradingbot {
 
                 if (orderConditionResult !== undefined) {
                     const detectedContent: string = orderConditionResult.isCrashOrder ? 'Crash condition' : 'Bullish divergence';
-                    txtLogger.writeToLogFile(`***** ${detectedContent} detected for ${tradingPair}. *****`);
+                    txtLogger.writeToLogFile(`***** ${detectedContent} detected for ${tradingPair} - Order condition name: ${orderConditionName} *****`);
 
                     txtLogger.writeToLogFile(`Checking if there are already orders open for this tradingPair. In case there are to many open orders a limit buy order will NOT be placed.`);
 
