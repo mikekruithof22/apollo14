@@ -143,13 +143,13 @@ export default class Tradingbot {
                         txtLogger.writeToLogFile(`The amount of open orders is equal to: 0.`);
                     }
 
-                    txtLogger.writeToLogFile(`Candle details:`);
-                    txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4));
-
                     if (orderConditionResult.isCrashOrder) {
                         if (this.largeCrashOrderActive) {
                             // STEP 3. 
                             //      OPTION I - A crash condition was detected , continue to the buyLimitOrderLogic() method.
+                            txtLogger.writeToLogFile(`Candle information associated with the crash condition:`);
+                            txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4));
+
                             const ordercondition = config.production.largeCrashOrder.order as ConfigOrderConditionOrder;
                             await this.buyLimitOrderLogic(
                                 ordercondition,
@@ -160,6 +160,9 @@ export default class Tradingbot {
                             txtLogger.writeToLogFile(`Crash order will NOT be placed becasue it is turned off (config.production.largeCrashOrder.active === false).`);
                         }
                     } else {
+                        txtLogger.writeToLogFile(`Candle details formatted on one line. In case it passes all 24 hour conditions it will be logged again on multiple lines.`);
+                        txtLogger.writeToLogFile(JSON.stringify(orderConditionResult));
+
                         txtLogger.writeToLogFile(`The most recent rsi value is: ${orderConditionResult.endiRsiValue}. The minimum configured for this condition is: ${order.rsi.minimumRisingPercentage}.`);
                         if (mostRecentRsiValue < this.doNotOrderWhenRSIValueIsBelow) {
                             txtLogger.writeToLogFile(`Because the RSI is lower than minimum configured the program will not place an limit buy order.`);
@@ -174,6 +177,10 @@ export default class Tradingbot {
                             const skip = await this.skipBasedOn24HourChangeStatistics(tradingPair, order.doNotOrder.coin24HourChange.percentage);
                             if (skip) { break; }
                         }
+
+                        txtLogger.writeToLogFile(`Candle details formatted on multiple lines:`);
+                        txtLogger.writeToLogFile(JSON.stringify(orderConditionResult, null, 4));
+
                         // STEP 3. 
                         //      OPTION II - A bullish divergence was found, continue to the buyLimitOrderLogic() method.
                         await this.buyLimitOrderLogic(
