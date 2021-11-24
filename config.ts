@@ -12,7 +12,8 @@ export default {
         "timeIntervals": [
             "15m"
         ],
-        "emailRecipient": "<your-email-here>"
+        "emailRecipient": "<your-email-here>",
+        "emailWhenBuyOrderCreated": false
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,

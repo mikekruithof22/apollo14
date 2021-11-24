@@ -305,6 +305,10 @@ export default class Tradingbot {
         txtLogger.writeToLogFile(`Buy order created. Details:`);
         txtLogger.writeToLogFile(`${JSON.stringify(buyOrder, null, 4)}`);
 
+        if (config.generic.emailWhenBuyOrderCreated === true) {
+            Mailer.Send(`Limit buy order created ${buyOrder.clientOrderId}`, `Limit buy order details: ${JSON.stringify(buyOrder, null, 4)}`);
+        }
+
         if (buyOrder.status === OrderStatusEnum.PARTIALLY_FILLED ||
             buyOrder.status === OrderStatusEnum.NEW ||
             buyOrder.status === OrderStatusEnum.FILLED
