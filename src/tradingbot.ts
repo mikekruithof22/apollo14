@@ -19,6 +19,7 @@ import rsiHelper from './helpers/rsi';
 import txtLogger from './helpers/txt-logger';
 
 export default class Tradingbot {
+    private emailListForOrdersWhichWhereTooLongOpen: string[] = [];
     private activeBuyOrders: ActiveBuyOrder[] = [];
     private binanceRest: MainClient;
     private binanceService: BinanceService;
@@ -55,6 +56,9 @@ export default class Tradingbot {
     }
 
     public async runProgram(botPauseActive: boolean) {
+
+        // STEP 0 - check if orders are longer open than configured, if so email.
+        await this.emailWhenOrderIsToLongOpenLogic();
 
         // STEP 1 If USDT is to low, you don't need to run the program, therefore quit.
         const balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
@@ -126,7 +130,7 @@ export default class Tradingbot {
 
                     txtLogger.writeToLogFile(`Checking if there are already orders open for this tradingPair. In case there are to many open orders a limit buy order will NOT be placed.`);
 
-                    const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
+                    const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrdersForTraidingPair(this.binanceRest, tradingPair);
                     if (currentOpenOrders && currentOpenOrders.length > 0) {
                         const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
                         txtLogger.writeToLogFile(`The amount of open orders is equal to: ${activeOrdersForTraidingPair.length}.`);
@@ -387,7 +391,7 @@ export default class Tradingbot {
 
     public async cancelLimitBuyOrderCheck(tradingPair: string, clientOrderId: string, orderName: string) {
         // STEP 1 - check if the limit buy order is not filled yet (it may be partially filled)
-        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
+        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrdersForTraidingPair(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
             const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId);
             txtLogger.writeToLogFile(`Checking if it is necessary to cancel the limit buy order with the following details:`);
@@ -421,7 +425,7 @@ export default class Tradingbot {
 
         // STEP 1 - Check if there are more than 5 bot generated orders. If yes return, because Binance does not allow more than 5
         const tradingPair: string = data.symbol;
-        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest, tradingPair);
+        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrdersForTraidingPair(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
             const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
             txtLogger.writeToLogFile(`The amount of open orders for ${tradingPair} length is equal to: ${activeOrdersForTraidingPair.length}.`);
@@ -592,5 +596,41 @@ export default class Tradingbot {
             }
         }
         return orderingAllowed;
+    }
+
+    public async emailWhenOrderIsToLongOpenLogic(): Promise<void> {
+        const emailWhenOrdersIsOpenAfterCandleAmount: number = config.generic.emailWhenOrdersIsOpenAfterCandleAmount
+        txtLogger.writeToLogFile(`Checking if there are orders longer active than ${emailWhenOrdersIsOpenAfterCandleAmount}. If so you will receive an email notification.`);
+
+        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrders(this.binanceRest);
+
+        this.emailListForOrdersWhichWhereTooLongOpen
+        
+        if (currentOpenOrders && currentOpenOrders.length > 0) {
+
+            currentOpenOrders.forEach(order => {
+                const emailAlreadySendDuringPreviousRun: boolean = this.emailListForOrdersWhichWhereTooLongOpen.find(id => id === order.clientOrderId) !== undefined;
+                if (emailAlreadySendDuringPreviousRun === true) { return }
+
+                const orderDate: Date = new Date(order.time);
+                const currentDate = new Date();
+                const minutesToAdd = 15 * emailWhenOrdersIsOpenAfterCandleAmount; // Multiply by 15 because the time interval is 15 right now
+                const dateWhenLimitWasReached = new Date(orderDate.getTime() + minutesToAdd * 60000);
+
+                if (currentDate > dateWhenLimitWasReached) {
+                    Mailer.Send(`${order.clientOrderId} - ${order.type} order is open for too long`, `${order.type} order is open for too long. Details: ${JSON.stringify(order, null, 4)}`);
+                    txtLogger.writeToLogFile(`EMAIL was sent with the following content:`);
+                    txtLogger.writeToLogFile(`${order.clientOrderId} - ${order.type} order is open for too long. ${order.type} order is open for too long. Details: ${JSON.stringify(order)}`);
+                    this.emailListForOrdersWhichWhereTooLongOpen.push(order.clientOrderId);
+                }
+            });
+        }
+
+        if (currentOpenOrders && currentOpenOrders === []) {
+            // TODO: testmike, create a propper solution 
+            // "Smerige oplossing", in case there are no active orders at all we can reset 'emailListForOrdersWhichWhereTooLongOpen: string[]';
+            // possible you want to have a check here: if(data.eventType === 'listStatus' && data.listOrderStatus === 'ALL_DONE')
+            this.emailListForOrdersWhichWhereTooLongOpen = [];
+        }
     }
 }

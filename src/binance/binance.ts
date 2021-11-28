@@ -72,12 +72,23 @@ export default class BinanceService {
         */
     }
 
-    public retrieveAllOpenOrders = async (binanceRest: MainClient, symbol: string): Promise<any> => {
+    public retrieveAllOpenOrdersForTraidingPair = async (binanceRest: MainClient, symbol: string): Promise<any> => {
         const options: Partial<BasicSymbolParam> = {
             symbol: symbol
         }
         return binanceRest
             .getOpenOrders(options)
+            .then(response => {
+                return response;
+            }).catch(err => {
+                txtLogger.writeToLogFile(`retrieveAllOpenOrdersForTraidingPair() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
+                return [];
+            });
+    }
+
+    public retrieveAllOpenOrders = async (binanceRest: MainClient): Promise<any> => {
+        return binanceRest
+            .getOpenOrders()
             .then(response => {
                 return response;
             }).catch(err => {
@@ -105,7 +116,7 @@ export default class BinanceService {
           "side": "BUY",
           "stopPrice": "0.0",
           "icebergQty": "0.0",
-          "time": 1499827319559,
+          "time": 149982731955,
           "updateTime": 1499827319559,
           "isWorking": true,
           "origQuoteOrderQty": "0.000000"

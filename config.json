@@ -7,14 +7,15 @@
             "doNotOrder": {
                 "RSIValueIsBelow": 3
             },
-            "limitBuyOrderExpirationTimeInSeconds": 60        
+            "limitBuyOrderExpirationTimeInSeconds": 60
         },
         "timeIntervals": [
             "15m"
         ],
         "emailRecipient": "<your-email-here>",
         "emailWhenBuyOrderCreated": false,
-        "emailWhenCrashDetected": false
+        "emailWhenCrashDetected": false,
+        "emailWhenOrdersIsOpenAfterCandleAmount": 20  
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,
@@ -47,7 +48,7 @@
         "pauseCondition": {
             "active": true,
             "tradingPair": "BTCUSDT",
-            "maxAmountOfCandlesToLookBack": 13,
+            "maxAmountOfCandlesToLookBack": 40,
             "minimumDeclingPercentage": -4.5,
             "amountOfCandlesToPauseBotFor": 32
         }

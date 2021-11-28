@@ -14,7 +14,8 @@ export default {
         ],
         "emailRecipient": "<your-email-here>",
         "emailWhenBuyOrderCreated": false,
-        "emailWhenCrashDetected": false
+        "emailWhenCrashDetected": false,
+        "emailWhenOrdersIsOpenAfterCandleAmount": 20  
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,
