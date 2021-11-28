@@ -7,13 +7,14 @@
             "doNotOrder": {
                 "RSIValueIsBelow": 3
             },
-            "limitBuyOrderExpirationTimeInSeconds": 60
+            "limitBuyOrderExpirationTimeInSeconds": 60        
         },
         "timeIntervals": [
             "15m"
         ],
         "emailRecipient": "<your-email-here>",
-        "emailWhenBuyOrderCreated": false
+        "emailWhenBuyOrderCreated": false,
+        "emailWhenCrashDetected": false
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,

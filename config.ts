@@ -13,7 +13,8 @@ export default {
             "15m"
         ],
         "emailRecipient": "<your-email-here>",
-        "emailWhenBuyOrderCreated": false
+        "emailWhenBuyOrderCreated": false,
+        "emailWhenCrashDetected": false
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,

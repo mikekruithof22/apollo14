@@ -54,6 +54,10 @@ try {
                     txtLogger.writeToLogFile(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles. Config details:`);
                     txtLogger.writeToLogFile(`${JSON.stringify(config.production.pauseCondition, null, 4)}`);                    
                     candlesToWait = amountOfCandlesToPauseBotFor;
+
+                    if (config.generic.emailWhenCrashDetected === true) {
+                        Mailer.Send(`Crash detected ${new Date().toLocaleString()}`, `Crash detected on ${new Date().toLocaleString()}. Setting pause to ${amountOfCandlesToPauseBotFor} }`);
+                    }
                 }
                 if (candlesToWait > 0) {
                     txtLogger.writeToLogFile(`Pause active for ${candlesToWait} amount of candles.`);
