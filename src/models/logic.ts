@@ -1,8 +1,3 @@
-export class BidObject {
-    price: number;
-    amount: number;
-}
-
 export class AmountAndPrice {
     price: number;
     amount: number;
@@ -24,8 +19,14 @@ export class ConfigOrderCondition {
     }
     order: ConfigOrderConditionOrder;
     doNotOrder: {
-        active: boolean;
-        btc24HourDeclineIsLowerThen: number;
+        btc24HourChange: {
+            active: boolean;
+            percentage: number;
+        },
+        coin24HourChange: {
+            active: boolean;
+            percentage: number;
+        }
     }
 }
 

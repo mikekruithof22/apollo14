@@ -82,7 +82,8 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         this.websocketClient.subscribeSpotUserDataStream();
 
         // Retreive some config values
-        const runTestInsteadOfProgram: boolean = config.production.devTest.triggerBuyOrderLogic;
+        // todo aram the triggerBuyLogic used to be retrieved from config.production... double check if this is a problem
+        const runTestInsteadOfProgram: boolean = config.test.devTest.triggerBuyOrderLogic;
 
         this.websocketClient.on('open', async (data: {
             wsKey: WsKey;

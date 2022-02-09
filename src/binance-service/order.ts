@@ -48,7 +48,7 @@ export default class Order {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.log(`createOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`createOrder() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
         /*
@@ -100,7 +100,7 @@ export default class Order {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.log(`createOcoSellOrder() failed ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`createOcoSellOrder() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
     }
 
@@ -306,8 +306,5 @@ export default class Order {
         }
         return options;
     }
-    // ERROR:   response: '{"code":-1013,"msg":"Stop loss orders are not supported for this symbol."}'
-    // TODO: dit werkend krijgen of is dit een package bug?
-
 }
 

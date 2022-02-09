@@ -26,7 +26,7 @@ export default class Test {
         if (incorrectConfigData) {
             return;
         }
-        console.log(`Checking for bulish divergences, one moment please...`);
+        console.log(`Checking for bullish divergences, one moment please...`);
 
         // STEP 2 - Prepare configuration data 
         const brokerApiUrl: string = config.brokerApiUrl;
@@ -35,22 +35,22 @@ export default class Test {
         const generateExcelFile: boolean = config.test.generateExcelFile;
 
         const orderConditions: any[] = config.orderConditions;
-        const candleInterval: string = config.timeIntervals[0]; // For the time being only one interval, therefore [0].
+        const candleInterval: string = config.generic.timeIntervals[0]; // For the time being only one interval, therefore [0].
         const tradingPairs: string[] = config.tradingPairs;
-        const basePair: string = config.basePair;
-        const rsiCalculationLength: number = config.genericOrder.rsiCalculationLength;
-        const doNotOrderWhenRSIValueIsBelow: number = config.genericOrder.doNotOrder.RSIValueIsBelow;
+        const baseCoin: string = config.baseCoin;
+        const rsiCalculationLength: number = config.generic.order.rsiCalculationLength;
+        const doNotOrderWhenRSIValueIsBelow: number = config.generic.order.doNotOrder.RSIValueIsBelow;
 
         // STEP 3 - Retrieve RSI & calculate bullish divergence foreach trading pair
         for await (let tradingPair of tradingPairs) {
-            const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}${basePair}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
+            const url: string = `${brokerApiUrl}api/v3/klines?symbol=${tradingPair}${baseCoin}&interval=${candleInterval}&limit=${numberOfCandlesToRetrieve}`;
             const candleList = await this.candleHelper.retrieveCandles(url);
             const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
             const closePriceList: number[] = this.candleHelper.generateClosePricesList(candleList);
             const rsiCollection = await rsiHelper.calculateRsi(closePriceList, rsiCalculationLength);
 
             for await (let order of orderConditions) {
-                const orderConditionName: string = `${tradingPair}-${basePair}-${order.name}`;
+                const orderConditionName: string = `${tradingPair}-${baseCoin}-${order.name}`;
                 const rsiMinimumRisingPercentage: number = order.rsi.minimumRisingPercentage;
                 const candleMinimumDeclingPercentage: number = order.candle.minimumDeclingPercentage;
                 const startCount: number = order.calcBullishDivergence.numberOfMinimumIntervals;
@@ -95,6 +95,8 @@ export default class Test {
     }
 
     public async getTop100BinanceCoins() {
+        console.log(`Retrieving top 100 coins from Binance by trading volume, one moment please...`);
+
         const result = await fetch('https://api.coingecko.com/api/v3/exchanges/binance')
             .then(res => { return res.json() })
             .then(data => {
@@ -106,8 +108,8 @@ export default class Test {
             console.log(`   ${tickers[i].base} ${tickers[i].target}`);
         }
 
-        console.log('### NOTE: in case you want to generate Excel files make sure to change the following value inside the config.json')
-        console.log('test.retrieveTop100CoinsInsteadOftest = true')
+        console.log('### NOTE: in case you want to generate Excel files make sure to change the following value inside the config.json');
+        console.log('test.retrieveTop100CoinsInsteadOftest = true');  
     }
 }
 

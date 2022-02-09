@@ -41,3 +41,8 @@ app.get( "/test", ( req, res ) => {
 app.listen( port, () => {
     console.log( `server started at http://localhost:${ port }` );
 });
+
+// todo aram after merge some from main was excluded, after refactoring make sure those things are included here again:
+// - run in test mode
+// - config sanity checker
+// - bot pauser functionality

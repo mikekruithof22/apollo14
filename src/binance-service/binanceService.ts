@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-import { AllCoinsInformationResponse, BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams, MainClient } from 'binance';
+import { AllCoinsInformationResponse, BasicSymbolParam, CancelOrderParams, ExchangeInfo, ExchangeInfoParams, OrderBookParams, OrderBookResponse, MainClient } from 'binance';
 
 import BinanceError from '../models/binance-error';
 import { LogLevel } from '../models/log-level';
@@ -41,7 +41,7 @@ export default class BinanceService {
         }
     }
 
-    public getOrderBook = async (binanceRest: MainClient, symbol: string): Promise<any> => {
+    public getOrderBook = async (binanceRest: MainClient, symbol: string): Promise<OrderBookResponse | void> => {
         const options: OrderBookParams = {
             symbol: symbol
         }
@@ -50,7 +50,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.log(` getOrderBook() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`getOrderBook() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
         /*  Example response::
             {
@@ -71,7 +71,7 @@ export default class BinanceService {
         */
     }
 
-    public retrieveAllOpenOrders = async (binanceRest: MainClient, symbol: string): Promise<any> => {
+    public retrieveAllOpenOrdersForTraidingPair = async (binanceRest: MainClient, symbol: string): Promise<any> => {
         const options: Partial<BasicSymbolParam> = {
             symbol: symbol
         }
@@ -80,37 +80,49 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.log(` retrieveAllOpenOrders() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`retrieveAllOpenOrdersForTraidingPair() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
+                return [];
             });
     }
-        /*
-      Example response:
-    
-      // IF FILLED, otherwise an emtpy array: []!
-     [
-          {
-              "symbol": "LTCBTC",
-              "orderId": 1,
-              "orderListId": -1, //Unless OCO, the value will always be -1
-              "clientOrderId": "myOrder1",
-              "price": "0.1",
-              "origQty": "1.0",
-              "executedQty": "0.0",
-              "cummulativeQuoteQty": "0.0",
-              "status": "NEW",
-              "timeInForce": "GTC",
-              "type": "LIMIT",
-              "side": "BUY",
-              "stopPrice": "0.0",
-              "icebergQty": "0.0",
-              "time": 1499827319559,
-              "updateTime": 1499827319559,
-              "isWorking": true,
-              "origQuoteOrderQty": "0.000000"
-          }
-      ]
-    */
-   
+
+    public retrieveAllOpenOrders = async (binanceRest: MainClient): Promise<any> => {
+        return binanceRest
+            .getOpenOrders()
+            .then(response => {
+                return response;
+            }).catch(err => {
+                txtLogger.log(`retrieveAllOpenOrders() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
+                return [];
+            });
+    }
+    /*
+  Example response:
+ 
+  // IF FILLED, otherwise an emtpy array: []!
+ [
+      {
+          "symbol": "LTCBTC",
+          "orderId": 1,
+          "orderListId": -1, //Unless OCO, the value will always be -1
+          "clientOrderId": "myOrder1",
+          "price": "0.1",
+          "origQty": "1.0",
+          "executedQty": "0.0",
+          "cummulativeQuoteQty": "0.0",
+          "status": "NEW",
+          "timeInForce": "GTC",
+          "type": "LIMIT",
+          "side": "BUY",
+          "stopPrice": "0.0",
+          "icebergQty": "0.0",
+          "time": 149982731955,
+          "updateTime": 1499827319559,
+          "isWorking": true,
+          "origQuoteOrderQty": "0.000000"
+      }
+  ]
+*/
+
 
     public retrieveAllTradingPairs = async (binanceRest: MainClient): Promise<ExchangeInfo | BinanceError> => {
         return binanceRest
@@ -169,7 +181,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.log(`cancelOrder() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`cancelOrder() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
         /*
@@ -201,7 +213,7 @@ export default class BinanceService {
             .then(response => {
                 return response as ExchangeInfo;
             }).catch(err => {
-                txtLogger.log(`getExchangeInfo() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`getExchangeInfo() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
         /*
@@ -220,7 +232,7 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.log(` getSpotUserDataListenKey() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`getSpotUserDataListenKey() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
     }
 
@@ -234,34 +246,34 @@ export default class BinanceService {
             .then(response => {
                 return response;
             }).catch(err => {
-                txtLogger.log(` get24hrChangeStatististics() ${JSON.stringify(err)}`, LogLevel.ERROR);
+                txtLogger.log(`get24hrChangeStatististics() failed: ${JSON.stringify(err, null, 4)}`, LogLevel.ERROR);
             });
 
-            /* 
-            {
-            symbol: 'BTCUSDT',
-            priceChange: '3684.44000000',
-            priceChangePercent: '5.951',
-            weightedAvgPrice: '64743.14646356',
-            prevClosePrice: '61911.00000000',
-            lastPrice: '65595.44000000',
-            lastQty: '0.00953000',
-            bidPrice: '65595.43000000',
-            bidQty: '0.09531000',
-            askPrice: '65595.44000000',
-            askQty: '1.92980000',
-            openPrice: '61911.00000000',
-            highPrice: '66423.00000000',
-            lowPrice: '61700.77000000',
-            volume: '47843.74933000',
-            quoteVolume: '3097554870.23826050',
-            openTime: 1636298221662,
-            closeTime: 1636384621662,
-            firstId: 1133222857,
-            lastId: 1135202650,
-            count: 1979794
-            }
-            */
+        /* 
+        {
+        symbol: 'BTCUSDT',
+        priceChange: '3684.44000000',
+        priceChangePercent: '5.951',
+        weightedAvgPrice: '64743.14646356',
+        prevClosePrice: '61911.00000000',
+        lastPrice: '65595.44000000',
+        lastQty: '0.00953000',
+        bidPrice: '65595.43000000',
+        bidQty: '0.09531000',
+        askPrice: '65595.44000000',
+        askQty: '1.92980000',
+        openPrice: '61911.00000000',
+        highPrice: '66423.00000000',
+        lowPrice: '61700.77000000',
+        volume: '47843.74933000',
+        quoteVolume: '3097554870.23826050',
+        openTime: 1636298221662,
+        closeTime: 1636384621662,
+        firstId: 1133222857,
+        lastId: 1135202650,
+        count: 1979794
+        }
+        */
     }
 
     private getAccountBalances = async (binanceRest: MainClient): Promise<AllCoinsInformationResponse[] | BinanceError> => {

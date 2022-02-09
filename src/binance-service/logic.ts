@@ -1,5 +1,6 @@
-import { AmountAndPrice, BidObject } from "../models/logic";
 import { OrderBookRow, SymbolLotSizeFilter, SymbolPriceFilter } from "binance";
+
+import { AmountAndPrice } from "../models/logic";
 
 export default class Logic {
 
@@ -16,37 +17,27 @@ export default class Logic {
     }
 
     public static calcOrderAmountAndPrice = (
-        bids: BidObject[],
+        orderBookRows: OrderBookRow[],
         amountToSpend: number,
         stepSize: number
     ): AmountAndPrice => {
         let amount: number = 0;
         let price: number = 0;
-        let tmpAmount: number = 0;
 
-        for (var i = 0; i < bids.length; i++) {
-            let breakOutOfLoop: boolean = false;
-            for (var j = 0; j <= i; j++) {
-                amount = amount + bids[j].amount;
-                tmpAmount = amount * bids[i].price;
-                if (tmpAmount >= amountToSpend) {
-                    price = bids[i].price;
-                    breakOutOfLoop = true;
-                    break;
-                }
-            }
-            if (breakOutOfLoop) {
+        for (var i = 0; i < orderBookRows.length; i++) {
+            let askPrice: number = parseFloat(orderBookRows[i][0] as string);
+            let askAmount: number = parseFloat(orderBookRows[i][1] as string);
+            amount = amount + askAmount;
+            let cost = amount * askPrice;
+            if (cost >= amountToSpend) {
+                price = askPrice;
                 break;
             }
         }
-        let finalAmount: number = 0;
-        if (stepSize === 1) {
-            finalAmount = Math.round(Number((amountToSpend / price) * 0.99));
-        } else {
-            // TODO: testMike, nagaan of dit echt nodig is. Want je hebt toch altijd 10 dollar als reserve?
-            // subtract 0.5% for fees
-            finalAmount = Number(((amountToSpend / price) * 0.995).toFixed(stepSize));
-        }
+
+        let finalAmount = amountToSpend / price;
+        finalAmount = Logic.roundDown(finalAmount, stepSize);
+
         return {
             price: price,
             amount: finalAmount,
@@ -54,80 +45,43 @@ export default class Logic {
         }
     }
 
-    public static determineStepSize = (lotSize: SymbolLotSizeFilter): number => {
-        // Lotsize.stepSize: '0.01000000' ==> means two behind the comma. Therefore stepSize will be: 2.
-        let stepSize: string = lotSize.stepSize as string;
-        const stepSizeNumber: number = parseFloat(stepSize);
-        stepSize = stepSizeNumber.toString(); // removes the extra zero's behind the first number
-        if (stepSize.startsWith('0.')) {
-            return stepSize.split(".")[1].length || 2;
-        } else {
-            // Which means, it start with something like: '1.0'.
-            return parseFloat(stepSize);
-        }
+    public static roundDown(amount: number, decimals: number): number {
+        decimals = decimals || 0;
+        return (Math.floor(amount * Math.pow(10, decimals)) / Math.pow(10, decimals));
+    }
+
+    public static round(amount: number, decimals: number): number {
+        decimals = decimals || 0;
+        return (Math.round(amount * Math.pow(10, decimals)) / Math.pow(10, decimals));
+    }
+
+    public static getdecimals = (size: string): number => {
+        // size: '1.0000000' ==> means zero decimals. Therefore decimals will be: 0.        
+        // size: '0.1000000' ==> means one decimal. Therefore decimals will be: 1.
+        // size: '0.01000000' ==> means two decimals. Therefore decimals will be: 2.
+        return Math.max(size.indexOf('1') - 1, 0);
+    }
+
+    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, tickSize: number): number => {
+        const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
+        let takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
+        return Logic.round(takeProfitPrice, tickSize);
+    }
+
+    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, tickSize: number): number => {
+        const takeLossPercentageInPercentage = takeLossPercentage / 100;
+        const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
+        return Logic.round(takeLossPrice, tickSize);
+    }
+
+    public static calcStopLimitPrice = (stopLossPrice: number, tickSize: number): number => {
+        return Logic.round(stopLossPrice * 0.99, tickSize);
+        //TODO: is the 0.99 necessary? Please explain why? must be different from stoploss?
     }
 
     public static determineMinQty = (lotSize: SymbolLotSizeFilter): number => {
         const minQty: string = lotSize.minQty as string;
         return parseFloat(minQty);
     }
-
-    public static determineTickSize = (priceFilter: SymbolPriceFilter): number => {
-        let tickSize: string = priceFilter.tickSize as string;
-        const tickSizeNumber: number = parseFloat(tickSize);
-        tickSize = tickSizeNumber.toString(); // removes the extra zero's behind the first number
-        if (tickSize.startsWith('0.')) {
-            return tickSize.split(".")[1].length || 2;
-        } else {
-            // Which means, it start with something like: '1.0'.
-            return parseFloat(tickSize);
-        }
-    }
-
-    public static calcProfitPrice = (buyOrderPrice: number, takeProfitPercentage: number, tickSize: number): number => {
-        const takeProfitPercentageInPercentage: number = takeProfitPercentage / 100;
-        let takeProfitPrice: number = (1 + takeProfitPercentageInPercentage) * buyOrderPrice;
-        return Number(takeProfitPrice.toFixed(tickSize));
-    }
-
-    public static calcStopLossPrice = (sellOrderPrice: number, takeLossPercentage: number, tickSize: number): number => {
-        const takeLossPercentageInPercentage = takeLossPercentage / 100;
-        const takeLossPrice = (1 - takeLossPercentageInPercentage) * sellOrderPrice;
-        return Number(takeLossPrice.toFixed(tickSize));
-    }
-
-    public static callStopLimitPrice = (stopLossPrice: number, tickSize: number): number => {
-       return Number((stopLossPrice * 0.99).toFixed(tickSize));
-    }
-
-    public static bidsToObject = (bids: OrderBookRow[]): BidObject[] => {
-        let result: BidObject[] = [];
-        bids.forEach(element => {
-            let obj: BidObject = {
-                price: parseFloat(element[0] as string),
-                amount: parseFloat(element[1] as string),
-            }
-            result.push(obj);
-            obj = undefined;
-        });
-        return result;
-    }
-
-    public static roundOrderAmount(value: number, decimals: number): number {
-        if (decimals === 1) {
-            return value = Math.floor(value);
-        } else {
-            return roundOrderAmountPrivate(value, decimals)
-        }
-    }
 }
 
-function roundOrderAmountPrivate(value: number, decimals: number): number {
-    const parts = value.toString().split('.')
-
-    if (parts.length === 2) {
-        return Number([parts[0], parts[1].slice(0, decimals)].join('.'))
-    } else {
-        return Number(parts[0]);
-    }
-}

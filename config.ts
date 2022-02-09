@@ -1,78 +1,92 @@
 export default {
     "brokerApiUrl": "https://api.binance.com/",
-    "emailRecipient": "a.gulzadian@gmail.com",
-    "basePair": "USDT",
-    "tradingPairs": [
-        "DOTUSDT",
-        "BTCUSDT",
-        "ETHUSDT",
-        "LTCUSDT"
-    ],
-    "timeIntervals": ["15m"],
-    "genericOrder": {
-        "rsiCalculationLength": 14,  
-        "doNotOrder": {
-            "RSIValueIsBelow": 20
-        },      
-        "limitBuyOrderExpirationTimeInSeconds": 5
-    },
-    "production": {
-        "numberOfCandlesToRetrieve": 50, 
-        "maxAllowedActiveOrdersForTraidingPair": 3,
-        "minimumUSDTorderAmount": 10,
-        "devTest": {
-            "triggerBuyOrderLogic": false,
+    "baseCoin": "USDT",
+    "generic": {
+        "order": {
+            "rsiCalculationLength": 14,
+            "doNotOrder": {
+                "RSIValueIsBelow": 3
+            },
+            "limitBuyOrderExpirationTimeInSeconds": 60
         },
-        "largeCrashOrder": {
-            "maxAmountOfCandlesToLookBack": 15,
-            "minimumDeclingPercentage": -15,
-            "order": {
-                "takeProfitPercentage": 5,
-                "takeLossPercentage": 90,
-                "maxUsdtBuyAmount": 100,
-                "maxPercentageOfBalance": 100
-            }
-        },
-        "pauseCondition": {
-            "active": true,
-            "tradingPair": "BTCUSDT",
-            "maxAmountOfCandlesToLookBack": 10,
-            "minimumDeclingPercentage": -5,
-            "amountOfCandlesToPauseBotFor": 32
-        }
+        "timeIntervals": [
+            "15m"
+        ],
+        "emailRecipient": "<your-email-here>",
+        "emailWhenBuyOrderCreated": false,
+        "emailWhenCrashDetected": false,
+        "emailWhenOrdersIsOpenAfterCandleAmount": 20  
     },
     "test": {
         "numberOfCandlesToRetrieve": 1000,
         "generateExcelFile": true,
         "candleAmountToLookIntoTheFuture": 100,
         "leverage": {
-            "active": true,
+            "active": false,
             "amount": 3
         },
-        "retrieveTop100CoinsInsteadOftest": true
-    },    
+        "retrieveTop100CoinsInsteadOftest": false,
+        "devTest": {
+            "triggerBuyOrderLogic": false
+        }
+    },
+    "production": {
+        "numberOfCandlesToRetrieve": 50,
+        "maxAllowedActiveOrdersForTraidingPair": 2,
+        "minimumUSDTorderAmount": 50,
+        "largeCrashOrder": {
+            "active": true,
+            "maxAmountOfCandlesToLookBack": 15,
+            "minimumDeclingPercentage": -20,
+            "order": {
+                "takeProfitPercentage": 5,
+                "takeLossPercentage": 50,
+                "maxUsdtBuyAmount": 10000,
+                "maxPercentageOfBalance": 50
+            }
+        },
+        "pauseCondition": {
+            "active": true,
+            "tradingPair": "BTCUSDT",
+            "maxAmountOfCandlesToLookBack": 13,
+            "minimumDeclingPercentage": -4.5,
+            "amountOfCandlesToPauseBotFor": 32
+        }
+    },
+
+    "tradingPairs": [
+        "ETH",
+        "LUNA",
+        "ADA"
+    ],
     "orderConditions": [
         {
-            "name": "1.) VTHOUSDT",
+            "name": "4-30-1#50",
             "rsi": {
-                "minimumRisingPercentage": 1.00
+                "minimumRisingPercentage": 30.00
             },
             "candle": {
-                "minimumDeclingPercentage": -1.00
+                "minimumDeclingPercentage": -4.00
             },
             "calcBullishDivergence": {
                 "numberOfMinimumIntervals": 5,
-                "numberOfMaximumIntervals": 25
+                "numberOfMaximumIntervals": 32
             },
             "order": {
-                "takeProfitPercentage": 1,
-                "takeLossPercentage": 2,
-                "maxUsdtBuyAmount": 5000,
-                "maxPercentageOfBalance": 75
+                "takeProfitPercentage": 0.85,
+                "takeLossPercentage": 25,
+                "maxUsdtBuyAmount": 500,
+                "maxPercentageOfBalance": 50
             },
             "doNotOrder": {
-                "active": false,
-                "btc24HourDeclineIsLowerThen": -2 
+                "btc24HourChange": {
+                    "active": false,
+                    "percentage": 1
+                },
+                "coin24HourChange": {
+                    "active": false,
+                    "percentage": -7.5
+                }
             }
         }
     ]
