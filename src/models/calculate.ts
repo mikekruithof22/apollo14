@@ -1,5 +1,7 @@
 import { LightWeightCandle } from "./candle";
 
+// todo aram wrap these in better classes/files or at least rename this file better
+
 export class HistoricalBullishDivergenceResult {
     id: string;
     startWithCandle: LightWeightCandle;
