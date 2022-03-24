@@ -14,29 +14,36 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     private inProgress: boolean = false;
     private websocketClient: WebsocketClient;
     private websocketKey: WsKey;
-
+    private currentPauseTimeInCandles: number = 0;
+    private amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
+    
     private job: schedule.Job = new schedule.Job(async function () {
-        let candlesToWait: number = 0;
-        const amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
-
         txtLogger.log(`---------- Program started ---------- `);
 
+        txtLogger.log(`---------- Checking for Crash ---------- `);
         const crashDetected: boolean = await this.tradingBot.crashDetected();
-        if (crashDetected) {
-            txtLogger.log(`Crash detected. Setting pause to ${amountOfCandlesToPauseBotFor} candles`);
-            candlesToWait = amountOfCandlesToPauseBotFor;
+        if (crashDetected) {            
+            txtLogger.log(`Crash detected. Setting number of candles to pause to ${this.amountOfCandlesToPauseBotFor} candles`);
+            this.currentPauseTimeInCandles = this.amountOfCandlesToPauseBotFor;
         }
 
-        if (candlesToWait > 0) {
-            txtLogger.log(`Pause active for ${candlesToWait} amount of candles.`);
+        txtLogger.log(`---------- Checking for Pause condition ---------- `);
+        if (this.currentPauseTimeInCandles > 0) {
+            txtLogger.log(`Bot is paused for ${this.currentPauseTimeInCandles} candles.`);
+            // todo aram I don't like how the tradingbot is still run even if the bot is supposed to be paused
+            // find out what the bot does do (even though it's paused) and maybe pull it out ouf the trading bot
+            // I guess it's just the crash order logic, see if you can seperate that logic from the main divergence logic
+            // (assuming the crash order stuff doesn't require a divergence)
             txtLogger.log(`Only checking crash order condition per trading pair during pause.`);
+
             this.tradingBot.botPauseActive = true;
-            await this.tradingBot.runProgram();
-            candlesToWait--;
+            this.currentPauseTimeInCandles--;
         } else {
             this.tradingBot.botPauseActive = false;
-            await this.tradingBot.runProgram();
         }
+
+        await this.tradingBot.runProgram();
+
     }.bind(this));
 
     public async Renew() { // todo aram maybe use this as a reset to renew all objects, websocket etc.?
@@ -61,21 +68,12 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         this.inProgress = true; 
         txtLogger.log('App is running');
 
-        // todo aram add an 'in progress' boolean to the class to prevent the start endpoint calling multiple  trading bots etc.
-        // maybe even add a result for the start function where it becomes clear of the start was succesful 
-        // (and in the case of being "in progress" it would be false)
-        // and if not, why not, and have that sent to the frontend again, so you can see like details of your run
-
         // setup
         const cronExpression = CronHelper.GetCronExpression();
-        // todo aram consider moving the websocket stuff to private consts, this way you can call a 
-        // /monitor endpoint or something and ask for the current state of the webconnection etc.
-        // could be like the start of the dashboard feature
         const wsService: WebSocketService = new WebSocketService(); 
         this.websocketKey = wsService.websocketKey;
         this.websocketClient = wsService.generateWebsocketClient();
         this.tradingBot = new Tradingbot()
-        let candlesToWait: number = 0;
 
         txtLogger.log('Subscribing to webSocketClient');
         
@@ -83,6 +81,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
 
         // Retreive some config values
         // todo aram the triggerBuyLogic used to be retrieved from config.production... double check if this is a problem
+        // todo aram the runTestInsteadOfProgram name is bad, confusing test run (historical) with force buy test (triggerBuyOrderLogic)
         const runTestInsteadOfProgram: boolean = config.test.devTest.triggerBuyOrderLogic;
 
         this.websocketClient.on('open', async (data: {
@@ -91,16 +90,18 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             event?: any;
         }) => {
             // Sanity check the config.json.
+            // todo aram tackle the whole config situation
             const incorrectConfigData: boolean = configChecker.checkConfigData();
             if (incorrectConfigData) {
                 txtLogger.log(`The websocket() quit because:`);
-                txtLogger.log(`The the method checkConfigData() detected wrong config values`);
+                txtLogger.log(`The method checkConfigData() detected wrong config values`);
                 return;
             }
             txtLogger.log(`*** config.json is equal to:  ${JSON.stringify(config)}`);
             txtLogger.log(`Websocket event - connection opened:', ${data.wsKey}`);
     
             if (runTestInsteadOfProgram === false) {
+                txtLogger.log(`Running job scheduled according to cron expression `)
                 this.job.schedule(cronExpression);
             } else {
                 txtLogger.log(`Running job once `)

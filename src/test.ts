@@ -30,7 +30,7 @@ export default class Test {
 
         // STEP 2 - Prepare configuration data 
         const brokerApiUrl: string = config.brokerApiUrl;
-        const numberOfCandlesToRetrieve: number = config.test.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
+        const numberOfCandlesToRetrieve: number = config.test.numberOfCandlesToRetrieve; + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals; // todo aram what the hell is this plus doing here
         const candleAmountToLookIntoTheFuture: number = config.test.candleAmountToLookIntoTheFuture;
         const generateExcelFile: boolean = config.test.generateExcelFile;
 
