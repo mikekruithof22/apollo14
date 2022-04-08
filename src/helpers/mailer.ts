@@ -20,6 +20,9 @@ const transporter = nodemailer.createTransport({
 
 export default class Mailer {
     public static Send(subject: string = 'The bot is down', text: string = 'The bot is down for unspecified reasons, please check the logs' ) {
+        txtLogger.log(`EMAIL was sent with the following content:`);
+        txtLogger.log(`subject=${subject} text=${text}`);
+        
         const mailOptions = {
             from: 'Apollo',
             to: recipient,

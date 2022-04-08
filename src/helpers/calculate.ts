@@ -4,26 +4,30 @@ import { OrderConditionResult } from '../models/calculate';
 import config from '../../config';
 import stopLoss from './stop-loss';
 import txtLogger from './txt-logger';
+import { ConfigOrderCondition } from '../models/logic';
 
 export default class CalculateHelper {
 
-    public static calculateBullishDivergenceOrCrashOrder = (
+    public static calculateBullishDivergenceOrCrashOrder = ( // todo aram seperate the crashorder and BD calculation
+        strategy: ConfigOrderCondition,
         closePriceList: number[],
         candleList: LightWeightCandle[],
         rsiItems: number[],
-        startCount: number,
-        stopCount: number,
-        rsiMinimumRisingPercentage: number,
-        candleMinimumDeclingPercentage: number,
         orderConditionName: string,
         botPauseActive: boolean
     ): OrderConditionResult => {
+        const rsiMinimumRisingPercentage: number = strategy.rsi.minimumRisingPercentage;
+        const candleMinimumDeclingPercentage: number = strategy.candle.minimumDeclingPercentage;
+        const startCount: number = strategy.calcBullishDivergence.numberOfMinimumIntervals;
+        const stopCount: number = strategy.calcBullishDivergence.numberOfMaximumIntervals;
         const mostRecentCandleIndex = closePriceList.length - 1;
         const mostRecentClose = closePriceList[mostRecentCandleIndex];
         const mostRecentRsiIndex = rsiItems.length - 1;
         const mostRecentRsiValue = rsiItems[mostRecentRsiIndex];
         const stopCandle = mostRecentCandleIndex - stopCount;
         let compareWithRsiIndex = mostRecentRsiIndex;
+
+        txtLogger.log(`Checking for bullish divergence for ${orderConditionName}`);
 
         for (var i = closePriceList.length - 2; i >= stopCandle; i--) {
             const compareWithClose = closePriceList[i];

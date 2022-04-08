@@ -1,3 +1,4 @@
+// todo aram rename class to orderModels or something more logical
 export class AmountAndPrice {
     price: number;
     amount: number;
@@ -5,7 +6,7 @@ export class AmountAndPrice {
 }
 
 
-export class ConfigOrderCondition {
+export class ConfigOrderCondition { // todo aram pretty sure in my new config model situation, this can be taken from the OrderStrategy model
     name: string;
     rsi: {
         minimumRisingPercentage: number;

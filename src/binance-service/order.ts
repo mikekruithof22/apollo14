@@ -5,7 +5,7 @@ import { OrderTypeEnum } from '../models/order';
 import dateHelper from '../helpers/date';
 import txtLogger from '../helpers/txt-logger';
 
-export default class Order {
+export default class Order { // todo aram for godsake rename this to something logical, probalby OrderHelper
 
     public createOrder = async (
         binanceRest: MainClient,

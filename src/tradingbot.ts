@@ -20,28 +20,28 @@ import rsiHelper from './helpers/rsi';
 import txtLogger from './helpers/txt-logger';
 
 export default class Tradingbot {
-    private emailListForOrdersWhichWhereTooLongOpen: string[] = [];
-    private activeBuyOrders: ActiveBuyOrder[] = [];
+    private emailListForOrdersWhichWhereTooLongOpen: string[] = []; // todo aram can be taken out of private, and retrieved ad hoc
+    private activeBuyOrders: ActiveBuyOrder[] = []; // todo aram possibly move up to main
     private binanceRest: MainClient;
     private binanceService: BinanceService;
     private candleHelper: CandleHelper;
     private order: Order;
-    public botPauseActive: boolean = false;
+    public botCurrentlyPaused: boolean = false;
 
     // config
     private brokerApiUrl: string = config.brokerApiUrl;
     private candleInterval: string = config.generic.timeIntervals[0]; // For the time being only one interval, therefore [0].
     private numberOfCandlesToRetrieve: number = config.production.numberOfCandlesToRetrieve + config.orderConditions[0].calcBullishDivergence.numberOfMaximumIntervals;
     private maxAllowedActiveOrdersForTraidingPair: number = config.production.maxAllowedActiveOrdersForTraidingPair;
-    private orderConditions: ConfigOrderCondition[] = config.orderConditions;
+    private orderStrategies: ConfigOrderCondition[] = config.orderConditions;
     private minimumUSDTorderAmount: number = config.production.minimumUSDTorderAmount;
     private largeCrashOrderActive: boolean = config.production.largeCrashOrder.active;
-    private tradingPairs: string[] = config.tradingPairs;
+    private coins: string[] = config.tradingPairs;
     private baseCoin: string = config.baseCoin;
     private rsiCalculationLength: number = config.generic.order.rsiCalculationLength;
     private limitBuyOrderExpirationTime: number = config.generic.order.limitBuyOrderExpirationTimeInSeconds * 1000; // multiply with 1000 for milliseconds 
     private doNotOrderWhenRSIValueIsBelow: number = config.generic.order.doNotOrder.RSIValueIsBelow;
-    private pauseConditionActiveboolean = config.production.pauseCondition.active;
+    private pauseOnCrash = config.production.pauseCondition.active;
 
     // devTest config
     private triggerBuyOrderLogic: boolean = config.test.devTest.triggerBuyOrderLogic;
@@ -55,160 +55,69 @@ export default class Tradingbot {
         txtLogger.log(`New TradingBot created`);
     }
 
-    // todo aram get the pauseBot param from the config instead as method param
     public async runProgram(botPauseActive: boolean) { 
         if (this.binanceRest === undefined) {
-            txtLogger.log(`The method runProgram() quit because:`);
-            txtLogger.log(`Generating binanceRest client failed.`, LogLevel.ERROR);
+            txtLogger.log(`The method runProgram() quit because generating binanceRest client failed.`, LogLevel.ERROR);
             return;
         }
 
-        // STEP 0 - check if orders are longer open than configured, if so email.
-        await this.emailWhenOrderIsToLongOpenLogic();
+        // todo aram this can actually be called from main async, as the rest of the program has no dependencies on this code
+        // Check if orders are open longer than allowed in Config
+        await this.handleExpiredOrder(); // aram checked
 
-        // STEP 1 If USDT is to low, you don't need to run the program, therefore quit.
-        const balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
-        if (balance instanceof BinanceError) {
-            txtLogger.log(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
-            return;
-        }
+        // Check if USDT is too low, if so bot can't do anything so quit
+        const notEnoughUsdt = await this.minimumUsdtCheck();
+        if (notEnoughUsdt) { return; }
 
-        const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
-        const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
-        txtLogger.log(`Free USDT balance amount: ${currentFreeUSDTAmount}.`);
-
-        if (currentFreeUSDTAmount < this.minimumUSDTorderAmount) {
-            txtLogger.log(`The method runProgram() quit because:`);
-            txtLogger.log(`The free USDT balance amount is lower than the configured minimum amount: ${this.minimumUSDTorderAmount}.`);
-            return;
-        }
-
-        // STEP 2 - Checking crash order conditions and bullish divergences for each tradingpair & retrieving the 24 hour BTCUSDT statistics
-        if (this.largeCrashOrderActive) {
-            txtLogger.log(`Checking ${this.tradingPairs.length} trading pair(s) for crash condition.`);
-        }
-        if (!botPauseActive) {
-            txtLogger.log(`Checking ${this.orderConditions.length * this.tradingPairs.length} order condition(s) for bullish divergences.`);
-        }
-
-        for await (let pair of this.tradingPairs) {
-            const tradingPair: string = `${pair}${this.baseCoin}`;
+        for await (let coin of this.coins) {
+            //#region vars
+            const tradingPair: string = `${coin}${this.baseCoin}`;
             const url: string = `${this.brokerApiUrl}api/v3/klines?symbol=${tradingPair}&interval=${this.candleInterval}&limit=${this.numberOfCandlesToRetrieve}`;
             const candleList = await this.candleHelper.retrieveCandles(url);
             const candleObjectList: LightWeightCandle[] = this.candleHelper.generateSmallObjectsFromData(candleList);
             const closePriceList: number[] = this.candleHelper.generateClosePricesList(candleList);
             const rsiCollection: number[] = await rsiHelper.calculateRsi(closePriceList, this.rsiCalculationLength);
             const mostRecentRsiValue = rsiCollection[rsiCollection.length - 1];
+            //#endregion
+            
+            // if max orders have been reached, the bot can't do anything so skip
+            const maxOrdersReached = this.maxOrderReachedCheck(tradingPair);
+            if (maxOrdersReached) { break; }
 
-            for await (let order of this.orderConditions) {
-                const orderConditionName: string = `${pair}-${this.baseCoin}-${order.name}`;
+            // possible place crash order
+            const crashOrderPlaced = this.handleCrashOrderLogic(tradingPair);
+            if (crashOrderPlaced) { break; }
 
-                if (this.triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
-                    txtLogger.log(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order. #####`);
+            // todo aram maybe add the crashorder stuff here, and break out of the coin loop if the crash order is met (since we don't care about the coin if it's crashing)
+            for await (let strategy of this.orderStrategies) {
+                const orderConditionName: string = `${coin}-${this.baseCoin}-${strategy.name}`; // todo aram in the new config situation this is done in the config parser
+
+                const shouldSkip = this.skipStrategyConditionsCheck(orderConditionName, tradingPair, mostRecentRsiValue, strategy);
+                if (shouldSkip) { break; }
+
+                // todo aram to be moved to main if possible (probably after new config model is implemented)
+                await this.forceBuyOrder();
+
+                // todo aram, figure out why botCurrentlyPaused is required here, if it's paused it shouldn't calculate the divergence or do anything else i guess
+                const bullishDivergence: OrderConditionResult = calculate.calculateBullishDivergenceOrCrashOrder(strategy, closePriceList, candleObjectList, rsiCollection, orderConditionName, this.botCurrentlyPaused);
+
+                if (bullishDivergence !== undefined) {
+                    txtLogger.log(`***** Bullish divergence detected for ${tradingPair} - Order condition name: ${orderConditionName} *****`);
+                    txtLogger.log(`Candle details formatted on multiple lines:`);
+                    txtLogger.log(JSON.stringify(bullishDivergence, null, 4));
+
+                    // STEP 3. 
+                    //      OPTION II - A bullish divergence was found, continue to the buyLimitOrderLogic() method.
                     await this.buyLimitOrderLogic(
-                        order.order,
+                        strategy.order,
                         tradingPair,
-                        orderConditionName,
+                        orderConditionName
                     );
-                    return;
-                }
-
-                const rsiMinimumRisingPercentage: number = order.rsi.minimumRisingPercentage;
-                const candleMinimumDeclingPercentage: number = order.candle.minimumDeclingPercentage;
-                const startCount: number = order.calcBullishDivergence.numberOfMinimumIntervals;
-                const stopCount: number = order.calcBullishDivergence.numberOfMaximumIntervals;
-
-                const orderConditionResult: OrderConditionResult = calculate.calculateBullishDivergenceOrCrashOrder(
-                    closePriceList,
-                    candleObjectList,
-                    rsiCollection,
-                    startCount,
-                    stopCount,
-                    rsiMinimumRisingPercentage,
-                    candleMinimumDeclingPercentage,
-                    orderConditionName,
-                    this.botPauseActive
-                );
-
-                if (orderConditionResult !== undefined) {
-                    const detectedContent: string = orderConditionResult.isCrashOrder ? 'Crash condition' : 'Bullish divergence';
-                    txtLogger.log(`***** ${detectedContent} detected for ${tradingPair} - Order condition name: ${orderConditionName} *****`);
-
-                    txtLogger.log(`Checking if there are already orders open for this tradingPair. In case there are to many open orders a limit buy order will NOT be placed.`);
-
-                    const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrdersForTraidingPair(this.binanceRest, tradingPair);
-                    if (currentOpenOrders && currentOpenOrders.length > 0) {
-                        const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
-                        txtLogger.log(`The amount of open orders is equal to: ${activeOrdersForTraidingPair.length}.`);
-
-                        if (activeOrdersForTraidingPair.length > this.maxAllowedActiveOrdersForTraidingPair ||
-                            activeOrdersForTraidingPair.length >= 5
-                        ) {
-                            txtLogger.log(`Limit buy order will NOT be created because of one of the following reasons:`);
-                            txtLogger.log(`A. The amount of active orders for this tradingPair - ${activeOrdersForTraidingPair.length} - is larger than the maximum amount configured inside the config.json - ${this.maxAllowedActiveOrdersForTraidingPair}.`, LogLevel.WARN);
-                            txtLogger.log(`B. Binance does not allow more than 5 trading bot created orders per trading pair.`);
-                            break;
-                        }
-                    } else {
-                        txtLogger.log(`The amount of open orders is equal to: 0.`);
-                    }
-
-                    if (orderConditionResult.isCrashOrder) {
-                        if (this.largeCrashOrderActive) {
-                            // STEP 3. 
-                            //      OPTION I - A crash condition was detected , continue to the buyLimitOrderLogic() method.
-                            txtLogger.log(`Candle information associated with the crash condition:`);
-                            txtLogger.log(JSON.stringify(orderConditionResult, null, 4));
-
-                            const ordercondition = config.production.largeCrashOrder.order as ConfigOrderConditionOrder;
-                            await this.buyLimitOrderLogic(
-                                ordercondition,
-                                tradingPair,
-                                `crashOrder-${tradingPair}`,
-                            );
-                        } else {
-                            txtLogger.log(`Crash order will NOT be placed becasue it is turned off (config.production.largeCrashOrder.active === false).`);
-                        }
-                    } else {
-                        txtLogger.log(`Candle details formatted on one line. In case it passes all 24 hour conditions it will be logged again on multiple lines.`);
-                        txtLogger.log(JSON.stringify(orderConditionResult));
-
-                        txtLogger.log(`The most recent rsi value is: ${orderConditionResult.endiRsiValue}. The minimum configured for this condition is: ${order.rsi.minimumRisingPercentage}.`);
-                        if (mostRecentRsiValue < this.doNotOrderWhenRSIValueIsBelow) {
-                            txtLogger.log(`Because the RSI is lower than minimum configured the program will not place an limit buy order.`);
-                            break;
-                        }
-                        if (order.doNotOrder.btc24HourChange.active) {
-                            const skip = await this.skipBasedOn24HourChangeStatistics('BTCUSDT', order.doNotOrder.btc24HourChange.percentage);
-                            if (skip) { break; }
-                        }
-
-                        if (order.doNotOrder.coin24HourChange.active) {
-                            const skip = await this.skipBasedOn24HourChangeStatistics(tradingPair, order.doNotOrder.coin24HourChange.percentage);
-                            if (skip) { break; }
-                        }
-
-                        txtLogger.log(`Candle details formatted on multiple lines:`);
-                        txtLogger.log(JSON.stringify(orderConditionResult, null, 4));
-
-                        // STEP 3. 
-                        //      OPTION II - A bullish divergence was found, continue to the buyLimitOrderLogic() method.
-                        await this.buyLimitOrderLogic(
-                            order.order,
-                            tradingPair,
-                            orderConditionName
-                        );
-                    }
-                    // TODO: testmike, for now we will 'RETURN' out of the loop once we trigger the buy buyLimitOrderLogic
-                    // This makes the program, for the time being way simpler! In the future we can let it continue.
+                    
                     return;
                 }
             }
         }
-
-        botPauseActive ?
-            txtLogger.log(`No crash condition(s) found during this run.`) :
-            txtLogger.log(`No bullish divergence(s) or crash condition(s) found during this run.`);
     }
 
     public async buyLimitOrderLogic(
@@ -349,7 +258,6 @@ export default class Tradingbot {
     }
 
     public async processFormattedUserDataMessage(data: WsUserDataEvents) {
-
         // POSSIBILITY I - When a buy order is FILLED an oco order should be created.
         if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.FILLED) {
             const clientOrderId: string = data.newClientOrderId;
@@ -373,7 +281,7 @@ export default class Tradingbot {
 
         // POSSIBILITY II - Order cancel was successful, in case of partial fill create OCO order
         if (data.eventType === 'executionReport' && data.orderStatus === OrderStatusEnum.CANCELED) {
-            const clientOrderId: string = data.originalClientOrderId; // TODO: kijken of 'newClientOrderId' juist vervangen is door: 'originalClientOrderId'
+            const clientOrderId: string = data.originalClientOrderId;
             txtLogger.log(`Limit buy order with clientOrderId ${clientOrderId} is successfully cancelled.`);
             txtLogger.log(`### Execution report for limit buy order which was CANCELED:`);
             txtLogger.log(`${JSON.stringify(data, null, 4)}`);
@@ -559,8 +467,9 @@ export default class Tradingbot {
         }
     }
 
-    public async crashDetected() {
-        if (!this.pauseConditionActiveboolean) {
+     // todo aram make distinction for btc crash and coin specific crash?
+    public async checkForCrash() {
+        if (!this.pauseOnCrash) {
             return false;
         }
 
@@ -586,6 +495,38 @@ export default class Tradingbot {
         return false;
     }
 
+    private async forceBuyOrder() {
+        // const orderConditionName = 'FORCED ORDER ${config.testing.ForceBuyOrder.Tradingpair} bla bla' 
+        if (this.triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
+            txtLogger.log(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order. #####`);
+            // await this.buyLimitOrderLogic(
+            //     strategy.order,
+            //     tradingPair,
+            //     orderConditionName,
+            // );
+        }
+    }
+
+    private async skipStrategyConditionsCheck(orderConditionName: string, tradingPair: string, mostRecentRsiValue: number, strategy: ConfigOrderCondition): Promise<boolean> {
+            txtLogger.log(`Checking do not order conditions for orderStrategy=${orderConditionName}:`);
+            if (mostRecentRsiValue < this.doNotOrderWhenRSIValueIsBelow) {
+                txtLogger.log(`The most recent rsi value is: ${mostRecentRsiValue}. The minimum configured for this condition is: ${strategy.rsi.minimumRisingPercentage}.`);
+                txtLogger.log(`Because the RSI is lower than minimum configured the program will not place an limit buy order.`);
+                return true;
+            }
+
+            // todo aram maybe it's worth finding out why we have both this check and the pausebot logic in main
+            if (strategy.doNotOrder.btc24HourChange.active) { // todo aram don't know how much i care, but BTCUSDT is magic string
+                const skip = await this.skipBasedOn24HourChangeStatistics('BTCUSDT', strategy.doNotOrder.btc24HourChange.percentage);
+                if (skip) { return true; }
+            }
+
+            if (strategy.doNotOrder.coin24HourChange.active) {
+                const skip = await this.skipBasedOn24HourChangeStatistics(tradingPair, strategy.doNotOrder.coin24HourChange.percentage);
+                if (skip) { return true; }
+            }
+    }
+
     private async skipBasedOn24HourChangeStatistics(tradingPair: string, change24HourPercentage: number): Promise<boolean> {
         let orderingAllowed: boolean;
         const coinStatistics = await this.binanceService.get24hrChangeStatististics(this.binanceRest, tradingPair);
@@ -604,7 +545,76 @@ export default class Tradingbot {
         return orderingAllowed;
     }
 
-    public async emailWhenOrderIsToLongOpenLogic(): Promise<void> {
+    private async minimumUsdtCheck(): Promise<boolean> {
+        const balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
+        if (balance instanceof BinanceError) {
+            txtLogger.log(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
+            
+            // in this case we can't check if the balance is too low, return false and just let the bot run and fail if there's not enough
+            return false;
+        }
+
+        const currentUSDTBalance = (balance as AllCoinsInformationResponse[]).find(b => b.coin === 'USDT');
+        const currentFreeUSDTAmount = parseFloat(currentUSDTBalance.free.toString());
+        txtLogger.log(`Free USDT balance amount: ${currentFreeUSDTAmount}.`);
+
+        if (currentFreeUSDTAmount < this.minimumUSDTorderAmount) {
+            txtLogger.log(`The method runProgram() quit because:`);
+            txtLogger.log(`The free USDT balance amount is lower than the configured minimum amount: ${this.minimumUSDTorderAmount}.`);
+            return true;
+        }
+    }
+
+    private async maxOrderReachedCheck(tradingPair: string): Promise<boolean> {
+        // todo aram check if the max open order is per trading pair or in total, i remember it to be total, in which case it needs to break out the whole programme not just coin
+        txtLogger.log(`Checking if there are already orders open for this tradingPair. In case there are too many open orders a limit buy order will NOT be placed.`);
+
+        const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrdersForTraidingPair(this.binanceRest, tradingPair);
+        if (currentOpenOrders && currentOpenOrders.length > 0) {
+            const activeOrdersForTraidingPair: SpotOrder[] = currentOpenOrders.filter(s => s.symbol === tradingPair);
+            txtLogger.log(`The amount of open orders for traiding pair ${tradingPair} is: ${activeOrdersForTraidingPair.length}.`);
+
+            if (activeOrdersForTraidingPair.length > this.maxAllowedActiveOrdersForTraidingPair ||
+                activeOrdersForTraidingPair.length >= 5) // 5 is the max amount determined by binance
+            {
+                txtLogger.log(`Limit buy order will NOT be created because of one of the following reasons:`);
+                txtLogger.log(`A. The amount of active orders for this tradingPair - ${activeOrdersForTraidingPair.length} - is larger than the maximum amount configured inside the config.json - ${this.maxAllowedActiveOrdersForTraidingPair}.`, LogLevel.WARN);
+                txtLogger.log(`B. Binance does not allow more than 5 trading bot created orders per trading pair.`);
+                return true;
+            }
+        } else {
+            txtLogger.log(`The amount of open orders is equal to: 0.`);
+        }
+
+        return false;
+    }
+
+    private async handleCrashOrderLogic(tradingPair: string): Promise<boolean> {
+        // todo aram need to rewrite this method with the new crashOrder config hierarchy
+        // if (this.largeCrashOrderActive) {
+        //     if (this.largeCrashOrderActive) {
+        //         txtLogger.log(`Checking ${this.coins.length} trading pair for crash condition.`);
+        //     }
+        //     // STEP 3. 
+        //     //      OPTION I - A crash condition was detected , continue to the buyLimitOrderLogic() method.
+        //     txtLogger.log(`Candle information associated with the crash condition:`);
+        //     //txtLogger.log(JSON.stringify(orderConditionResult, null, 4));
+
+        //     const ordercondition = config.production.largeCrashOrder.order as ConfigOrderConditionOrder;
+        //     await this.buyLimitOrderLogic(
+        //         ordercondition,
+        //         tradingPair,
+        //         `crashOrder-${tradingPair}`,
+        //     );
+        // }
+
+        // todo aram for now hard coded return false, make it return true if order is actually placed
+        return false;
+    }
+
+    public async handleExpiredOrder(): Promise<void> {
+        // todo aram what about cancelling these orders instead of just email about it?
+        // for this i would need to add a toggle in the config: whether the bot should cancel the order and/or email
         const emailWhenOrdersIsOpenAfterCandleAmount: number = config.generic.emailWhenOrdersIsOpenAfterCandleAmount
         txtLogger.log(`Checking if there are orders longer active than ${emailWhenOrdersIsOpenAfterCandleAmount}. If so you will receive an email notification.`);
 
@@ -620,18 +630,18 @@ export default class Tradingbot {
 
                 const orderDate: Date = new Date(order.time);
                 const currentDate = new Date();
-                const minutesToAdd = 15 * emailWhenOrdersIsOpenAfterCandleAmount; // Multiply by 15 because the time interval is 15 right now
-                const dateWhenLimitWasReached = new Date(orderDate.getTime() + minutesToAdd * 60000);
+                // todo aram get rid of hardcoded time interval
+                const allowedTime = 15 * emailWhenOrdersIsOpenAfterCandleAmount; // Multiply by 15 because the time interval is 15 right now
+                const expirationDateTime = new Date(orderDate.getTime() + allowedTime * 60000);
 
-                if (currentDate > dateWhenLimitWasReached) {
+                if (currentDate > expirationDateTime) {
                     Mailer.Send(`${order.clientOrderId} - ${order.type} order is open for too long`, `${order.type} order is open for too long. Details: ${JSON.stringify(order, null, 4)}`);
-                    txtLogger.log(`EMAIL was sent with the following content:`);
-                    txtLogger.log(`${order.clientOrderId} - ${order.type} order is open for too long. ${order.type} order is open for too long. Details: ${JSON.stringify(order)}`);
                     this.emailListForOrdersWhichWhereTooLongOpen.push(order.clientOrderId);
                 }
             });
         }
 
+        // todo aram find out what's going on here and refactor
         if (currentOpenOrders && currentOpenOrders === []) {
             // TODO: testmike, create a propper solution 
             // "Smerige oplossing", in case there are no active orders at all we can reset 'emailListForOrdersWhichWhereTooLongOpen: string[]';

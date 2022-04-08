@@ -40,6 +40,7 @@ app.get( "/test", ( req, res ) => {
 // start the Express server
 app.listen( port, () => {
     console.log( `server started at http://localhost:${ port }` );
+    // todo aram maybe this is the right place for the config checker
 });
 
 // todo aram after merge some from main was excluded, after refactoring make sure those things are included here again:

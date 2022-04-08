@@ -17,11 +17,13 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     private currentPauseTimeInCandles: number = 0;
     private amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
     
+    // todo aram create a new job specfic to the force buy test
+
     private job: schedule.Job = new schedule.Job(async function () {
         txtLogger.log(`---------- Program started ---------- `);
 
         txtLogger.log(`---------- Checking for Crash ---------- `);
-        const crashDetected: boolean = await this.tradingBot.crashDetected();
+        const crashDetected: boolean = await this.tradingBot.checkForCrash();
         if (crashDetected) {            
             txtLogger.log(`Crash detected. Setting number of candles to pause to ${this.amountOfCandlesToPauseBotFor} candles`);
             this.currentPauseTimeInCandles = this.amountOfCandlesToPauseBotFor;
@@ -73,7 +75,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         const wsService: WebSocketService = new WebSocketService(); 
         this.websocketKey = wsService.websocketKey;
         this.websocketClient = wsService.generateWebsocketClient();
-        this.tradingBot = new Tradingbot()
+        this.tradingBot = new Tradingbot() // todo aram I don't like that the trading bot (or somethinf CALLED trading bot) is only created now
 
         txtLogger.log('Subscribing to webSocketClient');
         
@@ -90,7 +92,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             event?: any;
         }) => {
             // Sanity check the config.json.
-            // todo aram tackle the whole config situation
+            // todo aram maybe do config importer stuff here? Downside is the config won't be loaded and visible in the UI before you hit start
             const incorrectConfigData: boolean = configChecker.checkConfigData();
             if (incorrectConfigData) {
                 txtLogger.log(`The websocket() quit because:`);
@@ -100,13 +102,13 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             txtLogger.log(`*** config.json is equal to:  ${JSON.stringify(config)}`);
             txtLogger.log(`Websocket event - connection opened:', ${data.wsKey}`);
     
-            if (runTestInsteadOfProgram === false) {
+            if (runTestInsteadOfProgram === true) {
+                txtLogger.log(`Running job once `)
+                this.tradingBot.botCurrentlyPaused = false; // todo aram not sure why this is set to active here
+                this.job.invoke();
+            } else {
                 txtLogger.log(`Running job scheduled according to cron expression `)
                 this.job.schedule(cronExpression);
-            } else {
-                txtLogger.log(`Running job once `)
-                this.tradingBot.botPauseActive = false;
-                this.job.invoke();
             }
 
             // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
