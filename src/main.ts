@@ -47,7 +47,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     }.bind(this));
 
     private forceBuyOrderJob: schedule.Job = new schedule.Job(async function () {
-        txtLogger.log(`---------- Program started in ForcedBuyOrder mode ---------- `);
+        txtLogger.log(`---------- Program started in ForceBuyOrder mode ---------- `);
 
         await this.tradingBot.forceBuyOrder();
 
@@ -87,10 +87,6 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         this.websocketClient.subscribeSpotUserDataStream();
 
         // Retreive some config values
-        // todo aram the triggerBuyLogic used to be retrieved from config.production... double check if this is a problem
-        // todo aram the runTestInsteadOfProgram name is bad, confusing test run (historical) with force buy test (triggerBuyOrderLogic)
-        const runTestInsteadOfProgram: boolean = config.test.devTest.triggerBuyOrderLogic;
-
         this.websocketClient.on('open', async (data: {
             wsKey: WsKey;
             ws: WebSocket;
@@ -98,6 +94,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         }) => {
             // Sanity check the config.json.
             // todo aram maybe do config importer stuff here? Downside is the config won't be loaded and visible in the UI before you hit start
+            // todo aram on second thought the on subscribe of the websocket is actually a terrible place to do this i think
             const incorrectConfigData: boolean = configChecker.checkConfigData();
             if (incorrectConfigData) {
                 txtLogger.log(`The websocket() quit because:`);
@@ -106,15 +103,9 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             }
             txtLogger.log(`*** config.json is equal to:  ${JSON.stringify(config)}`);
             txtLogger.log(`Websocket event - connection opened:', ${data.wsKey}`);
-    
-            if (runTestInsteadOfProgram === true) {
-                txtLogger.log(`Running job once `)
-                this.tradingBot.botCurrentlyPaused = false; // todo aram not sure why this is set to active here
-                this.job.invoke();
-            } else {
-                txtLogger.log(`Running job scheduled according to cron expression `)
-                this.job.schedule(cronExpression);
-            }
+
+            txtLogger.log(`Running job scheduled according to cron expression `)
+            this.job.schedule(cronExpression);
 
             // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
         });
@@ -132,19 +123,20 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     }
 
     public async ForceBuyOrderTest() {
+        // todo aram double check if the in progress check is still relevant for the forceBuyOrderTest
         if (this.inProgress) {
             txtLogger.log('Main already in progress, skipping...');
             return;
         }
 
         this.inProgress = true; 
-        txtLogger.log('App is running');
+        txtLogger.log('App is running in Force Buy Order mode');
 
         // setup
         const wsService: WebSocketService = new WebSocketService(); 
         this.websocketKey = wsService.websocketKey;
         this.websocketClient = wsService.generateWebsocketClient();
-        this.tradingBot = new Tradingbot() // todo aram I don't like that the trading bot (or somethinf CALLED trading bot) is only created now
+        this.tradingBot = new Tradingbot() // todo aram I don't like that the trading bot (or something CALLED trading bot) is only created now
 
         txtLogger.log('Subscribing to webSocketClient');
         
@@ -156,9 +148,9 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         }) => {
             // Sanity check the config.json.
             // todo aram maybe do config importer stuff here? Downside is the config won't be loaded and visible in the UI before you hit start
+            // todo aram actually on second thought, I'm not sure if the "on subscribe" of the websocketclient is at all a good place to handle the config
             const incorrectConfigData: boolean = configChecker.checkConfigData();
             if (incorrectConfigData) {
-                txtLogger.log(`The websocket() quit because:`);
                 txtLogger.log(`The method checkConfigData() detected wrong config values`);
                 return;
             }
@@ -169,7 +161,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         });
 
         // todo aram not sure if the below is interesting for forced buy order mode, we only care about putting in the order right?
-        // not the oco order part
+        // not the oco order part. Maybe add a param to toggle the option to also place an oco.
         // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
         this.websocketClient.on('reply', async (data: WsResponse) => {
             txtLogger.log(`reply eventreceived: ${JSON.stringify(data)}`);
