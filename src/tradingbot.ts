@@ -86,6 +86,10 @@ export default class Tradingbot {
             if (crashOrderPlaced) { break; }
 
             // todo aram maybe add the crashorder stuff here, and break out of the coin loop if the crash order is met (since we don't care about the coin if it's crashing)
+            // todo aram maybe it's way nicer to calculate the bullishdivergences for all strategies async and put them in a collection,
+            // then rank them somehow by attractiveness (assuming not all divergences are equal in profitability probability)
+            // and then AFTER the for loop create the buy order async, startin from the most attractive. This way less attractive strategies don't
+            // block more attractive strategies
             for await (let strategy of this.orderStrategies) {
                 const orderConditionName: string = `${coin}-${this.baseCoin}-${strategy.name}`; // todo aram in the new config situation this is done in the config parser
 
@@ -101,8 +105,8 @@ export default class Tradingbot {
                     txtLogger.log(JSON.stringify(bullishDivergence, null, 4));
 
                     // STEP 3. 
-                    //      OPTION II - A bullish divergence was found, continue to the buyLimitOrderLogic() method.
-                    await this.buyLimitOrder(
+                    //      OPTION II - A bullish divergence was found, continue to the buyLimitOrder() method.
+                    await this.placeBuyOrder(
                         strategy.order,
                         tradingPair,
                         orderConditionName
@@ -114,20 +118,23 @@ export default class Tradingbot {
         }
     }
 
-    public async buyLimitOrder(
+    public async placeBuyOrder(
         order: ConfigOrderConditionOrder,
         tradingPair: string,
         orderName: string
     ) {
         txtLogger.log(`buyLimitOrder() called for tradingPair=${tradingPair} orderName=${orderName}`);
 
-        // STEP I. Prepare config.json order data 
+        //#region vars
         const takeProfitPercentage: number = order.takeProfitPercentage;
         const takeLossPercentage: number = order.takeLossPercentage;
         const maxUsdtBuyAmount: number = order.maxUsdtBuyAmount;
         const maxPercentageOfBalance: number = order.maxPercentageOfBalance;
+        //#endregion
 
-        // STEP II. Check current amount of free USDT on the balance
+        // todo aram group this in checkUsdtSkip, untill.......
+        // todo aram thinking about it, if the usdt amount is too little, the bot can't buy for the other coins/strategies either, so we want in to break out of a higher level loop
+        // but we will still want this check to take place per startegy in case the previous strategy caused the amount to be too little
         const balance = await this.binanceService.getAccountBalancesWithRetry(this.binanceRest);
         if (balance instanceof BinanceError) {
             txtLogger.log(`getAccountBalances() returned an error after retry: ${JSON.stringify(balance)}`, LogLevel.ERROR);
@@ -138,12 +145,15 @@ export default class Tradingbot {
         txtLogger.log(`Free USDT balance amount is equal to: ${currentFreeUSDTAmount}.`);
 
         if (currentFreeUSDTAmount < this.minimumUSDTorderAmount) {
-            txtLogger.log(`The method buyLimitOrderLogic() quit because:`);
+            txtLogger.log(`The method buyLimitOrder() quit because:`);
             txtLogger.log(`The free USDT balance amount is lower than the configured minimum amount: ${this.minimumUSDTorderAmount}.`);
             return;
         }
+        // ....... here
+
 
         // STEP III. Determine how much you can spend at the next buy order based on the order book.
+        //#region orderVars
         const amountOfUSDTToSpend = exchangeLogic.calcAmountToSpend(currentFreeUSDTAmount, maxUsdtBuyAmount, maxPercentageOfBalance);
         txtLogger.log(`The allocated USDT amount for this order is equal to: ${amountOfUSDTToSpend}.`);
 
@@ -169,13 +179,14 @@ export default class Tradingbot {
         const stepSize: number = exchangeLogic.getdecimals(lotSize.stepSize as string);
         const tickSize: number = exchangeLogic.getdecimals(priceFilter.tickSize as string);
         const minimumOrderQuantity: number = exchangeLogic.determineMinQty(lotSize);
-
-        txtLogger.log(`The step size in decimals - which will be used in order to calculate the amount - is: ${stepSize}.`);
-        txtLogger.log(`The tick size in decimals - which will be used in order to calculate the the price - is: ${tickSize}.`);
-
         const percentPriceObj: SymbolPercentPriceFilter = symbolResult.filters.find(f => f.filterType === 'PERCENT_PRICE') as SymbolPercentPriceFilter;
         const multiplierDown: number = Number(percentPriceObj.multiplierDown);
         const allowedStopLossPercentageBinance: number = 100 - (multiplierDown * 100);
+        
+        // todo aram rewrite these logs
+        txtLogger.log(`The step size in decimals - which will be used in order to calculate the amount - is: ${stepSize}.`);
+        txtLogger.log(`The tick size in decimals - which will be used in order to calculate the the price - is: ${tickSize}.`);
+        //#endregion
 
         if (takeLossPercentage > allowedStopLossPercentageBinance) {
             txtLogger.log(`Buy ordering logic is cancelled because:`);
@@ -218,6 +229,7 @@ export default class Tradingbot {
         txtLogger.log(`Buy order created. Details:`);
         txtLogger.log(`${JSON.stringify(buyOrder, null, 4)}`);
 
+        // todo aram maybe wrap this in a broader "reporting" step, where the buy order is logged in an excel or something AND an email is sent if wished so
         if (config.generic.emailWhenBuyOrderCreated === true) {
             Mailer.Send(`Limit buy order created ${buyOrder.clientOrderId}`, `Limit buy order details: ${JSON.stringify(buyOrder, null, 4)}`);
         }
@@ -226,7 +238,7 @@ export default class Tradingbot {
             buyOrder.status === OrderStatusEnum.NEW ||
             buyOrder.status === OrderStatusEnum.FILLED
         ) {
-            const currentBuyOrder: ActiveBuyOrder = {
+            const activeBuyOrder: ActiveBuyOrder = {
                 price: Number(buyOrder.price),
                 clientOrderId: buyOrder.clientOrderId,
                 orderName: orderName,
@@ -237,15 +249,19 @@ export default class Tradingbot {
                 tickSize: tickSize,
                 status: buyOrder.status
             }
-            this.activeBuyOrders.push(currentBuyOrder);
+            this.activeBuyOrders.push(activeBuyOrder);
         }
 
+        // todo aram, the below step is done async i think, meaning the other strategies are now waiting for this step, nicer if done sync
+        // maybe it's not that bad, espcially if the time is generally a couple of seconds or something
         if (buyOrder.status !== OrderStatusEnum.FILLED) {
             // STEP VI. Activate cancelLimitBuyOrderCheck() because after X seconds you want to cancel the limit buy order if it is not filled.
             if (this.limitBuyOrderExpirationTime > 0) {
                 setTimeout(() => {
                     txtLogger.log(`The method cancelLimitBuyOrderCheck() is going to check if the limit buy order - ${orderName} - has been filled within the allocated time: ${this.limitBuyOrderExpirationTime / 1000} seconds.`);
-                    this.cancelLimitBuyOrderCheck(tradingPair, buyOrder.clientOrderId, orderName);
+                    
+                    // todo aram, perhaps move the check condition to here, and make the method a true cancelBuyOrder method, instead of also incorperating the check
+                    this.cancelBuyOrderCheck(tradingPair, buyOrder.clientOrderId, orderName);
                 }, this.limitBuyOrderExpirationTime);
             }
         }
@@ -297,23 +313,25 @@ export default class Tradingbot {
         }
     }
 
-    public async cancelLimitBuyOrderCheck(tradingPair: string, clientOrderId: string, orderName: string) {
+    public async cancelBuyOrderCheck(tradingPair: string, clientOrderId: string, orderName: string) {
         // STEP 1 - check if the limit buy order is not filled yet (it may be partially filled)
         const currentOpenOrders: SpotOrder[] = await this.binanceService.retrieveAllOpenOrdersForTraidingPair(this.binanceRest, tradingPair);
         if (currentOpenOrders.length > 0) {
-            const limitBuyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId);
+            // todo aram pretty sure we can also just pass the buyOrder from the placeBuyOrder method
+            const buyOrder: SpotOrder = currentOpenOrders.find(f => f.clientOrderId === clientOrderId);
             txtLogger.log(`Checking if it is necessary to cancel the limit buy order with the following details:`);
             txtLogger.log(`orderName: ${orderName}, clientOrderId: ${clientOrderId} `);
 
             // STEP 2 - If the limit buy order is still open cancel it ('NEW' or 'PARTIALLY_FILLED')
             if (
-                limitBuyOrder !== undefined &&
-                (limitBuyOrder.status === 'NEW' || limitBuyOrder.status === 'PARTIALLY_FILLED')
+                buyOrder !== undefined &&
+                (buyOrder.status === 'NEW' || buyOrder.status === 'PARTIALLY_FILLED')
             ) {
-                txtLogger.log(`Limit buy order status: ${limitBuyOrder.status}`);
-                txtLogger.log(`${JSON.stringify(limitBuyOrder)}`);
+                txtLogger.log(`Limit buy order status: ${buyOrder.status}`);
+                txtLogger.log(`${JSON.stringify(buyOrder)}`);
                 txtLogger.log(`Trying to cancel the limit buy order.`);
-                const cancelSpotOrderResult: CancelSpotOrderResult = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, limitBuyOrder.orderId);
+                // todo aram, if i perform the other todos (move the check condition one layer up, and pass the buyOrder) the below line is actually the only relevant line
+                const cancelSpotOrderResult: CancelSpotOrderResult = await this.binanceService.cancelOrder(this.binanceRest, tradingPair, buyOrder.orderId);
                 txtLogger.log(`The cancel spot order results looks as follows:`);
                 txtLogger.log(`${JSON.stringify(cancelSpotOrderResult, null, 4)}`);
             } else {
@@ -493,7 +511,7 @@ export default class Tradingbot {
         // const orderConditionName = 'FORCED ORDER ${config.testing.ForceBuyOrder.Tradingpair} bla bla' 
 
         // txtLogger.log(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order. #####`);
-        // await this.buyLimitOrderLogic(
+        // await this.buyLimitOrder(
         //     strategy.order,
         //     tradingPair,
         //     orderConditionName,
@@ -589,12 +607,12 @@ export default class Tradingbot {
         //         txtLogger.log(`Checking ${this.coins.length} trading pair for crash condition.`);
         //     }
         //     // STEP 3. 
-        //     //      OPTION I - A crash condition was detected , continue to the buyLimitOrderLogic() method.
+        //     //      OPTION I - A crash condition was detected , continue to the buyLimitOrder() method.
         //     txtLogger.log(`Candle information associated with the crash condition:`);
         //     //txtLogger.log(JSON.stringify(orderConditionResult, null, 4));
 
         //     const ordercondition = config.production.largeCrashOrder.order as ConfigOrderConditionOrder;
-        //     await this.buyLimitOrderLogic(
+        //     await this.buyLimitOrder(
         //         ordercondition,
         //         tradingPair,
         //         `crashOrder-${tradingPair}`,
