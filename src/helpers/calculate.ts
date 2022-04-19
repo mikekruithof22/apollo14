@@ -8,14 +8,29 @@ import { ConfigOrderCondition } from '../models/logic';
 
 export default class CalculateHelper {
 
-    public static calculateBullishDivergenceOrCrashOrder = ( // todo aram seperate the crashorder and BD calculation
+    public static calculateCrashOrder = (): OrderConditionResult => {
+        // todo aram fix this crashOrder stuff (it used to be in calculateBullishDivergenceOrCrashOrder)
+                // STEP 2 - determine if there is a crash
+                // const crashConfig = config.production.largeCrashOrder;
+                // if (crashConfig.maxAmountOfCandlesToLookBack >= mostRecentCandleIndex - i
+                //     && closePriceChange <= crashConfig.minimumDeclingPercentage) {
+                //     return {
+                //         startWithCandle: candleList[i],
+                //         endingCandle: candleList[mostRecentCandleIndex],
+                //         totalCandles: mostRecentCandleIndex - i,
+                //         isCrashOrder: true
+                //     } as OrderConditionResult;
+                // }
+                return {} as OrderConditionResult;
+    }
+
+    public static checkForBullishDivergence = ( 
         strategy: ConfigOrderCondition,
         closePriceList: number[],
         candleList: LightWeightCandle[],
         rsiItems: number[],
-        orderConditionName: string,
-        botPauseActive: boolean
-    ): OrderConditionResult => {
+        orderConditionName: string
+        ): OrderConditionResult => {
         const rsiMinimumRisingPercentage: number = strategy.rsi.minimumRisingPercentage;
         const candleMinimumDeclingPercentage: number = strategy.candle.minimumDeclingPercentage;
         const startCount: number = strategy.calcBullishDivergence.numberOfMinimumIntervals;
@@ -37,26 +52,12 @@ export default class CalculateHelper {
                 // STEP 1 - calculate priceListDelta
                 const closePriceChange = CalculateHelper.calculatePercentageChange(compareWithClose, mostRecentClose);
 
-                // STEP 2 - determine if there is a crash
-                const crashConfig = config.production.largeCrashOrder;
-                if (crashConfig.maxAmountOfCandlesToLookBack >= mostRecentCandleIndex - i
-                    && closePriceChange <= crashConfig.minimumDeclingPercentage) {
-                    return {
-                        startWithCandle: candleList[i],
-                        endingCandle: candleList[mostRecentCandleIndex],
-                        totalCandles: mostRecentCandleIndex - i,
-                        isCrashOrder: true
-                    } as OrderConditionResult;
-                }
-
-                // This part is only for bullish Divergences
-                if (mostRecentCandleIndex - i >= startCount &&
-                    !botPauseActive) {
-                    // STEP 3 - calculate RSI delta
+                if (mostRecentCandleIndex - i >= startCount) {
+                    // STEP 2 - calculate RSI delta
                     const compareWithRsiValue = rsiItems[compareWithRsiIndex];
                     const rsiChange = CalculateHelper.calculatePercentageChange(compareWithRsiValue, mostRecentRsiValue);
 
-                    // STEP 4 - determine if there is a bullish divergence. Only when pause is not active
+                    // STEP 3 - determine if there is a bullish divergence.
                     if (rsiChange >= rsiMinimumRisingPercentage &&
                         closePriceChange <= candleMinimumDeclingPercentage) {
                         return {
@@ -70,7 +71,7 @@ export default class CalculateHelper {
                     }
                 }
             } catch (e) {
-                txtLogger.log(`calculateBullishDivergenceOrCrashOrder() failed. ${JSON.stringify(e)}`, LogLevel.ERROR);
+                txtLogger.log(`checkForBullishDivergence() failed. ${JSON.stringify(e)}`, LogLevel.ERROR);
             }
         }
     }

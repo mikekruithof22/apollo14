@@ -18,16 +18,20 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     private amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
     
     private job: schedule.Job = new schedule.Job(async function () {
+        // todo aram go though this job and double check if the method names are still the same
         txtLogger.log(`---------- Program started ---------- `);
 
         txtLogger.log(`---------- Checking for Crash ---------- `);
+
         const crashDetected: boolean = await this.tradingBot.checkForCrash();
+
         if (crashDetected) {            
             txtLogger.log(`Crash detected. Setting number of candles to pause to ${this.amountOfCandlesToPauseBotFor} candles`);
             this.currentPauseTimeInCandles = this.amountOfCandlesToPauseBotFor;
         }
 
         txtLogger.log(`---------- Checking for Pause condition ---------- `);
+
         if (this.currentPauseTimeInCandles > 0) {
             txtLogger.log(`Bot is paused for ${this.currentPauseTimeInCandles} candles.`);
             // todo aram I don't like how the tradingbot is still run even if the bot is supposed to be paused
@@ -41,6 +45,8 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
         } else {
             this.tradingBot.botPauseActive = false;
         }
+
+        txtLogger.log(`---------- No Crash or Pause Condition found, Running TradingBot ---------- `);
 
         await this.tradingBot.runProgram();
 

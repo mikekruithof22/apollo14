@@ -43,9 +43,6 @@ export default class Tradingbot {
     private doNotOrderWhenRSIValueIsBelow: number = config.generic.order.doNotOrder.RSIValueIsBelow;
     private pauseOnCrash = config.production.pauseCondition.active;
 
-    // devTest config
-    private triggerBuyOrderLogic: boolean = config.test.devTest.triggerBuyOrderLogic;
-
     constructor() {
         this.binanceService = new BinanceService();
         this.candleHelper = new CandleHelper();
@@ -55,7 +52,7 @@ export default class Tradingbot {
         txtLogger.log(`New TradingBot created`);
     }
 
-    public async runProgram(botPauseActive: boolean) { 
+    public async runProgram() { 
         if (this.binanceRest === undefined) {
             txtLogger.log(`The method runProgram() quit because generating binanceRest client failed.`, LogLevel.ERROR);
             return;
@@ -80,7 +77,7 @@ export default class Tradingbot {
             const mostRecentRsiValue = rsiCollection[rsiCollection.length - 1];
             //#endregion
             
-            // if max orders have been reached, the bot can't do anything so skip
+            // if max orders have been reached, the bot can't do anything, so skip
             const maxOrdersReached = this.maxOrderReachedCheck(tradingPair);
             if (maxOrdersReached) { break; }
 
@@ -96,7 +93,7 @@ export default class Tradingbot {
                 if (shouldSkip) { break; }
 
                 // todo aram, figure out why botCurrentlyPaused is required here, if it's paused it shouldn't calculate the divergence or do anything else i guess
-                const bullishDivergence: OrderConditionResult = calculate.calculateBullishDivergenceOrCrashOrder(strategy, closePriceList, candleObjectList, rsiCollection, orderConditionName, this.botCurrentlyPaused);
+                const bullishDivergence: OrderConditionResult = calculate.checkForBullishDivergence(strategy, closePriceList, candleObjectList, rsiCollection, orderConditionName);
 
                 if (bullishDivergence !== undefined) {
                     txtLogger.log(`***** Bullish divergence detected for ${tradingPair} - Order condition name: ${orderConditionName} *****`);
@@ -105,7 +102,7 @@ export default class Tradingbot {
 
                     // STEP 3. 
                     //      OPTION II - A bullish divergence was found, continue to the buyLimitOrderLogic() method.
-                    await this.buyLimitOrderLogic(
+                    await this.buyLimitOrder(
                         strategy.order,
                         tradingPair,
                         orderConditionName
@@ -117,12 +114,12 @@ export default class Tradingbot {
         }
     }
 
-    public async buyLimitOrderLogic(
+    public async buyLimitOrder(
         order: ConfigOrderConditionOrder,
         tradingPair: string,
         orderName: string
     ) {
-        txtLogger.log(`The method buyLimitOrderLogic() will try to place a limit buy order.`);
+        txtLogger.log(`buyLimitOrder() called for tradingPair=${tradingPair} orderName=${orderName}`);
 
         // STEP I. Prepare config.json order data 
         const takeProfitPercentage: number = order.takeProfitPercentage;
@@ -494,14 +491,13 @@ export default class Tradingbot {
 
     private async forceBuyOrder() {
         // const orderConditionName = 'FORCED ORDER ${config.testing.ForceBuyOrder.Tradingpair} bla bla' 
-        if (this.triggerBuyOrderLogic === true) { // use ONLY for testing purposes!
-            txtLogger.log(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order. #####`);
-            // await this.buyLimitOrderLogic(
-            //     strategy.order,
-            //     tradingPair,
-            //     orderConditionName,
-            // );
-        }
+
+        // txtLogger.log(`##### DEVTEST - Skipping bullish divergence calculation and trigger a limit buy order. #####`);
+        // await this.buyLimitOrderLogic(
+        //     strategy.order,
+        //     tradingPair,
+        //     orderConditionName,
+        // );
     }
 
     private async skipStrategyConditionsCheck(orderConditionName: string, tradingPair: string, mostRecentRsiValue: number, strategy: ConfigOrderCondition): Promise<boolean> {
