@@ -95,9 +95,6 @@ export default class Tradingbot {
                 const shouldSkip = this.skipStrategyConditionsCheck(orderConditionName, tradingPair, mostRecentRsiValue, strategy);
                 if (shouldSkip) { break; }
 
-                // todo aram to be moved to main if possible (probably after new config model is implemented)
-                await this.forceBuyOrder();
-
                 // todo aram, figure out why botCurrentlyPaused is required here, if it's paused it shouldn't calculate the divergence or do anything else i guess
                 const bullishDivergence: OrderConditionResult = calculate.calculateBullishDivergenceOrCrashOrder(strategy, closePriceList, candleObjectList, rsiCollection, orderConditionName, this.botCurrentlyPaused);
 

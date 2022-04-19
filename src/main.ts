@@ -17,8 +17,6 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
     private currentPauseTimeInCandles: number = 0;
     private amountOfCandlesToPauseBotFor: number = config.production.pauseCondition.amountOfCandlesToPauseBotFor
     
-    // todo aram create a new job specfic to the force buy test
-
     private job: schedule.Job = new schedule.Job(async function () {
         txtLogger.log(`---------- Program started ---------- `);
 
@@ -48,6 +46,13 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
 
     }.bind(this));
 
+    private forceBuyOrderJob: schedule.Job = new schedule.Job(async function () {
+        txtLogger.log(`---------- Program started in ForcedBuyOrder mode ---------- `);
+
+        await this.tradingBot.forceBuyOrder();
+
+    }.bind(this));
+
     public async Renew() { // todo aram maybe use this as a reset to renew all objects, websocket etc.?
 
     }
@@ -63,7 +68,7 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
 
     public async Start() {
         if (this.inProgress) {
-            txtLogger.log('Main already in progress, skipping...'); // todo aram is this enough?
+            txtLogger.log('Main already in progress, skipping...');
             return;
         }
 
@@ -114,6 +119,57 @@ export default class Main { // todo aram this wrapper is kind of uselss I think,
             // wsService.requestListSubscriptions(websocketClient, data.wsKey, 1);
         });
 
+        // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
+        this.websocketClient.on('reply', async (data: WsResponse) => {
+            txtLogger.log(`reply eventreceived: ${JSON.stringify(data)}`);
+        });
+
+        // Listen To Order Changes
+        this.websocketClient.on('formattedUserDataMessage', async (data: WsUserDataEvents) => {
+            txtLogger.log(`formattedUserDataMessage eventreceived: ${JSON.stringify(data)}`);
+            await this.tradingBot.processFormattedUserDataMessage(data);
+        });
+    }
+
+    public async ForceBuyOrderTest() {
+        if (this.inProgress) {
+            txtLogger.log('Main already in progress, skipping...');
+            return;
+        }
+
+        this.inProgress = true; 
+        txtLogger.log('App is running');
+
+        // setup
+        const wsService: WebSocketService = new WebSocketService(); 
+        this.websocketKey = wsService.websocketKey;
+        this.websocketClient = wsService.generateWebsocketClient();
+        this.tradingBot = new Tradingbot() // todo aram I don't like that the trading bot (or somethinf CALLED trading bot) is only created now
+
+        txtLogger.log('Subscribing to webSocketClient');
+        
+        this.websocketClient.subscribeSpotUserDataStream();
+        this.websocketClient.on('open', async (data: {
+            wsKey: WsKey;
+            ws: WebSocket;
+            event?: any;
+        }) => {
+            // Sanity check the config.json.
+            // todo aram maybe do config importer stuff here? Downside is the config won't be loaded and visible in the UI before you hit start
+            const incorrectConfigData: boolean = configChecker.checkConfigData();
+            if (incorrectConfigData) {
+                txtLogger.log(`The websocket() quit because:`);
+                txtLogger.log(`The method checkConfigData() detected wrong config values`);
+                return;
+            }
+            txtLogger.log(`*** config.json is equal to:  ${JSON.stringify(config)}`);
+            txtLogger.log(`Websocket event - connection opened:', ${data.wsKey}`);
+    
+            this.forceBuyOrderJob.invoke();
+        });
+
+        // todo aram not sure if the below is interesting for forced buy order mode, we only care about putting in the order right?
+        // not the oco order part
         // We can run requestListSubscriptions above to check if we are subscribed. The answer will appear here.
         this.websocketClient.on('reply', async (data: WsResponse) => {
             txtLogger.log(`reply eventreceived: ${JSON.stringify(data)}`);

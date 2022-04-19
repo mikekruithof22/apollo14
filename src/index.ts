@@ -19,6 +19,12 @@ app.get( "/start", ( req, res ) => {
     main.Start();
 });
 
+app.get( "/forceBuyOrderTest", ( req, res ) => {
+    res.send( "forceBuyOrderTest endpoint called!" );
+    txtLogger.log("Running bot with forced buy order logic");
+    main.ForceBuyOrderTest();
+});
+
 app.get( "/stop", ( req, res ) => {
     res.send( "Stop endpoint called!" );
     txtLogger.log("Stopping app through stop endpoint");
